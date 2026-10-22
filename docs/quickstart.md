@@ -44,6 +44,12 @@ The health output also names its artifact.
 
 ## Record what you observed
 
+The step log records what happened. The result file records what it proves:
+for each claim, you name the steps and artifacts that prove it. `result` checks
+that those steps completed and that the artifacts exist with their checksums,
+so a claim cannot pass on a statement alone. An agent normally writes this
+file; in this trial, you write it.
+
 Open `.spyglass/runs/terminal-trial/spyglass/result.json` in your editor. Set
 `operator` to `human`. For `health-ready`, set `outcome` to `passed`, copy the
 health step ID into `steps`, and copy its artifact path into `artifacts`.
@@ -72,9 +78,9 @@ spyglass down --run terminal-trial
 spyglass report --run terminal-trial
 ```
 
-Open the report path printed by `report`. Check that it includes both attempts,
-the observation, the source identity, the limit and cleanup. A report run before
-cleanup must remain incomplete. Running `report` after cleanup needs no live app.
+Open the page at `reportPath` in the `report` output. Check that it includes
+both attempts, the observation, the source identity, the limit and cleanup. A
+report run before cleanup must remain incomplete. Running `report` after cleanup needs no live app.
 
 ## Continue an agent's run
 
