@@ -92,7 +92,9 @@ export class Secrets {
         )
       )
         return "[REDACTED]";
-      if (typeof v === "string") return isReference(v) ? v : this.text(v);
+      // Mask references too: a reference holds no secret value, but reflected
+      // output can start with a reference prefix and still contain one.
+      if (typeof v === "string") return this.text(v);
       if (Array.isArray(v)) return v.map((x) => visit(x));
       if (v && typeof v === "object")
         return Object.fromEntries(
