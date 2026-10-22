@@ -1,10 +1,12 @@
-# Spyglass
+<h1 align="center">
+  <img src="docs/assets/hero.png" alt="Spyglass. Verify code changes with real tools, and keep the evidence." width="100%">
+</h1>
 
-[![CI](https://github.com/Schramm2/spyglass/actions/workflows/ci.yml/badge.svg)](https://github.com/Schramm2/spyglass/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Node.js 24+](https://img.shields.io/badge/node-%3E%3D24-339933.svg)
-
-**Verify code changes with real tools, and keep the evidence.**
+<p align="center">
+  <a href="https://github.com/Schramm2/spyglass/actions/workflows/ci.yml"><img src="https://github.com/Schramm2/spyglass/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D24-339933.svg" alt="Node.js 24+">
+</p>
 
 Spyglass is a command-line tool for coding agents and the people who review
 their work. It connects browser actions, HTTP calls, database reads and
@@ -12,6 +14,10 @@ repository checks to one **run**. Each run records its source identity, every
 attempt (failed attempts too) and its artifacts. The evidence stays after
 cleanup, so another agent or person can inspect the result later without the
 original chat or shell.
+
+<p align="center">
+  <img src="docs/assets/how-it-works.png" alt="One run: a code change, verified with real tools (browser, HTTP, database and checks), gives evidence (screenshots, logs, rows and checksums), and the evidence goes into a report." width="100%">
+</p>
 
 > [!NOTE]
 > Spyglass is pre-release software (version 0.1.0). Commands and the version 1
