@@ -9,7 +9,7 @@ version or prepare a release.
 
 | File | Source | Rule |
 | --- | --- | --- |
-| `schemas/*.schema.json` | `src/schema.ts`, written by `src/export-schemas.ts` at the end of `npm run build` | Never edit by hand. Rebuild and commit the regenerated files with the schema change. A schema change is a change to the public version 1 contract; record it in `CHANGELOG.md`. |
+| `schemas/*.schema.json` | `src/schema.ts`, written by `src/export-schemas.ts` at the end of `npm run build` | Never edit by hand. Rebuild and commit the regenerated files with the schema change. |
 | `dist/` | `npm run build` | Git-ignored. `package.json` `bin` points to `dist/cli.js`, so rebuild before you run the CLI from this checkout. |
 | `package-lock.json` | `npm install` | Change only with a dependency change. |
 
@@ -17,6 +17,18 @@ The tested `agent-browser` version is pinned in several places. Change all of
 them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:255`,
 `src/profile.ts:294`, `README.md`, `CONTRIBUTING.md` and
 `agent_docs/testing.md`.
+
+## User-visible changes
+
+A new or changed command, option, output field, exit code or schema field
+changes the public contract. In the same pull request:
+
+- add an entry under `[Unreleased]` in `CHANGELOG.md`;
+- update the command table or text in `README.md`, and the help in
+  `src/help.ts`;
+- update the skill text in `skills/` that names the command or field.
+
+The version number changes only at release time; see "Version and release".
 
 ## Before you push
 
@@ -72,5 +84,4 @@ it, remove `private` or create a GitHub release unless the user asks for it.
 `skills/` is the source of truth for the three Spyglass skills. Other skill
 catalogs install a copy pinned to a commit of this repository, so a skill
 change reaches them only after they update the pin. Keep each adapted skill's
-`LICENSE` file, and keep the skill text in line with the current CLI help and
-schemas.
+`LICENSE` file.

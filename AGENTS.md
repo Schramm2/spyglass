@@ -70,9 +70,10 @@ Read the relevant documents before you start work:
   modules or change where state lives.
 - `agent_docs/testing.md`: how the E2E suite works, the opt-in surface tests
   and how to add or focus a test. Read before you write or run tests.
-- `agent_docs/delivery.md`: generated schemas, pre-push checks and the
-  secret scan, version strings, the changelog and the publication boundary.
-  Read before you push, change a schema, bump the version or release.
+- `agent_docs/delivery.md`: what a user-visible change must update, generated
+  schemas, pre-push checks and the secret scan, version strings and the
+  publication boundary. Read before you change a command, output or schema,
+  push, or release.
 - `docs/failure-cases.md`: the failures the CLI must detect. Read before you
   change verification, evidence or cleanup behavior, and add a row for a new
   failure case.
