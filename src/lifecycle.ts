@@ -244,8 +244,13 @@ export function status(run: Run): Record<string, unknown> {
       bindings: run.profile.bindings,
       cleanupRequired: !run.ownerCleaned,
     },
-    next: `spyglass ${run.cleanup ? "report" : "down"} --run ${run.id}`,
+    next: nextCommand(run),
   };
+}
+function nextCommand(run: Run): string {
+  if (run.plan.claims.length && !run.result)
+    return `spyglass result --file ${relative(run.repo, run.resultPath)} --run ${run.id}`;
+  return `spyglass ${run.cleanup ? "report" : "down"} --run ${run.id}`;
 }
 export function capabilities(run: Run): Record<string, unknown> {
   return {

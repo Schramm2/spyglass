@@ -869,7 +869,8 @@ function collectFindings(
   if (!result)
     findings.push({
       code: "RESULT_MISSING",
-      message: "No result has been submitted for this run.",
+      message:
+        "No result has been recorded for this run. Submit it with spyglass result --file PATH.",
     });
   if (!ctx.run.plan.claims.length)
     findings.push({
@@ -1014,25 +1015,12 @@ function reportSummary(
   });
 }
 
+// Only a result recorded through `result` counts. An edited template on disk
+// has not passed the proof validation that `result` applies.
 function parseRunResult(run: Run, findings: Finding[]): Result | undefined {
-  if (run.result) {
-    try {
-      return validate(resultSchema, run.result, "result");
-    } catch (error) {
-      findings.push({
-        code: "RESULT_INVALID",
-        message: error instanceof Error ? error.message : String(error),
-      });
-      return undefined;
-    }
-  }
-  if (!run.resultPath) return undefined;
-  const path = isAbsolute(run.resultPath)
-    ? run.resultPath
-    : resolve(run.repo, run.resultPath);
-  if (!existsSync(path)) return undefined;
+  if (!run.result) return undefined;
   try {
-    return validate(resultSchema, readJson(path), "result");
+    return validate(resultSchema, run.result, "result");
   } catch (error) {
     findings.push({
       code: "RESULT_INVALID",
@@ -1204,6 +1192,7 @@ export async function report(
     attemptCount: entries.length,
     artifactCount: inventory.length,
     report: { page, summary: summaryArtifact },
+    reportPath: join(ctx.run.evidence, "spyglass", page.path),
   };
   if (findings.length) {
     const first = findings[0]!;

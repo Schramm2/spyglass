@@ -24,6 +24,7 @@ results and retained evidence.
 | Database | A query returns more rows or encoded output than the supported bound. | The query fails with a clear limit and does not retain an unbounded result. |
 | Database | A query returns a different row count than `--expect-rows`. | The command fails and retains the observed count and bounded result. |
 | Containers | A run stops. | Spyglass stops its own processes and browser. The repository owner cleans its containers; shared services and evidence remain. |
+| Report | The operator edits the result file but does not record it with `result`. | The report ignores the unrecorded file, stays incomplete with `RESULT_MISSING`, and `status` names `result` as the next command until a result is recorded. |
 | Report | Required work or owner cleanup is missing. | The report files are still produced, but the run is incomplete and exits with failed-check status. |
 | Operator | A required input is missing while JSON mode is active. | Stdout contains one versioned result object, stderr contains diagnostics, and the command exits without prompting. |
 

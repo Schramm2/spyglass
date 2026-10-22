@@ -6,6 +6,19 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- `report` uses only a result recorded with `spyglass result`. An edited
+  result file that was not recorded leaves the report incomplete with
+  `RESULT_MISSING`.
+- `status` names `spyglass result` as the next command while the run has a
+  plan and no recorded result.
+
+### Added
+
+- `report` output includes `reportPath`, the absolute path of the HTML page.
+- The terminal quickstart explains what the result file is for.
+
 ## [0.1.0] - 2026-10-22
 
 ### Added

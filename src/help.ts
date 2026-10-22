@@ -19,7 +19,7 @@ const details: Record<
   status: {
     usage: "status [--run ID]",
     description:
-      "List repository runs, or inspect one run: source, active command, completed checks, pending claims, capabilities, owner resources and cleanup. Inspection works while another operator drives the run.",
+      "List repository runs, or inspect one run: source, active command, completed checks, pending claims, capabilities, owner resources, cleanup and the next command. Inspection works while another operator drives the run.",
     example: "spyglass status --run change-42 --json",
   },
   doctor: {
@@ -96,7 +96,7 @@ const details: Record<
   report: {
     usage: "report --run ID",
     description:
-      "Write retained offline HTML and JSON from the run log, result, source and artifact checksums. Works after cleanup without contacting the app. Missing claims, controls, required gates, cleanup, altered evidence or source changes produce a diagnostic report and exit 1. Prior failed attempts remain visible.",
+      "Write retained offline HTML and JSON from the run log, recorded result, source and artifact checksums. Only a result recorded with spyglass result counts. data.reportPath is the absolute path of the HTML page. Works after cleanup without contacting the app. Missing claims, controls, required gates, cleanup, altered evidence or source changes produce a diagnostic report and exit 1. Prior failed attempts remain visible.",
     example: "spyglass report --run change-42 --json",
   },
   schema: {

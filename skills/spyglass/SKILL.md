@@ -138,7 +138,9 @@ owner cleanup, and remaining limits separately.
 
 Edit the result template printed by `up`, then record it with
 `spyglass --run <run-id> result --file <result-file> --json`. The CLI checks
-step IDs and evidence; fix a missing proof by running the required check.
+step IDs and evidence; fix a missing proof by running the required check. The
+report uses only a recorded result: an edited file that you did not submit
+through `result` leaves the report incomplete with `RESULT_MISSING`.
 Copy each returned artifact `path` exactly into the result. It is relative to
 the run's evidence folder under `spyglass/`; do not add the repository path.
 Use the recorded command status to judge a check. A child exit code of zero

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import {
@@ -790,7 +790,17 @@ test("a report validates completed proof after cleanup and detects artifact tamp
       { ok: true, code: 0 },
     );
     assert.ok(check.artifacts.length);
-    await writeJson(join(dir, "result.json"), {
+    const pending = assertEnvelope(
+      await runCli(dir, ["--json", "status", "--run", run]),
+      { ok: true, code: 0 },
+    );
+    assert.deepEqual(pending.data.pendingClaims, ["demo-ready"]);
+    assert.match(
+      pending.data.next,
+      /^spyglass result --file \S+result\.json --run /,
+      "a pending claim must lead to result, not cleanup",
+    );
+    const passingResult = {
       operator: "agent",
       claims: [
         {
@@ -803,7 +813,17 @@ test("a report validates completed proof after cleanup and detects artifact tamp
       ],
       gates: [],
       limits: [],
-    });
+    };
+    await writeJson(join(dir, pending.data.result), passingResult);
+    const unrecorded = assertEnvelope(
+      await runCli(dir, ["--json", "report", "--run", run]),
+      { ok: false, code: 1 },
+    );
+    assert.ok(
+      unrecorded.data.findings.some((f) => f.code === "RESULT_MISSING"),
+      "an edited template that was never submitted through result is not proof",
+    );
+    await writeJson(join(dir, "result.json"), passingResult);
     assertEnvelope(
       await runCli(dir, [
         "--json",
@@ -815,6 +835,12 @@ test("a report validates completed proof after cleanup and detects artifact tamp
       ]),
       { ok: true, code: 0 },
     );
+    const recorded = assertEnvelope(
+      await runCli(dir, ["--json", "status", "--run", run]),
+      { ok: true, code: 0 },
+    );
+    assert.deepEqual(recorded.data.pendingClaims, []);
+    assert.equal(recorded.data.next, `spyglass down --run ${run}`);
     assertEnvelope(await runCli(dir, ["--json", "report", "--run", run]), {
       ok: false,
       code: 1,
@@ -823,14 +849,20 @@ test("a report validates completed proof after cleanup and detects artifact tamp
       ok: true,
       code: 0,
     });
-    assertEnvelope(await runCli(dir, ["--json", "report", "--run", run]), {
-      ok: true,
-      code: 0,
-    });
+    const complete = assertEnvelope(
+      await runCli(dir, ["--json", "report", "--run", run]),
+      { ok: true, code: 0 },
+    );
+    assert.ok(
+      isAbsolute(complete.data.reportPath) &&
+        existsSync(complete.data.reportPath),
+      `report must print a path that opens from any directory: ${complete.data.reportPath}`,
+    );
     const status = assertEnvelope(
       await runCli(dir, ["--json", "status", "--run", run]),
       { ok: true, code: 0 },
     );
+    assert.equal(status.data.next, `spyglass report --run ${run}`);
     await writeFile(
       join(dir, status.data.evidence, check.artifacts[0].path),
       "tampered",
