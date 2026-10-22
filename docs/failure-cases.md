@@ -1,0 +1,40 @@
+# Spyglass failure cases
+
+These cases define failures that the public CLI must detect. The end-to-end
+tests run the built CLI in temporary Git repositories. They test observable
+results and retained evidence.
+
+| Area | Failure case | Required result |
+| --- | --- | --- |
+| Input | The profile has an unsupported version or an unknown field. | The command exits with usage/profile status and names the invalid field. It does not launch the app. |
+| Setup | Two profiles match the repository. | The command asks for an explicit profile through an error and next action. It does not prompt. |
+| Run | The app exits before its readiness check succeeds. | The run remains recorded as failed, its ID is returned, and status and cleanup remain available. |
+| Run | Two operators try to change one run at once. | One mutation owns the lock. Status can inspect the active command. The second mutation fails with a recovery action. |
+| Source | Source changes after the run starts. | Later evidence cannot be presented as proof for the original source. The run records both source identities or rejects the stale result. |
+| Check | A check exits zero but reports a failed assertion or skipped required assertion. | The check fails and retains the command result, assertion details, skips, and artifacts. |
+| Claim | A required claim has no completed step or required evidence. | The claim cannot pass. The report stays incomplete and names the missing proof. |
+| Claim | A side-effect claim has no independent read after the action completes. | The claim cannot pass. |
+| Evidence | An imported artifact is missing, outside an approved root, or changes during import. | The import fails and does not claim the artifact as evidence. |
+| Secret | A request or page reflects a test credential. | Reports and artifacts do not expose credential values, cookies, or authorization headers. |
+| Browser | A browser action targets an origin outside the profile allowlist. | The action fails with the required capability or policy named. It does not use another browser session. |
+| Browser | A screenshot succeeds but a visual claim has no inspection record. | The visual claim remains incomplete. |
+| HTTP | A request returns an unexpected status or an asynchronous submission is checked before completion. | The expected-status check fails, or the workflow waits for completion before an independent read. |
+| Database | A query attempts to write data. | Spyglass rejects it before execution. |
+| Database | A query contains multiple statements, attempts to escape its transaction, or contains a psql meta-command. | PostgreSQL's extended protocol rejects multiple statements. Client meta-commands never run. No side effect occurs. |
+| Database | A query returns more rows or encoded output than the supported bound. | The query fails with a clear limit and does not retain an unbounded result. |
+| Database | A query returns a different row count than `--expect-rows`. | The command fails and retains the observed count and bounded result. |
+| Containers | A run stops. | Spyglass stops its own processes and browser. The repository owner cleans its containers; shared services and evidence remain. |
+| Report | Required work or owner cleanup is missing. | The report files are still produced, but the run is incomplete and exits with failed-check status. |
+| Operator | A required input is missing while JSON mode is active. | Stdout contains one versioned result object, stderr contains diagnostics, and the command exits without prompting. |
+
+Regression tests also cover these review findings. Each test failed on the CLI
+before its fix:
+
+- A rejected command must not change run state.
+- A child process that exits must not use the readiness of another server.
+- Spyglass must not consume a child command's `--version` argument.
+- Two imported files with the same basename must not collide.
+- A configured database credential that is absent must fail clearly.
+
+The handoff test checks the command status separately from the child exit
+status. It also requires a short source summary and prepared control entries.

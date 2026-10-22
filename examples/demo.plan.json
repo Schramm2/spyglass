@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "id": "health-ready",
+      "behavior": "The demo app answers its health request.",
+      "entryPoint": "GET /health",
+      "precondition": "The owned demo app is ready.",
+      "expected": "HTTP 200 with status ok.",
+      "case": "Normal startup.",
+      "checks": ["health"],
+      "evidence": ["Retained health response"],
+      "kind": "behavior",
+      "required": true
+    }
+  ],
+  "controls": [
+    {
+      "id": "failure-detection",
+      "claim": "health-ready",
+      "expectation": "The same declared assertion detects a deliberate fixture failure.",
+      "assertion": "health-ready"
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "This demo proves the command workflow. It does not prove visual layout or a persistent database."
+  ]
+}

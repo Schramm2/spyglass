@@ -1,0 +1,431 @@
+{
+  "$id": "https://github.com/Schramm2/spyglass/schemas/v1/profile",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "app": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "default": ".spyglass/runs/${run}",
+      "type": "string"
+    },
+    "launch": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "owned",
+            "external"
+          ]
+        },
+        "command": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "ready": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "status": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "command": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "timeoutMs": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 86400000
+            }
+          },
+          "additionalProperties": false
+        },
+        "doctor": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "web": {
+      "type": "string"
+    },
+    "api": {
+      "type": "string"
+    },
+    "bindings": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "checks": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "env": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "timeoutMs": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 86400000
+          },
+          "result": {
+            "default": "exit",
+            "type": "string",
+            "enum": [
+              "exit",
+              "json",
+              "engine"
+            ]
+          },
+          "artifacts": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cleanup": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "command",
+          "result",
+          "artifacts",
+          "cleanup"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "seats": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]*|file:.+|dotenv:.+#.+|op:\\/\\/.+)$"
+          },
+          "login": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "ready": {
+                "type": "object",
+                "properties": {
+                  "selector": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?!\\s*-)(?!\\s*\\d+\\s*$)[\\s\\S]+$"
+                  }
+                },
+                "required": [
+                  "selector"
+                ],
+                "additionalProperties": false
+              },
+              "steps": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "fill": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "label": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "label"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "role": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "role",
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "value": {
+                          "type": "string"
+                        },
+                        "secret": {
+                          "type": "string",
+                          "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]*|file:.+|dotenv:.+#.+|op:\\/\\/.+)$"
+                        }
+                      },
+                      "required": [
+                        "fill"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "click": {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "role",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "click"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "done": {
+                "type": "object",
+                "properties": {
+                  "urlContains": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "urlContains"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "path",
+              "steps",
+              "done"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "db": {
+      "type": "object",
+      "properties": {
+        "connection": {
+          "type": "string",
+          "pattern": "^(env:[A-Za-z_][A-Za-z0-9_]*|file:.+|dotenv:.+#.+|op:\\/\\/.+)$"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "additionalProperties": false
+    },
+    "compose": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string"
+        },
+        "files": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "project",
+        "files",
+        "required"
+      ],
+      "additionalProperties": false
+    },
+    "browser": {
+      "type": "object",
+      "properties": {
+        "allowedOrigins": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "idleTimeoutMs": {
+          "default": 3600000,
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 86400000
+        }
+      },
+      "required": [
+        "allowedOrigins",
+        "idleTimeoutMs"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "include"
+      ],
+      "additionalProperties": false
+    },
+    "imports": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "skill": {
+      "type": "string"
+    },
+    "features": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "guessed"
+            ]
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "source"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "app",
+    "evidence",
+    "launch",
+    "bindings",
+    "checks",
+    "seats",
+    "imports"
+  ],
+  "additionalProperties": false
+}

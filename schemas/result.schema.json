@@ -1,0 +1,172 @@
+{
+  "$id": "https://github.com/Schramm2/spyglass/schemas/v1/result",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "controls": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "failedRun": {
+            "type": "string",
+            "minLength": 1
+          },
+          "failedStep": {
+            "type": "string"
+          },
+          "restoredStep": {
+            "type": "string"
+          },
+          "observedFailure": {
+            "type": "string"
+          },
+          "observedPass": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "failedStep",
+          "restoredStep",
+          "observedFailure",
+          "observedPass"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "operator": {
+      "type": "string",
+      "enum": [
+        "agent",
+        "human"
+      ]
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "blocked",
+              "not run"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "observed": {
+            "type": "string"
+          },
+          "artifacts": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inspection": {
+            "type": "object",
+            "properties": {
+              "viewport": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expected": {
+                "type": "string",
+                "minLength": 1
+              },
+              "observed": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "viewport",
+              "expected",
+              "observed"
+            ],
+            "additionalProperties": false
+          },
+          "independentRead": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "outcome",
+          "steps",
+          "observed",
+          "artifacts"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "gates": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "blocked",
+              "not run"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "outcome",
+          "steps"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "limits": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "controls",
+    "operator",
+    "claims",
+    "gates",
+    "limits"
+  ],
+  "additionalProperties": false
+}

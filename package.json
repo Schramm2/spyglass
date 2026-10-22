@@ -1,0 +1,51 @@
+{
+  "name": "@schramm2/spyglass",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Verify code changes with real tools and keep the evidence, for coding agents and the people who review their work.",
+  "keywords": [
+    "verification",
+    "ai-agents",
+    "coding-agents",
+    "cli",
+    "evidence",
+    "testing",
+    "browser-automation",
+    "postgresql"
+  ],
+  "homepage": "https://github.com/Schramm2/spyglass#readme",
+  "bugs": {
+    "url": "https://github.com/Schramm2/spyglass/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Schramm2/spyglass.git"
+  },
+  "license": "MIT",
+  "author": "Matthew Schramm",
+  "type": "module",
+  "bin": {
+    "spyglass": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && esbuild src/*.ts --bundle --splitting --format=esm --platform=node --packages=external --external:./browser-proxy.js --outdir=dist --entry-names='[name]' --chunk-names='chunks/[name]-[hash]' && esbuild src/browser.ts --bundle --format=esm --platform=node --external:./browser-proxy.js --external:./state.js --external:./errors.js --outfile=dist/browser.js && node dist/export-schemas.js",
+    "test": "npm run build && node --test --test-concurrency=1 tests/e2e/*.test.mjs",
+    "check": "npm run build && npm test",
+    "format": "prettier --write src tests fixtures examples",
+    "format:check": "prettier --check src tests fixtures examples"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/pg": "^8.15.6",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "app": "spyglass-demo",
+  "evidence": ".spyglass/runs/${run}",
+  "launch": {
+    "mode": "owned",
+    "command": ["node", "fixtures/demo-app/server.mjs"],
+    "env": {
+      "PORT": "${port}"
+    },
+    "ready": {
+      "url": "http://127.0.0.1:${port}/health",
+      "status": 200,
+      "timeoutMs": 5000
+    }
+  },
+  "web": "http://127.0.0.1:${port}",
+  "api": "http://127.0.0.1:${port}/api",
+  "browser": {
+    "allowedOrigins": ["http://127.0.0.1:${port}"]
+  },
+  "checks": {
+    "health": {
+      "command": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "const r=await fetch(process.env.HEALTH_URL);const body=await r.json();const ok=r.status===200&&body.status==='ok';console.log(JSON.stringify({ok,claims:[{id:'health-ready',ok,detail:body}]}));process.exitCode=ok?0:1"
+      ],
+      "env": {
+        "HEALTH_URL": "http://127.0.0.1:${port}/health"
+      },
+      "result": "json"
+    },
+    "deliberate-failure": {
+      "command": [
+        "node",
+        "-e",
+        "console.log(JSON.stringify({ok:false,claims:[{id:'health-ready',ok:false,detail:'Deliberate fixture failure'}]}))"
+      ],
+      "result": "json"
+    }
+  }
+}

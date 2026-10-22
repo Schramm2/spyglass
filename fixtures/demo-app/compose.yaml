@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: spyglass
+      POSTGRES_PASSWORD: spyglass-demo-only
+      POSTGRES_DB: spyglass_demo
+    ports:
+      - "127.0.0.1::5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spyglass -d spyglass_demo"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
