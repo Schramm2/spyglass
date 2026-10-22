@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/wordmark-white.png">
+  <img src="docs/assets/wordmark-black.png" alt="Spyglass" width="240">
+</picture>
+
 # Contributing to Spyglass
 
 Thank you for your help. This guide tells you how to report a problem, set up

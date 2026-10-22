@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-white.png">
+  <img src="assets/wordmark-black.png" alt="Spyglass" width="240">
+</picture>
+
 # Terminal quickstart
 
 Use this disposable demo to learn the same workflow that an agent uses. It
