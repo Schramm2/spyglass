@@ -51,7 +51,7 @@ These tools are necessary only for some surfaces:
 
 | Tool | Necessary for |
 | --- | --- |
-| [`agent-browser`](https://www.npmjs.com/package/agent-browser) 0.38.2 and its Chromium | Browser checks (`ui`) |
+| [`agent-browser`](https://www.npmjs.com/package/agent-browser) 0.38.2 | `up` for a profile with a `web` origin. Browser checks (`ui`) also need its Chromium. |
 | Docker Compose | Container status and logs (`ps`, `logs`) |
 | A PostgreSQL database | Database reads (`db`). The driver is included. |
 
@@ -208,8 +208,9 @@ SPYGLASS_TEST_SURFACES=1 npm test # also real Chromium and PostgreSQL in Docker
 npm run format:check
 ```
 
-The end-to-end tests run the built CLI in temporary Git repositories. The
-surface tests need `agent-browser`, Chromium and Docker.
+The end-to-end tests run the built CLI in temporary Git repositories. They
+need `agent-browser` on your `PATH`. The surface tests also need its Chromium
+and Docker.
 
 ## Contributing
 

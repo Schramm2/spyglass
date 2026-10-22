@@ -14,12 +14,13 @@ the project and send a change.
 
 ## Set up the project
 
-You need Node.js 24 or later and Git.
+You need Node.js 24 or later, Git and `agent-browser` 0.38.2.
 
 ```sh
 git clone https://github.com/Schramm2/spyglass.git
 cd spyglass
 npm ci
+npm install --global agent-browser@0.38.2
 npm run build
 ```
 
@@ -33,8 +34,8 @@ This builds the CLI and runs the end-to-end tests in `tests/e2e/`. The tests
 run the built CLI in temporary Git repositories.
 
 The surface tests use a real Chromium browser and a PostgreSQL database in
-Docker. To run them, install `agent-browser` 0.38.2 with its Chromium, start
-Docker, then run:
+Docker. To run them, install Chromium for `agent-browser`, start Docker, then
+run:
 
 ```sh
 SPYGLASS_TEST_SURFACES=1 npm test

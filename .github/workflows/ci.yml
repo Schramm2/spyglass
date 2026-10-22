@@ -12,11 +12,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      # `up` runs `agent-browser --version` for any profile with a web origin.
+      # Chromium is needed only for the opt-in surface tests.
+      - run: npm install --global agent-browser@0.38.2
       - run: npm run format:check
       - run: npm test
