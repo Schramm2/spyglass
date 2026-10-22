@@ -18,7 +18,7 @@ TypeScript on Node 24, ESM, bundled by esbuild. Runtime dependencies are `pg`
 and `zod` only.
 
 - `src/`: the CLI. `src/cli.ts` parses options and dispatches each command to
-  its module.
+  its module. `ARCHITECTURE.md` maps the modules.
 - `src/schema.ts`: the version 1 profile, plan and result schemas.
 - `schemas/`: JSON Schema files **generated** from `src/schema.ts` by
   `npm run build` and committed. Edit `src/schema.ts`, rebuild, and commit both.
@@ -65,6 +65,9 @@ Read the relevant documents before you start work:
 
 - `GLOSSARY.md`: the Spyglass domain terms. Read before you name a concept in
   code, output, schemas or docs.
+- `ARCHITECTURE.md`: the module map, the run flow, the processes, where state
+  lives and the invariants. Read before you add a command, move code between
+  modules or change where state lives.
 - `agent_docs/testing.md`: how the E2E suite works, the opt-in surface tests
   and how to add or focus a test. Read before you write or run tests.
 - `agent_docs/delivery.md`: generated schemas, pre-push checks and the
@@ -78,3 +81,6 @@ Read the relevant documents before you start work:
   or the build script.
 - `CONTRIBUTING.md`: the contributor workflow for people. `README.md` and
   `docs/quickstart.md`: the user-facing contract for commands and output.
+
+This CLI has no interface application, so there is no `FRONTEND.md` or
+`DESIGN.md`. The HTML report is generated in `src/report.ts`.
