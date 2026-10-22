@@ -30,6 +30,8 @@ and `zod` only.
   Edit them here. Keep each adapted skill's `LICENSE` file.
 - `docs/`: user docs and the failure cases the CLI must detect.
 - `examples/`: the example profile and plan that the README links.
+- `landing/`: the static landing page. Its CLI output and report states are
+  real output of the quickstart demo. Replace them only with new real output.
 
 ## Commands
 
@@ -37,7 +39,7 @@ and `zod` only.
 npm ci
 npm run build          # type-check, bundle to dist/, regenerate schemas/
 npm test               # build, then the E2E tests in tests/e2e/
-npm run format:check   # Prettier on src, tests, fixtures, examples
+npm run format:check   # Prettier on src, tests, fixtures, examples, landing
 npm run format         # fix the format
 ```
 
