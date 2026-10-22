@@ -714,6 +714,46 @@ surfaceTest(
 );
 
 surfaceTest(
+  "a screenshot inside a browser batch cannot write outside run evidence",
+  async () => {
+    const page = await servePage("<h1>Batch fixture</h1>");
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile });
+    const outside = join(dir, "outside-evidence.png");
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "browser-batch-shot"]),
+        { ok: true, code: 0 },
+      ).run;
+      assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "ui", "open", "/"]),
+        { ok: true, code: 0 },
+      );
+      const batch = JSON.stringify([
+        ["get", "title"],
+        ["screenshot", outside],
+      ]);
+      const refused = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "ui", "batch", batch]),
+        { ok: false, code: 2 },
+      );
+      assert.equal(refused.error.code, "BROWSER_POLICY");
+      assert.equal(existsSync(outside), false, "the batch wrote a screenshot");
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+      await page.close();
+    }
+  },
+);
+
+surfaceTest(
   "down stops the run browser and proxy when the operator's locale and time zone differ from the ones that started them",
   async (t) => {
     const startLocale = { LC_ALL: "C", LANG: "C", TZ: "UTC" };

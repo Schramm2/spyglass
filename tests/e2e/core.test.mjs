@@ -902,6 +902,55 @@ test("profiles reject literal credentials before creating a run", async () => {
   }
 });
 
+test("a reflected credential is masked even when its text starts like a secret reference", async () => {
+  const secret = "reflected-check-secret-41";
+  const profile = baseProfile({
+    launch: { mode: "none" },
+    web: undefined,
+    api: undefined,
+    browser: undefined,
+    checks: {
+      reflect: {
+        command: [
+          "node",
+          "-e",
+          "const t=process.env.TOKEN;console.log(JSON.stringify({ok:true,claims:[{id:'reflect',ok:true,detail:'file: '+t},{id:'plain',ok:true,detail:'echo '+t}]}))",
+        ],
+        env: { TOKEN: "file:token.txt" },
+        result: "json",
+      },
+    },
+  });
+  const dir = await makeRepo({ profile, files: { "token.txt": secret } });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "reflected-secret"]),
+      { ok: true, code: 0 },
+    ).run;
+    const check = await runCli(dir, [
+      "--json",
+      "--run",
+      run,
+      "check",
+      "reflect",
+    ]);
+    assertEnvelope(check, { ok: true, code: 0 });
+    const log = await readRunFile(dir, run, "spyglass/log.jsonl");
+    for (const [where, text] of [
+      ["stdout", check.stdout],
+      ["stderr", check.stderr],
+      ["run log", log],
+    ])
+      assert.ok(!text.includes(secret), `${where} exposes the check secret`);
+    assert.match(check.stdout, /file: \[REDACTED\]/);
+    assert.match(check.stdout, /echo \[REDACTED\]/);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
 test("negative controls require the declared failed assertion followed by its restored pass", async () => {
   const profile = baseProfile({
     launch: { mode: "none" },

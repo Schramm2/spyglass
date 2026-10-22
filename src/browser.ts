@@ -1316,6 +1316,12 @@ export async function browser(
       input[1] = checkUrl(ctx, input[1], ctx.run.web);
     }
     const commands = flatten(input).map((command) => validate(ctx, command));
+    if (commands.length > 1 && commands.some(([head]) => head === "screenshot"))
+      throw new Fault(
+        "BROWSER_POLICY",
+        "A screenshot inside a batch would write outside run evidence.",
+        "Run spyglass ui screenshot or ui proof LABEL as its own command.",
+      );
     if (commands.length === 1 && commands[0]![0] === "snapshot") {
       const command = commands[0]!;
       if (!command.some((value) => value === "-i" || value === "--interactive"))
