@@ -81,6 +81,3 @@ Read the relevant documents before you start work:
   or the build script.
 - `CONTRIBUTING.md`: the contributor workflow for people. `README.md` and
   `docs/quickstart.md`: the user-facing contract for commands and output.
-
-This CLI has no interface application, so there is no `FRONTEND.md` or
-`DESIGN.md`. The HTML report is generated in `src/report.ts`.
