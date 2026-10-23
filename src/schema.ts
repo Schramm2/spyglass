@@ -182,6 +182,16 @@ export const resultSchema = z.strictObject({
           observed: z.string().min(1),
         })
         .optional(),
+      inspections: z
+        .array(
+          z.strictObject({
+            viewport: z.string().trim().min(1),
+            expected: z.string().trim().min(1),
+            observed: z.string().trim().min(1),
+            artifact: z.string().min(1),
+          }),
+        )
+        .optional(),
       independentRead: z.string().optional(),
       reason: z.string().optional(),
     }),

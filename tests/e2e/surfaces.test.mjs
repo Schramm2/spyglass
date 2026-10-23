@@ -512,6 +512,91 @@ surfaceTest(
         ),
         { ok: true, code: 0 },
       );
+      assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "--run", run, "ui", "set", "viewport", "390", "844"],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      );
+      assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "--run", run, "ui", "open", "/dashboard"],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      );
+      const narrowProof = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "--run", run, "ui", "proof", "narrow-dashboard"],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      );
+      const narrowImage = narrowProof.artifacts.find((a) =>
+        a.path.endsWith(".png"),
+      );
+      assert.ok(narrowImage);
+      valid.claims[0].steps.push(narrowProof.step);
+      valid.claims[0].artifacts.push(narrowImage.path);
+      valid.claims[0].inspections = [
+        { ...valid.claims[0].inspection, artifact: image.path },
+        {
+          viewport: "390x844",
+          expected: "The page shows the Ask a question form.",
+          observed: "The form is visible at the narrow viewport.",
+          artifact: narrowImage.path,
+        },
+      ];
+      delete valid.claims[0].inspection;
+      await writeJson(resultPath, valid);
+      assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "--run", run, "result", "--file", "result.json"],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      );
+      valid.claims[0].inspections[1].artifact = "spyglass/missing.png";
+      await writeJson(resultPath, valid);
+      assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "--run", run, "result", "--file", "result.json"],
+          { env },
+        ),
+        { ok: false, code: 1 },
+      );
+      valid.claims[0].inspections[1].artifact = narrowImage.path;
+      await writeJson(resultPath, valid);
+      assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "--run", run, "result", "--file", "result.json"],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      );
+      assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "down"], { env }),
+        { ok: true, code: 0 },
+      );
+      const report = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "report"], { env }),
+        { ok: true, code: 0 },
+      );
+      const html = await readFile(report.data.reportPath, "utf8");
+      const observations = html
+        .split("<h2>Visual observations</h2>")[1]
+        .split("</section>")[0];
+      assert.ok(observations.includes(image.path));
+      assert.ok(observations.includes(narrowImage.path));
+      assert.match(observations, /1280x800/);
+      assert.match(observations, /390x844/);
 
       const files = await readdir(evidenceRoot, { recursive: true });
       for (const relative of files) {

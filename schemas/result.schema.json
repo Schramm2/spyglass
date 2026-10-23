@@ -103,6 +103,37 @@
             ],
             "additionalProperties": false
           },
+          "inspections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "viewport": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "expected": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "observed": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "artifact": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "viewport",
+                "expected",
+                "observed",
+                "artifact"
+              ],
+              "additionalProperties": false
+            }
+          },
           "independentRead": {
             "type": "string"
           },

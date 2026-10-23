@@ -72,7 +72,7 @@ The version string is in five places. Change all of them together:
 - `src/lifecycle.ts:368` (the tool identity in `doctor`)
 
 `tests/e2e/core.test.mjs:1750` asserts the step record version, and
-`README.md` names the pre-release version. Move the `[Unreleased]` entries in
+`README.md` names the current version. Move the `[Unreleased]` entries in
 `CHANGELOG.md` to a new version heading and update the compare links at its
 end. Tag the release commit `vX.Y.Z`.
 

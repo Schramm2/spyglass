@@ -6,18 +6,28 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-23
+
+### Added
+
+- Multiple viewport inspections in each visual claim, each linked to its
+  screenshot from a cited step. The single inspection remains supported.
+- Clear `childExitCode` and `spyglassExitCode` fields in completed checks.
+  The earlier fields remain as aliases.
+- `failedRun` in each control template, initially the current run ID.
+- `report` output includes `reportPath`, the absolute path of the HTML page.
+- The terminal quickstart explains what the result file is for.
+
 ### Changed
+
+- Default CLI output uses compact text instead of formatted JSON.
+  `--json` and schema output keep their structured formats.
 
 - `report` uses only a result recorded with `spyglass result`. An edited
   result file that was not recorded leaves the report incomplete with
   `RESULT_MISSING`.
 - `status` names `spyglass result` as the next command while the run has a
   plan and no recorded result.
-
-### Added
-
-- `report` output includes `reportPath`, the absolute path of the HTML page.
-- The terminal quickstart explains what the result file is for.
 
 ## [0.1.0] - 2026-10-22
 
@@ -33,5 +43,6 @@ This file records the notable changes to Spyglass. The format follows
 - The agent skills `spyglass`, `create-verification-skill` and
   `maintain-verification-skill`.
 
-[Unreleased]: https://github.com/Schramm2/spyglass/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Schramm2/spyglass/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/Schramm2/spyglass/releases/tag/v0.1.0
