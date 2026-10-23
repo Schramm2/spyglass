@@ -113,8 +113,12 @@ function sharedRepository(repo: string): string {
         .replace(/^gitdir:\s*/, "")
         .trim(),
     );
+    // A main worktree with a separate Git directory has no commondir file.
+    const commonDir = join(gitDir, "commondir");
     const common = realpathSync(
-      resolve(gitDir, readFileSync(join(gitDir, "commondir"), "utf8").trim()),
+      existsSync(commonDir)
+        ? resolve(gitDir, readFileSync(commonDir, "utf8").trim())
+        : gitDir,
     );
     return basename(common) === ".git" ? dirname(common) : common;
   } catch {
@@ -127,7 +131,8 @@ function stateRoot(repo: string): string {
 }
 /**
  * Before runs were shared, each linked worktree kept its runs under its own
- * path. Keep finding them there so that existing runs can still be cleaned up.
+ * path. Such a run stays there and is found first from its own worktree, so
+ * a shared run with the same ID never hides it from cleanup.
  */
 function legacyStateRoot(repo: string): string | undefined {
   return sharedRepository(repo) === repo ? undefined : stateDirectory(repo);
@@ -139,31 +144,42 @@ export function runDirectory(repo: string, id: string): string {
       "Invalid run name.",
       "Use letters, digits, hyphens and underscores.",
     );
-  const shared = join(stateRoot(repo), id);
   const legacy = legacyStateRoot(repo);
-  return !existsSync(shared) && legacy && existsSync(join(legacy, id))
+  return legacy && existsSync(join(legacy, id))
     ? join(legacy, id)
-    : shared;
+    : join(stateRoot(repo), id);
 }
 export function runFile(repo: string, id: string): string {
   return join(runDirectory(repo, id), "run.json");
 }
+/**
+ * The directory each run was read from. A run's own worktree may be gone, so
+ * its path can no longer locate the shared store; the reader's path can.
+ */
+const runHomes = new WeakMap<Run, string>();
+function readRun(directory: string): Run {
+  const run = readJson(join(directory, "run.json")) as Run;
+  runHomes.set(run, directory);
+  return run;
+}
+export function runHome(run: Run): string {
+  return runHomes.get(run) ?? runDirectory(run.repo, run.id);
+}
 export function saveRun(run: Run): void {
-  writeJson(runFile(run.repo, run.id), run);
+  writeJson(join(runHome(run), "run.json"), run);
 }
 export function runs(repo: string): Run[] {
-  const ids = new Set(
-    [stateRoot(repo), legacyStateRoot(repo)].flatMap((root) =>
-      root && existsSync(root) ? readdirSync(root) : [],
-    ),
+  return [legacyStateRoot(repo), stateRoot(repo)].flatMap((root) =>
+    root && existsSync(root)
+      ? readdirSync(root).flatMap((id) => {
+          try {
+            return [readRun(join(root, id))];
+          } catch {
+            return [];
+          }
+        })
+      : [],
   );
-  return [...ids].flatMap((id) => {
-    try {
-      return [readJson(runFile(repo, id)) as Run];
-    } catch {
-      return [];
-    }
-  });
 }
 export function loadRun(repo: string, id: string): Run {
   const file = runFile(repo, id);
@@ -177,16 +193,28 @@ export function loadRun(repo: string, id: string): Run {
       }.`,
       "Run spyglass status or spyglass up.",
     );
-  return readJson(file) as Run;
+  return readRun(dirname(file));
 }
-/** Runs are shared across worktrees for reading; only the run's own worktree drives it. */
-export function assertWorktree(run: Run, repo: string): void {
-  if (run.repo !== repo)
+/**
+ * Runs are shared across worktrees for reading; only the run's own worktree
+ * drives it. A run whose worktree was removed can still be stopped anywhere.
+ */
+export function worktreeRemoved(run: Run): boolean {
+  return !existsSync(run.repo);
+}
+export function assertWorktree(run: Run, repo: string, command: string): void {
+  if (run.repo === repo || (command === "down" && worktreeRemoved(run))) return;
+  if (worktreeRemoved(run))
     throw new Fault(
       "RUN_OTHER_WORKTREE",
-      `Run ${run.id} belongs to the worktree ${run.repo}.`,
-      `Run this command from ${run.repo}. Run down there before you remove that worktree.`,
+      `Run ${run.id} belongs to the removed worktree ${run.repo}.`,
+      `Run spyglass down --run ${run.id} to stop what remains of it.`,
     );
+  throw new Fault(
+    "RUN_OTHER_WORKTREE",
+    `Run ${run.id} belongs to the worktree ${run.repo}.`,
+    `Run this command from ${run.repo}. Run down there before you remove that worktree.`,
+  );
 }
 export function source(repo: string, profile: Profile): Source {
   const r = spawnSync(
@@ -301,11 +329,11 @@ export function steps(run: Run): Step[] {
     .map((l) => JSON.parse(l) as Step);
 }
 export function lockInfo(run: Run): unknown {
-  const path = join(runDirectory(run.repo, run.id), "lock", "owner.json");
+  const path = join(runHome(run), "lock", "owner.json");
   return existsSync(path) ? readJson(path) : null;
 }
 export function lock(run: Run, command: string): () => void {
-  const path = join(runDirectory(run.repo, run.id), "lock");
+  const path = join(runHome(run), "lock");
   try {
     mkdirSync(path, { mode: 0o700 });
   } catch (error) {
@@ -460,10 +488,13 @@ export class Context {
     this.step.durationMs = Date.now() - Date.parse(this.step.startedAt);
     this.step.data = this.vault.clean(data);
     this.step.args = this.vault.clean(this.step.args);
-    const file = safePath(join(this.run.evidence, "spyglass"), "log.jsonl");
-    appendFileSync(file, JSON.stringify(this.vault.clean(this.step)) + "\n", {
-      mode: 0o600,
-    });
+    // A removed worktree took the log with it; never recreate its folders.
+    if (!worktreeRemoved(this.run)) {
+      const file = safePath(join(this.run.evidence, "spyglass"), "log.jsonl");
+      appendFileSync(file, JSON.stringify(this.vault.clean(this.step)) + "\n", {
+        mode: 0o600,
+      });
+    }
     saveRun(this.run);
   }
 }

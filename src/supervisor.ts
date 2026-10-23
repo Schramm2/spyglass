@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, existsSync } from "node:fs";
+import { dirname } from "node:path";
 import { writeJson } from "./files.js";
 import { Secrets } from "./secrets.js";
 let input = "";
@@ -21,10 +22,21 @@ const child = spawn(config.command[0]!, config.command.slice(1), {
   env: config.env,
   stdio: ["ignore", "pipe", "pipe"],
 });
-const log = (s: string) =>
-  appendFileSync(config.log, `${new Date().toISOString()} ${vault.text(s)}\n`, {
-    mode: 0o600,
-  });
+// The evidence folder goes away with a removed worktree; never recreate it.
+const evidencePresent = () => existsSync(dirname(config.appState));
+const log = (s: string) => {
+  if (evidencePresent())
+    appendFileSync(
+      config.log,
+      `${new Date().toISOString()} ${vault.text(s)}\n`,
+      {
+        mode: 0o600,
+      },
+    );
+};
+const appState = (value: Record<string, unknown>) => {
+  if (evidencePresent()) writeJson(config.appState, value);
+};
 for (const stream of [child.stdout, child.stderr]) {
   let pending = "";
   stream.setEncoding("utf8");
@@ -45,19 +57,19 @@ for (const stream of [child.stdout, child.stderr]) {
   });
 }
 child.on("spawn", () =>
-  writeJson(config.appState, {
+  appState({
     status: "running",
     pid: child.pid,
     startedAt: new Date().toISOString(),
   }),
 );
 child.on("error", (e) => {
-  writeJson(config.appState, { status: "failed", exitCode: 1 });
+  appState({ status: "failed", exitCode: 1 });
   log(e.message);
   process.exitCode = 1;
 });
 child.on("close", (code) => {
-  writeJson(config.appState, { status: "exited", exitCode: code ?? 1 });
+  appState({ status: "exited", exitCode: code ?? 1 });
   process.exitCode = code ?? 1;
 });
 process.on("SIGTERM", () => {

@@ -1344,7 +1344,7 @@ surfaceTest(
   async () => {
     const secret = `focus-secret-${randomUUID()}`;
     const page = await servePage(
-      `<label>Email <input id="email"></label><label>Password <input id="password" type="password" value="${secret}"></label><script>document.getElementById("password").focus()</script>`,
+      `<label>Email <input id="email"></label><label>Password <input id="password" type="password" value="${secret}"><select><option>Remember me</option></select></label><script>document.getElementById("password").focus()</script>`,
     );
     const profile = baseProfile({
       launch: { mode: "none" },
@@ -1378,10 +1378,19 @@ surfaceTest(
       assert.deepEqual(focused.data.focused, {
         tag: "input",
         type: "password",
-        role: "textbox",
         label: "Password",
         id: "password",
       });
+      assert.equal(focused.data.url, `${page.origin}/`);
+      const refusedEval = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "ui", "eval", "1"]),
+        { ok: false, code: 2 },
+      );
+      assert.equal(
+        refusedEval.error.code,
+        "BROWSER_COMMAND",
+        "raw eval stays refused",
+      );
       const wrong = assertEnvelope(
         await runCli(dir, [
           "--json",

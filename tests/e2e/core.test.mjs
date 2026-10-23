@@ -2834,7 +2834,7 @@ test("a control links a failed run from a fault worktree to the candidate in the
   }
 });
 
-test("a gate from another run counts only on the same source identity", async () => {
+test("a gate from another run counts only on the same source, profile and bindings", async () => {
   const matrix = { claims: [], gates: ["verify"], limits: [] };
   const dir = await makeRepo({
     profile: baseProfile({ launch: { mode: "none" } }),
@@ -2890,9 +2890,109 @@ test("a gate from another run counts only on the same source identity", async ()
       JSON.stringify(refused),
       /Gate verify cites run .* on a different source identity/,
     );
+    await writeFile(join(dir, "README.md"), "# Isolated Spyglass fixture\n");
+    const failedGate = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "exec",
+        "--run",
+        gateRun,
+        "--",
+        process.execPath,
+        "-e",
+        "process.exit(3)",
+      ]),
+      { ok: false, code: 1 },
+    );
+    const restored = await start();
+    assertEnvelope(await record(restored, gateRun, failedGate.step), {
+      ok: false,
+      code: 1,
+    });
+    const unknown = assertEnvelope(
+      await record(restored, "no-such-run", gate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(JSON.stringify(unknown), /Gate verify cites run no-such-run/);
+    const otherBinding = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--plan",
+        "plan.json",
+        "--binding",
+        "mode=stub",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    runsCreated.push(otherBinding);
+    const mismatch = assertEnvelope(
+      await record(otherBinding, gateRun, gate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(mismatch),
+      /Gate verify cites run .* with a different profile or bindings/,
+    );
   } finally {
     for (const run of runsCreated)
       await runCli(dir, ["--json", "down", "--run", run]);
+    await removeRepo(dir);
+  }
+});
+
+test("a run whose worktree was removed stays listed and can still be stopped", async () => {
+  const dir = await makeRepo({ profile: baseProfile(), plan });
+  const removedTree = `${dir}-removed`;
+  const shared = {
+    env: { XDG_STATE_HOME: join(tmpdir(), `${basename(dir)}-state`) },
+  };
+  let run;
+  try {
+    await git(dir, ["worktree", "add", "-q", "--detach", removedTree, "HEAD"]);
+    const up = assertEnvelope(
+      await runCli(
+        removedTree,
+        ["--json", "up", "--plan", "plan.json"],
+        shared,
+      ),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    const web = up.data.web;
+    await git(dir, ["worktree", "remove", "--force", removedTree]);
+    const listed = assertEnvelope(await runCli(dir, ["--json", "status"]), {
+      ok: true,
+      code: 0,
+    });
+    const row = listed.data.runs.find((item) => item.id === run);
+    assert.equal(
+      row?.worktreeRemoved,
+      true,
+      "status marks the removed worktree",
+    );
+    assertEnvelope(await runCli(dir, ["--json", "status", "--run", run]), {
+      ok: true,
+      code: 0,
+    });
+    assertEnvelope(await runCli(dir, ["--json", "down", "--run", run]), {
+      ok: true,
+      code: 0,
+    });
+    const stopped = assertEnvelope(
+      await runCli(dir, ["--json", "status", "--run", run]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(stopped.data.state, "stopped");
+    await assert.rejects(fetch(`${web}/health`), "the owned app is stopped");
+    assert.equal(
+      existsSync(removedTree),
+      false,
+      "down recreates no worktree files",
+    );
+  } finally {
+    if (run) await runCli(dir, ["--json", "down", "--run", run]);
+    await rm(removedTree, { recursive: true, force: true });
     await removeRepo(dir);
   }
 });

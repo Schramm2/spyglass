@@ -439,6 +439,20 @@ function citedGateRun(
 ): Map<string, Step> | undefined {
   try {
     const cited = loadRun(run.repo, id);
+    if (
+      cited.profileHash !== run.profileHash ||
+      JSON.stringify(cited.profile.bindings) !==
+        JSON.stringify(run.profile.bindings)
+    )
+      findings.push({
+        code: "STEP_SOURCE_MISMATCH",
+        message: `Gate ${gate} cites run ${id} with a different profile or bindings than run ${run.id}.`,
+      });
+    if (!existsSync(cited.evidence))
+      findings.push({
+        code: "GATE_PROOF_MISSING",
+        message: `Gate ${gate} cites run ${id}, whose evidence folder ${cited.evidence} no longer exists.`,
+      });
     const citedEntries = steps(cited);
     const changed: Finding[] = [];
     artifactInventory(cited, citedEntries, changed);

@@ -95,7 +95,7 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 
 | Rule | Enforced by |
 | --- | --- |
-| A command that changes a run runs from the run's own worktree | `assertWorktree` in `src/state.ts`, E2E tests |
+| A command that changes a run runs from the run's own worktree; `down` of a run whose worktree was removed runs from any worktree | `assertWorktree` in `src/state.ts`, E2E tests |
 | Every mutating command holds the run lock; a second one fails with `RUN_BUSY` and `status` stays available | `lock` in `src/state.ts`, E2E tests |
 | Evidence from changed source cannot pass for the recorded source | `assertSource`, `report` checks, E2E tests |
 | A failed step stays in the log; nothing removes log entries | `Context.finish` appends only; not otherwise enforced |

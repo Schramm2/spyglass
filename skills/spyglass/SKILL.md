@@ -161,7 +161,8 @@ Use `completedChecks.spyglassExitCode` and the recorded status to judge a check;
 `childExitCode` describes only the child process. Control templates include
 `failedRun`; replace it with the earlier run ID for a retained failing baseline.
 Run the repository gates once for a source. Another run on the same source can
-cite those steps with `run` in its gate entry; a gate from changed source fails.
+cite those steps with `run` in its gate entry; a gate from changed source,
+profile or bindings fails.
 Use the recorded command status to judge a check. A child exit code of zero
 can still accompany failed assertions.
 

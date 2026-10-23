@@ -148,11 +148,14 @@ worktree, record its failing run there, and name that run in `failedRun`.
 Run `down` for the fault run in its own worktree; Spyglass refuses commands
 that change a run from another worktree (`RUN_OTHER_WORKTREE`). Keep the
 fault worktree until the candidate report: its evidence folder holds the
-failed attempt.
+failed attempt. Run IDs are unique in the repository. If a worktree is
+removed while its run is active, `status` shows `worktreeRemoved` and `down`
+stops that run from any worktree.
 
 A gate can cite another run with `run`, for example one run that executes
 the repository gates for several journeys. Its steps must have passed on the
-same source identity as the run that records the result.
+same source identity, profile and bindings as the run that records the
+result.
 
 ## Configuration
 

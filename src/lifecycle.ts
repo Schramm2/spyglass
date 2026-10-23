@@ -22,6 +22,7 @@ import {
   lockInfo,
   runDirectory,
   runFile,
+  worktreeRemoved,
   saveRun,
   source,
   sourceChanges,
@@ -215,7 +216,9 @@ export function status(run: Run): Record<string, unknown> {
       hash: run.source.hash,
       fileCount: Object.keys(run.source.files).length,
     },
-    sourceChanges: sourceChanges(run),
+    ...(worktreeRemoved(run)
+      ? { worktreeRemoved: true }
+      : { sourceChanges: sourceChanges(run) }),
     profile: run.profilePath,
     plan: run.plan,
     result: relative(run.repo, run.resultPath),
