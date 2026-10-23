@@ -302,7 +302,7 @@ export class Context {
     this.step = {
       run: run.id,
       profileHash: run.profileHash,
-      tool: { name: "spyglass", version: "0.1.0", node: process.version },
+      tool: { name: "spyglass", version: "1.0.0", node: process.version },
       id: randomUUID().slice(0, 12),
       command,
       args: this.vault.clean(args),

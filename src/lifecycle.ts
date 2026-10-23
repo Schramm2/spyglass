@@ -167,6 +167,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
       operator: "agent",
       controls: plan.controls.map(({ id }) => ({
         id,
+        failedRun: run.id,
         failedStep: "",
         restoredStep: "",
         observedFailure: "",
@@ -226,6 +227,9 @@ export function status(run: Run): Record<string, unknown> {
         step: s.id,
         exitCode: s.exitCode,
         commandExitCode:
+          s.commandExitCode ?? (s.data.passed === false ? 1 : s.exitCode),
+        childExitCode: s.exitCode,
+        spyglassExitCode:
           s.commandExitCode ?? (s.data.passed === false ? 1 : s.exitCode),
         status:
           s.status ??
@@ -370,7 +374,7 @@ export async function doctor(ctx: Context): Promise<Record<string, unknown>> {
   safePath(ctx.run.repo, ctx.run.evidence);
   const tools: Record<string, string> = {
     node: process.version,
-    spyglass: "0.1.0",
+    spyglass: "1.0.0",
   };
   for (const [name, args] of [
     ...(ctx.run.web ? [["browser", ["agent-browser", "--version"]]] : []),

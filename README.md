@@ -20,8 +20,7 @@ original chat or shell.
 </p>
 
 > [!NOTE]
-> Spyglass is pre-release software (version 0.1.0). Commands and the version 1
-> schemas can change before 1.0.
+> Spyglass 1.0.0 uses version 1 profile, plan and result schemas.
 
 ## Why Spyglass
 
@@ -68,7 +67,7 @@ Spyglass does not install tools, fetch secrets or start your app during `init`.
 Spyglass is not on npm yet. Install it from source:
 
 ```sh
-git clone https://github.com/Schramm2/spyglass.git
+git clone --branch v1.0.0 https://github.com/Schramm2/spyglass.git
 cd spyglass
 npm ci
 npm run build
@@ -120,9 +119,9 @@ arguments of one command.
 
 ### Output and exit codes
 
-Default output is text for people. `--json` gives one versioned result object
-on stdout and diagnostics on stderr. The two modes use the same handler and the
-same exit code.
+Default output is compact, indented text for people. `--json` gives one versioned
+result object on stdout and diagnostics on stderr. The two modes use the same
+handler and the same exit code.
 
 | Exit code | Meaning |
 | --- | --- |
@@ -133,7 +132,16 @@ same exit code.
 
 `--run ID` selects a run across shell calls. You can also set `SPYGLASS_RUN`;
 `--run` has priority. `spyglass status --run ID` shows the handoff state of a
-run.
+run. `completedChecks.childExitCode` is the child process exit code;
+`completedChecks.spyglassExitCode` is the Spyglass command exit code. A child
+can exit zero while Spyglass rejects failed assertions. The earlier `exitCode`
+and `commandExitCode` fields remain as aliases.
+
+A visual result can use `inspections`, with one entry per viewport. Each entry
+has `viewport`, `expected`, `observed` and `artifact`; the artifact must be a
+valid screenshot from a cited step. The earlier single `inspection` remains
+supported. Control templates include `failedRun`, initially the current run;
+replace it when the intended failure belongs to a retained earlier run.
 
 ## Configuration
 

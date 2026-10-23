@@ -18,6 +18,11 @@ results and retained evidence.
 | Secret | A request or page reflects a test credential. | Reports and artifacts do not expose credential values, cookies, or authorization headers. |
 | Browser | A browser action targets an origin outside the profile allowlist. | The action fails with the required capability or policy named. It does not use another browser session. |
 | Browser | A screenshot succeeds but a visual claim has no inspection record. | The visual claim remains incomplete. |
+| Browser | An inspection for a viewport names a missing or unrelated screenshot. | The result fails and names the inspection's missing proof. |
+| Operator | A child exits zero but its assertions fail. | Status names the child and Spyglass exit codes separately. Default output is readable text. |
+| Output | External output contains terminal controls or a new line that resembles a Spyglass field. | Text output escapes the control bytes and keeps external content inside its field. |
+| Compatibility | A version 1 result has a single inspection and no inspections array. | Both the CLI and the published schema accept the result. |
+| Control | A control needs a failure from an earlier run. | The result template includes the failed run ID, which the operator can replace with the retained baseline run. |
 | HTTP | A request returns an unexpected status or an asynchronous submission is checked before completion. | The expected-status check fails, or the workflow waits for completion before an independent read. |
 | Database | A query attempts to write data. | Spyglass rejects it before execution. |
 | Database | A query contains multiple statements, attempts to escape its transaction, or contains a psql meta-command. | PostgreSQL's extended protocol rejects multiple statements. Client meta-commands never run. No side effect occurs. |

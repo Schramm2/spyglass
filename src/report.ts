@@ -285,11 +285,23 @@ function validateClaimProof(
       }
     }
     if (planned.kind === "visual") {
-      if (!claim.inspection)
+      if (!claim.inspection && !claim.inspections?.length)
         findings.push({
           code: "VISUAL_INSPECTION_MISSING",
           message: `Visual claim ${claim.id} needs the operator's viewport, expected state and observed differences.`,
         });
+      for (const inspection of claim.inspections ?? []) {
+        if (
+          !/\.(png|jpe?g)$/i.test(inspection.artifact) ||
+          !artifacts
+            .get(inspection.artifact)
+            ?.some((item) => item.valid && cited.has(item.artifact.step))
+        )
+          findings.push({
+            code: "VISUAL_IMAGE_MISSING",
+            message: `Visual claim ${claim.id} inspection at ${inspection.viewport} needs a valid screenshot from a cited step: ${inspection.artifact}.`,
+          });
+      }
       const image = [
         ...claim.artifacts,
         ...resolved.flatMap(({ entry }) =>
@@ -514,7 +526,7 @@ function validateControls(
   result: Result | undefined,
   entries: Step[],
   findings: Finding[],
-): Array<Record<string, unknown>> {
+) {
   const planned = run.plan.controls ?? [];
   const submitted = result?.controls ?? [];
   const stepMap = new Map(
@@ -774,7 +786,7 @@ function renderHtml(
     visuals
       .map(
         (item) =>
-          `<article><h3>${htmlEscape(item.id, ctx)}</h3><p><strong>Viewport:</strong> ${htmlEscape(item.viewport, ctx)}<br><strong>Expected:</strong> ${htmlEscape(item.expected, ctx)}<br><strong>Observed:</strong> ${htmlEscape(item.observed, ctx)}</p></article>`,
+          `<article><h3>${htmlEscape(item.id, ctx)}</h3><p><strong>Viewport:</strong> ${htmlEscape(item.viewport, ctx)}<br><strong>Expected:</strong> ${htmlEscape(item.expected, ctx)}<br><strong>Observed:</strong> ${htmlEscape(item.observed, ctx)}<br><strong>Screenshots:</strong> ${htmlEscape((item.artifacts as string[]).join(", "), ctx)}</p></article>`,
       )
       .join("\n") || "<p>No visual observations are recorded.</p>";
   const artifactHtml =
@@ -807,10 +819,7 @@ function renderHtml(
 </body></html>\n`;
 }
 
-function renderClaims(
-  plan: Plan,
-  result: Result | undefined,
-): Array<Record<string, unknown>> {
+function renderClaims(plan: Plan, result: Result | undefined) {
   const rows = new Map(result?.claims.map((claim) => [claim.id, claim]) ?? []);
   return plan.claims.map((claim) => {
     const row = rows.get(claim.id);
@@ -830,6 +839,7 @@ function renderClaims(
       observed: row?.observed ?? "",
       artifacts: row?.artifacts ?? [],
       inspection: row?.inspection,
+      inspections: row?.inspections ?? [],
       independentRead: row?.independentRead,
       reason: row?.reason,
     };
@@ -939,12 +949,17 @@ function reportSummary(
   });
   const controls = validateControls(ctx.run, result, entries, findings);
   const visualObservations = claims
-    .filter((claim) => claim.kind === "visual" && claim.inspection)
-    .map((claim) => ({
-      id: claim.id,
-      ...(claim.inspection as Record<string, unknown>),
-      artifacts: claim.artifacts,
-    }));
+    .filter((claim) => claim.kind === "visual")
+    .flatMap((claim) => [
+      ...(claim.inspection
+        ? [{ id: claim.id, ...claim.inspection, artifacts: claim.artifacts }]
+        : []),
+      ...claim.inspections.map((inspection) => ({
+        id: claim.id,
+        ...inspection,
+        artifacts: [inspection.artifact],
+      })),
+    ]);
   const limits = [
     ...new Set([...(ctx.run.plan.limits ?? []), ...(result?.limits ?? [])]),
   ];

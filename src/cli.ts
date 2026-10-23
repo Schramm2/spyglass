@@ -72,7 +72,30 @@ function render(data: Record<string, unknown>): string {
       gates: p.gates,
     };
   }
-  const text = JSON.stringify(compact, null, 2);
+  const safeText = (value: unknown): string =>
+    String(value).replace(
+      /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,
+      (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"),
+    );
+  const lines = (value: unknown, indent = ""): string[] => {
+    if (Array.isArray(value))
+      return value.length
+        ? value.flatMap((item) =>
+            typeof item === "object" && item !== null
+              ? [indent + "-", ...lines(item, indent + "  ")]
+              : [indent + "- " + safeText(item)],
+          )
+        : [indent + "none"];
+    if (value !== null && typeof value === "object")
+      return Object.entries(value).flatMap(([key, item]) => {
+        if (item === undefined) return [];
+        return item !== null && typeof item === "object"
+          ? [indent + safeText(key) + ":", ...lines(item, indent + "  ")]
+          : [indent + safeText(key) + ": " + safeText(item)];
+      });
+    return [indent + safeText(value)];
+  };
+  const text = lines(compact).join("\n");
   // Only a command that records a step writes its result to the run log.
   const full =
     run && ctx ? `${run.evidence}/spyglass/log.jsonl` : "rerun with --json";
@@ -166,8 +189,8 @@ try {
     args.includes("--") ? args.indexOf("--") : args.length,
   );
   if (ownArgs.includes("--version")) {
-    if (json) emit({ version: "0.1.0" });
-    else console.log("0.1.0");
+    if (json) emit({ version: "1.0.0" });
+    else console.log("1.0.0");
   } else if (args[0] === "ui" && ownArgs.includes("--help")) {
     const b = await import("./browser.js");
     emit(b.browserHelp());

@@ -47,6 +47,16 @@ test("help works without a profile and explains the main commands and exit codes
     assert.match(result.stdout, /ui/);
     assert.match(result.stdout, /exit code/i);
     assert.match(result.stdout, /example/i);
+    const schema = assertEnvelope(
+      await runCli(dir, ["schema", "result", "--json"]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(
+      schema.data.schema.properties.claims.items.required.includes(
+        "inspections",
+      ),
+      false,
+    );
   } finally {
     await removeRepo(dir);
   }
@@ -243,6 +253,18 @@ test("exec preserves the child exit and output in the run log", async () => {
     );
     assert.match(JSON.stringify(failed.data), /child output/);
     assert.ok(failed.step, "exec must identify the recorded step");
+    const terminal = await runCli(dir, [
+      "--run",
+      run,
+      "exec",
+      "--",
+      process.execPath,
+      "-e",
+      'console.log("\\u001b[2J\\nstatus: forged")',
+    ]);
+    assert.equal(terminal.code, 0);
+    assert.equal(terminal.stdout.includes("\u001b"), false);
+    assert.doesNotMatch(terminal.stdout, /^status: forged/m);
 
     const lines = (await readRunFile(dir, run, "spyglass/log.jsonl"))
       .trim()
@@ -1779,7 +1801,7 @@ test("run evidence retains its profile, plan and tool identity for a handoff", a
       .split("\n")
       .map(JSON.parse);
     assert.equal(records[0].run, run);
-    assert.equal(records[0].tool.version, "0.1.0");
+    assert.equal(records[0].tool.version, "1.0.0");
     assert.match(records[0].profileHash, /^[a-f0-9]{64}$/);
     const doctor = assertEnvelope(
       await runCli(dir, ["--json", "doctor", "--run", run]),
@@ -2434,6 +2456,7 @@ test("handoff output distinguishes command failure, keeps source compact and pre
       await readRunFile(dir, run, "spyglass/result.json"),
     );
     assert.equal(template.controls[0].id, "known-fault");
+    assert.equal(template.controls[0].failedRun, run);
     await runCli(dir, ["check", "health", "--run", run, "--json"]);
     const status = assertEnvelope(
       await runCli(dir, ["status", "--run", run, "--json"]),
@@ -2442,7 +2465,14 @@ test("handoff output distinguishes command failure, keeps source compact and pre
     const check = status.data.completedChecks[0];
     assert.equal(check.exitCode, 0);
     assert.equal(check.commandExitCode, 1);
+    assert.equal(check.childExitCode, 0);
+    assert.equal(check.spyglassExitCode, 1);
     assert.equal(check.status, "failed");
+    const text = await runCli(dir, ["status", "--run", run]);
+    assert.equal(text.code, 0);
+    assert.match(text.stdout, /childExitCode: 0/);
+    assert.match(text.stdout, /spyglassExitCode: 1/);
+    assert.equal(text.stdout.trim().startsWith("{"), false);
   } finally {
     if (run) await runCli(dir, ["down", "--run", run, "--json"]);
     await removeRepo(dir);
