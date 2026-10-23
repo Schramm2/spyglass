@@ -87,6 +87,9 @@ spyglass --run <run-id> check <check-name> --json
 spyglass --run <run-id> exec -- <command> [arguments]
 ```
 
+For a gate longer than five minutes, select a bounded deadline before `--`,
+for example `spyglass exec --timeout-ms 900000 --run <run-id> -- make check`.
+
 Wait for every command and asynchronous action to finish. Record the final
 state, not only an accepted request or a running process. Keep each failed
 attempt; after a repair, run the affected proof again.

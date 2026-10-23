@@ -8,6 +8,8 @@ results and retained evidence.
 | --- | --- | --- |
 | Input | The profile has an unsupported version or an unknown field. | The command exits with usage/profile status and names the invalid field. It does not launch the app. |
 | Setup | Two profiles match the repository. | The command asks for an explicit profile through an error and next action. It does not prompt. |
+| Setup | A CLI binding overrides a profile default. | Execution and retained binding records use the same resolved override. |
+| Command | A command exceeds its selected deadline. | The attempt retains timeout status and output; an invalid deadline is rejected before execution. |
 | Run | The app exits before its readiness check succeeds. | The run remains recorded as failed, its ID is returned, and status and cleanup remain available. |
 | Run | Two operators try to change one run at once. | One mutation owns the lock. Status can inspect the active command. The second mutation fails with a recovery action. |
 | Source | Source changes after the run starts. | Later evidence cannot be presented as proof for the original source. The run records both source identities or rejects the stale result. |

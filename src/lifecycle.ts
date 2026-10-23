@@ -102,7 +102,10 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
   if (raw.web) vars.web = template(raw.web, vars);
   if (raw.api) vars.api = template(raw.api, vars);
   vars.evidence = resolve(repo, template(raw.evidence, vars));
-  const profile = template(raw, vars);
+  const profile = template(
+    { ...raw, bindings: { ...raw.bindings, ...opts.bindings } },
+    vars,
+  );
   const evidence = vars.evidence;
   if (!ignored(repo, evidence))
     throw new Fault(

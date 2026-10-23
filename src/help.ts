@@ -41,9 +41,9 @@ const details: Record<
     example: "spyglass check verify --run change-42 --json",
   },
   exec: {
-    usage: "exec --run ID -- COMMAND [ARGUMENTS]",
+    usage: "exec [--timeout-ms MILLISECONDS] --run ID -- COMMAND [ARGUMENTS]",
     description:
-      "Run a trusted command as separate arguments and retain output. The deadline is 300 seconds and output limit is 8 MiB. data.exitCode retains the child status; the CLI exits 1 for a failed child. Global options go before --. exec is not a sandbox and command success alone proves only its declared command-level condition.",
+      "Run a trusted command as separate arguments and retain output. The default deadline is 300 seconds; --timeout-ms selects an integer from 1 to 86400000 milliseconds. The output limit is 8 MiB. data.exitCode retains the child status; the CLI exits 1 for a failed child. Global options go before --. exec is not a sandbox and command success alone proves only its declared command-level condition.",
     example: "spyglass exec --run change-42 --json -- npm test",
   },
   api: {

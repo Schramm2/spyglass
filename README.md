@@ -168,6 +168,11 @@ A profile selects one lifecycle mode:
 | `external` | The repository's own tool starts and stops its resources. Spyglass records its doctor and checks. A named check with `cleanup: true` records the owner's cleanup. `down` closes only the Spyglass browser. |
 | `none` | There is no persistent target, for example a library journey. |
 
+For a long command, use `spyglass exec --timeout-ms 900000 --run ID -- COMMAND`.
+The default is 300 seconds; the maximum is 24 hours. The selected deadline is
+retained with the result. CLI binding overrides are retained with their resolved
+values, including bindings added only on the command line.
+
 ### Credentials
 
 Do not put credential values in a profile. Use references:
