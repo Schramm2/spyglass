@@ -22,7 +22,7 @@ import { request as httpsRequest } from "node:https";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Fault } from "./errors.js";
 import { processIdentity } from "./process.js";
-import { BROWSER_IDLE_TIMEOUT_MS, saveRun, stateRoot } from "./state.js";
+import { BROWSER_IDLE_TIMEOUT_MS, runHome, saveRun } from "./state.js";
 import type { Run } from "./state.js";
 
 const HEADER_LIMIT = 16 * 1024;
@@ -65,7 +65,7 @@ interface ProxyMetadata {
 }
 
 function proxyDirectory(run: Run): string {
-  return join(stateRoot(run.repo), run.id);
+  return runHome(run);
 }
 function configPath(run: Run): string {
   return join(proxyDirectory(run), "browser-proxy.json");

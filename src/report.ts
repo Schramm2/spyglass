@@ -352,6 +352,21 @@ function validateClaimProof(
       });
     }
   }
+  validateGates(run, plan, result, entries, findings);
+}
+
+/**
+ * A gate can cite steps from another run of the repository, such as one gate
+ * run shared by several journeys, but only from the same source identity.
+ */
+function validateGates(
+  run: Run,
+  plan: Plan,
+  result: Result,
+  entries: Step[],
+  findings: Finding[],
+): void {
+  const ownSteps = new Map(entries.map((entry) => [entry.id, entry]));
   const plannedGates = new Set(plan.gates);
   const seenGates = new Set<string>();
   for (const gate of result.gates) {
@@ -366,24 +381,42 @@ function validateClaimProof(
         message: `Result lists gate ${gate.name} more than once.`,
       });
     seenGates.add(gate.name);
+    let gateSteps = ownSteps;
+    if (gate.run && gate.run !== run.id) {
+      const cited = citedGateRun(run, gate.name, gate.run, findings);
+      if (!cited) continue;
+      gateSteps = cited;
+    }
     for (const id of gate.steps)
-      if (!stepMap.has(id))
+      if (!gateSteps.has(id))
         findings.push({
           code: "MISSING_STEP",
           message: `Gate ${gate.name} names missing step ${id}.`,
         });
+    const proof = gate.steps.map((id) => gateSteps.get(id));
     if (
       gate.outcome === "passed" &&
-      (!gate.steps.length ||
-        gate.steps.some(
-          (id) => !stepMap.has(id) || !stepPassed(stepMap.get(id)!.entry),
-        ))
+      (!proof.length || proof.some((step) => !step || !stepPassed(step)))
     ) {
       findings.push({
         code: "GATE_PROOF_MISSING",
         message: `Passed gate ${gate.name} needs successful recorded steps.`,
       });
     }
+    if (
+      gate.run &&
+      gate.run !== run.id &&
+      proof.some(
+        (step) =>
+          step &&
+          (step.source?.hash !== run.source.hash ||
+            step.source?.commit !== run.source.commit),
+      )
+    )
+      findings.push({
+        code: "STEP_SOURCE_MISMATCH",
+        message: `Gate ${gate.name} cites run ${gate.run} on a different source identity than run ${run.id}.`,
+      });
   }
   for (const gate of plan.gates) {
     if (
@@ -395,6 +428,49 @@ function validateClaimProof(
         code: "GATE_INCOMPLETE",
         message: `Required repository gate ${gate} is not passed.`,
       });
+  }
+}
+
+function citedGateRun(
+  run: Run,
+  gate: string,
+  id: string,
+  findings: Finding[],
+): Map<string, Step> | undefined {
+  try {
+    const cited = loadRun(run.repo, id);
+    // Compare bindings before templates: a per-run value such as app_${run}
+    // differs in every run without changing what the gate checked.
+    const overrides = (item: Run) =>
+      JSON.stringify(Object.entries(item.bindingOverrides ?? {}).sort());
+    if (
+      cited.profileHash !== run.profileHash ||
+      overrides(cited) !== overrides(run)
+    )
+      findings.push({
+        code: "STEP_SOURCE_MISMATCH",
+        message: `Gate ${gate} cites run ${id} with a different profile or bindings than run ${run.id}.`,
+      });
+    if (!existsSync(cited.evidence))
+      findings.push({
+        code: "GATE_PROOF_MISSING",
+        message: `Gate ${gate} cites run ${id}, whose evidence folder ${cited.evidence} no longer exists.`,
+      });
+    const citedEntries = steps(cited);
+    const changed: Finding[] = [];
+    artifactInventory(cited, citedEntries, changed);
+    if (changed.length)
+      findings.push({
+        code: "GATE_PROOF_MISSING",
+        message: `Gate ${gate} cites run ${id}, whose evidence is missing or changed.`,
+      });
+    return new Map(citedEntries.map((entry) => [entry.id, entry]));
+  } catch (error) {
+    findings.push({
+      code: "GATE_PROOF_MISSING",
+      message: `Gate ${gate} cites run ${id}, which cannot be read: ${String(error)}`,
+    });
+    return undefined;
   }
 }
 
@@ -564,6 +640,10 @@ function validateControls(
     if (control.failedRun && control.failedRun !== run.id) {
       try {
         baseline = loadRun(run.repo, control.failedRun);
+        if (!existsSync(baseline.evidence))
+          problems.push(
+            `the failed run's evidence folder ${baseline.evidence} no longer exists; keep its worktree until this report`,
+          );
         baselineEntries = steps(baseline);
         const oldSpec = baseline.plan.controls.find(
           (item) => item.id === spec.id,

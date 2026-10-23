@@ -11,7 +11,7 @@ import {
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
-import { Fault } from "./errors.js";
+import { Fault, fault } from "./errors.js";
 import { hash, readJson, safePath, writeJson } from "./files.js";
 import { loadProfile, locateProfile, template } from "./profile.js";
 import { planSchema, profileSchema, validate } from "./schema.js";
@@ -20,7 +20,9 @@ import {
   assertSource,
   ignored,
   lockInfo,
+  runDirectory,
   runFile,
+  worktreeRemoved,
   saveRun,
   source,
   sourceChanges,
@@ -125,6 +127,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     profile,
     profilePath,
     profileHash: hash(JSON.stringify(raw)),
+    bindingOverrides: opts.bindings,
     source: source(repo, profile),
     port,
     web: profile.web,
@@ -138,7 +141,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     ownerCleaned: profile.launch.mode !== "external",
     cleanup: false,
   };
-  const directory = dirname(runFile(repo, id));
+  const directory = runDirectory(repo, id);
   mkdirSync(dirname(directory), { recursive: true, mode: 0o700 });
   try {
     mkdirSync(directory, { mode: 0o700 });
@@ -199,6 +202,15 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     throw e;
   }
 }
+/** One unreadable worktree must not stop status for every run. */
+function currentSource(run: Run): Record<string, unknown> {
+  if (worktreeRemoved(run)) return { worktreeRemoved: true };
+  try {
+    return { sourceChanges: sourceChanges(run) };
+  } catch (error) {
+    return { sourceError: fault(error).message };
+  }
+}
 export function status(run: Run): Record<string, unknown> {
   const records = steps(run);
   return {
@@ -214,7 +226,7 @@ export function status(run: Run): Record<string, unknown> {
       hash: run.source.hash,
       fileCount: Object.keys(run.source.files).length,
     },
-    sourceChanges: sourceChanges(run),
+    ...currentSource(run),
     profile: run.profilePath,
     plan: run.plan,
     result: relative(run.repo, run.resultPath),

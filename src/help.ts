@@ -19,7 +19,7 @@ const details: Record<
   status: {
     usage: "status [--run ID]",
     description:
-      "List repository runs, or inspect one run: source, active command, completed checks, pending claims, capabilities, owner resources, cleanup and the next command. Inspection works while another operator drives the run. completedChecks names childExitCode (child process) and spyglassExitCode (Spyglass command); exitCode and commandExitCode remain aliases.",
+      "List the runs of every worktree of the repository, or inspect one run: source, active command, completed checks, pending claims, capabilities, owner resources, cleanup and the next command. Inspection works while another operator drives the run. completedChecks names childExitCode (child process) and spyglassExitCode (Spyglass command); exitCode and commandExitCode remain aliases. A run whose worktree was removed shows worktreeRemoved; stop it with down from any worktree.",
     example: "spyglass status --run change-42 --json",
   },
   doctor: {
@@ -89,7 +89,7 @@ const details: Record<
   result: {
     usage: "result --file PATH --run ID",
     description:
-      "Read the edited result template printed by up. Validate claim IDs, cited steps and artifacts, visual inspection, independent reads, gates and predeclared negative controls. For multiple viewports use inspections with viewport, expected, observed and artifact for each cited screenshot. The single inspection remains supported. Controls include failedRun; replace its current run ID when the failure belongs to an earlier run. Use spyglass schema result for the full shape. Recording a result does not complete cleanup or certify semantic coverage.",
+      "Read the edited result template printed by up. Validate claim IDs, cited steps and artifacts, visual inspection, independent reads, gates and predeclared negative controls. For multiple viewports use inspections with viewport, expected, observed and artifact for each cited screenshot. The single inspection remains supported. Controls include failedRun; replace its current run ID when the failure belongs to an earlier run, also one from another worktree of the repository. Keep that worktree until the report. A gate can name run, another run with the same source identity, profile and bindings whose steps prove it. Use spyglass schema result for the full shape. Recording a result does not complete cleanup or certify semantic coverage.",
     example:
       "spyglass result --file .spyglass/runs/change-42/spyglass/result.json --run change-42 --json",
   },

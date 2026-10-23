@@ -7,6 +7,7 @@ import { Fault, fault, requireValue } from "./errors.js";
 import {
   Context,
   assertSource,
+  assertWorktree,
   loadRun,
   lock,
   runs,
@@ -23,7 +24,7 @@ Commands:
   doctor                       Check the owner, app and source baseline
   check NAME                   Run a named verification check
   exec -- COMMAND [ARGS]       Record a child command and its real exit code
-  ui open PATH | snapshot | proof NAME | login SEAT | errors
+  ui open PATH | snapshot | proof NAME | focused | login SEAT | errors
   api METHOD PATH [--expect STATUS] [--data JSON] [--seat NAME]
   db SQL [--expect-rows N]      Run one read-only PostgreSQL statement
   ps | logs SERVICE            Inspect the profile's Compose project
@@ -281,7 +282,10 @@ try {
           cmd: directCmd,
           ready,
         });
-      } else run = loadRun(repo, requireValue(selected, "--run ID"));
+      } else {
+        run = loadRun(repo, requireValue(selected, "--run ID"));
+        assertWorktree(run, repo, command);
+      }
       release = lock(run, command);
       run = loadRun(repo, run.id);
       ctx = new Context(run, command, args.slice(1));

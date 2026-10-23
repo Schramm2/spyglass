@@ -2,13 +2,15 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { existsSync } from "node:fs";
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, readdir, rm, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
 import { Client } from "pg";
 import {
   assertEnvelope,
   baseProfile,
+  git,
   makeRepo,
   removeRepo,
   runCli,
@@ -1335,6 +1337,147 @@ surfaceTest(
           timeoutMs: 30000,
         });
       await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui focused names the focused field without its value and fails on another expected label",
+  async () => {
+    const secret = `focus-secret-${randomUUID()}`;
+    const page = await servePage(
+      `<label>Email <input id="email"></label><label>Password <input id="password" type="password" value="${secret}"><select><option>Remember me</option></select></label><script>document.getElementById("password").focus()</script>`,
+    );
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "browser-focus"]),
+        { ok: true, code: 0 },
+      ).run;
+      assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "ui", "open", "/"]),
+        { ok: true, code: 0 },
+      );
+      const focused = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "--run",
+          run,
+          "ui",
+          "focused",
+          "--expect",
+          "Password",
+        ]),
+        { ok: true, code: 0 },
+      );
+      assert.deepEqual(focused.data.focused, {
+        tag: "input",
+        type: "password",
+        label: "Password",
+        id: "password",
+      });
+      assert.equal(focused.data.url, `${page.origin}/`);
+      const refusedEval = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "ui", "eval", "1"]),
+        { ok: false, code: 2 },
+      );
+      assert.equal(
+        refusedEval.error.code,
+        "BROWSER_COMMAND",
+        "raw eval stays refused",
+      );
+      const wrong = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "--run",
+          run,
+          "ui",
+          "focused",
+          "--expect",
+          "Email",
+        ]),
+        { ok: false, code: 1 },
+      );
+      assert.equal(wrong.error.code, "BROWSER_EXPECTATION_FAILED");
+      const log = await readFile(
+        join(dir, ".spyglass/runs", run, "spyglass/log.jsonl"),
+        "utf8",
+      );
+      for (const text of [JSON.stringify(focused), JSON.stringify(wrong), log])
+        assert.doesNotMatch(text, new RegExp(secret), "never read the value");
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+      await page.close();
+    }
+  },
+);
+
+surfaceTest(
+  "down from the main worktree closes the browser of a run whose worktree was removed",
+  async () => {
+    const page = await servePage("<h1>Removed worktree</h1>");
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile });
+    const removedTree = `${dir}-removed`;
+    const shared = {
+      env: { XDG_STATE_HOME: join(tmpdir(), `${basename(dir)}-state`) },
+    };
+    let run;
+    try {
+      await git(dir, [
+        "worktree",
+        "add",
+        "-q",
+        "--detach",
+        removedTree,
+        "HEAD",
+      ]);
+      run = assertEnvelope(
+        await runCli(
+          removedTree,
+          ["--json", "up", "--run", "removed-browser"],
+          shared,
+        ),
+        { ok: true, code: 0 },
+      ).run;
+      assertEnvelope(
+        await runCli(
+          removedTree,
+          ["--json", "--run", run, "ui", "open", "/"],
+          shared,
+        ),
+        { ok: true, code: 0 },
+      );
+      assert.ok(
+        (await proxyPids(dir)).length,
+        "the run browser proxy is running",
+      );
+      await git(dir, ["worktree", "remove", "--force", removedTree]);
+      assertEnvelope(await runCli(dir, ["--json", "--run", run, "down"]), {
+        ok: true,
+        code: 0,
+      });
+      await waitFor(async () => !(await proxyPids(dir)).length, {
+        message: "down must stop the run browser proxy",
+      });
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await rm(removedTree, { recursive: true, force: true });
+      await removeRepo(dir);
+      await page.close();
     }
   },
 );

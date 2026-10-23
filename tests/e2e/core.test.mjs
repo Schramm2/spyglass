@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
-import { isAbsolute, join } from "node:path";
+import { readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
+import { basename, isAbsolute, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import {
   assertEnvelope,
   baseProfile,
+  git,
   makeRepo,
   readRunFile,
   removeRepo,
@@ -2695,6 +2696,307 @@ test("exec applies its explicit deadline and preserves child timeout arguments",
     }
   } finally {
     if (run) await runCli(dir, ["down", "--run", run, "--json"]);
+    await removeRepo(dir);
+  }
+});
+
+test("a control links a failed run from a fault worktree to the candidate in the main worktree", async () => {
+  const matrix = {
+    ...plan,
+    controls: [
+      {
+        id: "readme-fault",
+        claim: "demo-ready",
+        expectation: "Health fails when the README loses its title.",
+        assertion: "health",
+      },
+    ],
+  };
+  const command = [
+    process.execPath,
+    "-e",
+    `const ok=require('fs').readFileSync('README.md','utf8').includes('Isolated');console.log(JSON.stringify({ok,claims:[{id:'health',ok}]}))`,
+  ];
+  const dir = await makeRepo({
+    profile: baseProfile({
+      launch: { mode: "none" },
+      checks: { health: { command, result: "json" } },
+    }),
+    plan: matrix,
+  });
+  const faultTree = `${dir}-fault`;
+  // Each worktree must use the one state home that the main worktree uses.
+  const shared = {
+    env: { XDG_STATE_HOME: join(tmpdir(), `${basename(dir)}-state`) },
+  };
+  let fault, candidate;
+  try {
+    await git(dir, ["worktree", "add", "-q", "--detach", faultTree, "HEAD"]);
+    await writeFile(join(faultTree, "README.md"), "# Broken\n");
+    fault = assertEnvelope(
+      await runCli(faultTree, ["--json", "up", "--plan", "plan.json"], shared),
+      { ok: true, code: 0 },
+    ).run;
+    const bad = assertEnvelope(
+      await runCli(
+        faultTree,
+        ["--json", "check", "health", "--run", fault],
+        shared,
+      ),
+      { ok: false, code: 1 },
+    );
+    candidate = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--plan", "plan.json"]),
+      { ok: true, code: 0 },
+    ).run;
+    const listed = assertEnvelope(await runCli(dir, ["--json", "status"]), {
+      ok: true,
+      code: 0,
+    });
+    assert.ok(
+      listed.data.runs.some((item) => item.id === fault),
+      "the main worktree lists the fault worktree's run",
+    );
+    const foreign = assertEnvelope(
+      await runCli(dir, ["--json", "check", "health", "--run", fault]),
+      { ok: false, code: 2 },
+    );
+    assert.equal(foreign.error.code, "RUN_OTHER_WORKTREE");
+    assert.match(foreign.error.message, new RegExp(basename(faultTree)));
+    assertEnvelope(
+      await runCli(faultTree, ["--json", "down", "--run", fault], shared),
+      { ok: true, code: 0 },
+    );
+    const good = assertEnvelope(
+      await runCli(dir, ["--json", "check", "health", "--run", candidate]),
+      { ok: true, code: 0 },
+    );
+    const result = {
+      operator: "agent",
+      claims: [
+        {
+          id: "demo-ready",
+          outcome: "passed",
+          steps: [good.step],
+          observed: "Health passes on the restored source.",
+          artifacts: good.artifacts.map((a) => a.path),
+        },
+      ],
+      controls: [
+        {
+          id: "readme-fault",
+          failedRun: fault,
+          failedStep: bad.step,
+          restoredStep: good.step,
+          observedFailure: "Health failed in the fault worktree.",
+          observedPass: "Health passed in the main worktree.",
+        },
+      ],
+      gates: [],
+      limits: [],
+    };
+    await writeJson(join(dir, "result.json"), result);
+    assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "result",
+        "--run",
+        candidate,
+        "--file",
+        "result.json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    await git(dir, ["worktree", "remove", "--force", faultTree]);
+    const lost = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "result",
+        "--run",
+        candidate,
+        "--file",
+        "result.json",
+      ]),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(lost),
+      new RegExp(`evidence folder .*${basename(faultTree)}.* no longer exists`),
+    );
+  } finally {
+    if (fault)
+      await runCli(faultTree, ["--json", "down", "--run", fault], shared).catch(
+        () => undefined,
+      );
+    if (candidate) await runCli(dir, ["--json", "down", "--run", candidate]);
+    await rm(faultTree, { recursive: true, force: true });
+    await removeRepo(dir);
+  }
+});
+
+test("a gate from another run counts only on the same source, profile and bindings", async () => {
+  const matrix = { claims: [], gates: ["verify"], limits: [] };
+  const dir = await makeRepo({
+    profile: baseProfile({
+      launch: { mode: "none" },
+      // A per-run binding must not make every other run's gate a mismatch.
+      bindings: { database: "app_${run}" },
+    }),
+    plan: matrix,
+  });
+  const runsCreated = [];
+  const start = async () => {
+    const run = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--plan", "plan.json"]),
+      { ok: true, code: 0 },
+    ).run;
+    runsCreated.push(run);
+    return run;
+  };
+  const record = (run, gateRun, step) =>
+    writeJson(join(dir, "result.json"), {
+      operator: "agent",
+      claims: [],
+      gates: [
+        { name: "verify", outcome: "passed", run: gateRun, steps: [step] },
+      ],
+      limits: [],
+    }).then(() =>
+      runCli(dir, ["--json", "result", "--run", run, "--file", "result.json"]),
+    );
+  try {
+    const gateRun = await start();
+    const gate = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "exec",
+        "--run",
+        gateRun,
+        "--",
+        process.execPath,
+        "-e",
+        "console.log('gate ok')",
+      ]),
+      { ok: true, code: 0 },
+    );
+    const sameSource = await start();
+    assertEnvelope(await record(sameSource, gateRun, gate.step), {
+      ok: true,
+      code: 0,
+    });
+    await writeFile(join(dir, "README.md"), "# Changed source\n");
+    const changedSource = await start();
+    const refused = assertEnvelope(
+      await record(changedSource, gateRun, gate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(refused),
+      /Gate verify cites run .* on a different source identity/,
+    );
+    await writeFile(join(dir, "README.md"), "# Isolated Spyglass fixture\n");
+    const failedGate = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "exec",
+        "--run",
+        gateRun,
+        "--",
+        process.execPath,
+        "-e",
+        "process.exit(3)",
+      ]),
+      { ok: false, code: 1 },
+    );
+    const restored = await start();
+    assertEnvelope(await record(restored, gateRun, failedGate.step), {
+      ok: false,
+      code: 1,
+    });
+    const unknown = assertEnvelope(
+      await record(restored, "no-such-run", gate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(JSON.stringify(unknown), /Gate verify cites run no-such-run/);
+    const otherBinding = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--plan",
+        "plan.json",
+        "--binding",
+        "mode=stub",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    runsCreated.push(otherBinding);
+    const mismatch = assertEnvelope(
+      await record(otherBinding, gateRun, gate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(mismatch),
+      /Gate verify cites run .* with a different profile or bindings/,
+    );
+  } finally {
+    for (const run of runsCreated)
+      await runCli(dir, ["--json", "down", "--run", run]);
+    await removeRepo(dir);
+  }
+});
+
+test("a run whose worktree was removed stays listed and can still be stopped", async () => {
+  const dir = await makeRepo({ profile: baseProfile(), plan });
+  const removedTree = `${dir}-removed`;
+  const shared = {
+    env: { XDG_STATE_HOME: join(tmpdir(), `${basename(dir)}-state`) },
+  };
+  let run;
+  try {
+    await git(dir, ["worktree", "add", "-q", "--detach", removedTree, "HEAD"]);
+    const up = assertEnvelope(
+      await runCli(
+        removedTree,
+        ["--json", "up", "--plan", "plan.json"],
+        shared,
+      ),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    const web = up.data.web;
+    await git(dir, ["worktree", "remove", "--force", removedTree]);
+    const listed = assertEnvelope(await runCli(dir, ["--json", "status"]), {
+      ok: true,
+      code: 0,
+    });
+    const row = listed.data.runs.find((item) => item.id === run);
+    assert.equal(
+      row?.worktreeRemoved,
+      true,
+      "status marks the removed worktree",
+    );
+    assertEnvelope(await runCli(dir, ["--json", "status", "--run", run]), {
+      ok: true,
+      code: 0,
+    });
+    assertEnvelope(await runCli(dir, ["--json", "down", "--run", run]), {
+      ok: true,
+      code: 0,
+    });
+    const stopped = assertEnvelope(
+      await runCli(dir, ["--json", "status", "--run", run]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(stopped.data.state, "stopped");
+    await assert.rejects(fetch(`${web}/health`), "the owned app is stopped");
+    assert.equal(
+      existsSync(removedTree),
+      false,
+      "down recreates no worktree files",
+    );
+  } finally {
+    if (run) await runCli(dir, ["--json", "down", "--run", run]);
+    await rm(removedTree, { recursive: true, force: true });
     await removeRepo(dir);
   }
 });

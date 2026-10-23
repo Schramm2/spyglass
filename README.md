@@ -108,7 +108,7 @@ the source and start a new run.
 | --- | --- | --- |
 | Existing tests and journeys | `check NAME` | Exit status, assertions, declared artifacts |
 | Other commands | `exec -- COMMAND ARGS` | Bounded stdout and stderr, real exit status |
-| Web browser | `ui open /`, `ui snapshot`, `ui proof LABEL` | Isolated session, screenshot, DOM, errors and requests |
+| Web browser | `ui open /`, `ui snapshot`, `ui proof LABEL`, `ui focused` | Isolated session, screenshot, DOM, errors and requests |
 | HTTP | `api GET /path --expect 200` | Masked request and response; redirects are not followed |
 | PostgreSQL | `db 'SELECT ...' --expect-rows 1` | One statement in a read-only transaction, with rows and role limits |
 | Docker Compose | `ps`, `mark LABEL`, `logs SERVICE --since LABEL` | Project-scoped status and timestamped logs |
@@ -142,6 +142,20 @@ has `viewport`, `expected`, `observed` and `artifact`; the artifact must be a
 valid screenshot from a cited step. The earlier single `inspection` remains
 supported. Control templates include `failedRun`, initially the current run;
 replace it when the intended failure belongs to a retained earlier run.
+
+All worktrees of a repository share their runs. Put a fault in a separate
+worktree, record its failing run there, and name that run in `failedRun`.
+Run `down` for the fault run in its own worktree; Spyglass refuses commands
+that change a run from another worktree (`RUN_OTHER_WORKTREE`). Keep the
+fault worktree until the candidate report: its evidence folder holds the
+failed attempt. Run IDs are unique in the repository. If a worktree is
+removed while its run is active, `status` shows `worktreeRemoved` and `down`
+stops that run from any worktree.
+
+A gate can cite another run with `run`, for example one run that executes
+the repository gates for several journeys. Its steps must have passed on the
+same source identity, profile and bindings as the run that records the
+result.
 
 ## Configuration
 
