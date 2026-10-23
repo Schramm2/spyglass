@@ -89,7 +89,7 @@ const details: Record<
   result: {
     usage: "result --file PATH --run ID",
     description:
-      "Read the edited result template printed by up. Validate claim IDs, cited steps and artifacts, visual inspection, independent reads, gates and predeclared negative controls. For multiple viewports use inspections with viewport, expected, observed and artifact for each cited screenshot. The single inspection remains supported. Controls include failedRun; replace its current run ID when the failure belongs to an earlier run. Use spyglass schema result for the full shape. Recording a result does not complete cleanup or certify semantic coverage.",
+      "Read the edited result template printed by up. Validate claim IDs, cited steps and artifacts, visual inspection, independent reads, gates and predeclared negative controls. For multiple viewports use inspections with viewport, expected, observed and artifact for each cited screenshot. The single inspection remains supported. Controls include failedRun; replace its current run ID when the failure belongs to an earlier run, also one from another worktree of the repository. Keep that worktree until the report. A gate can name run, another run on the same source identity whose steps prove it. Use spyglass schema result for the full shape. Recording a result does not complete cleanup or certify semantic coverage.",
     example:
       "spyglass result --file .spyglass/runs/change-42/spyglass/result.json --run change-42 --json",
   },

@@ -7,6 +7,7 @@ import { Fault, fault, requireValue } from "./errors.js";
 import {
   Context,
   assertSource,
+  assertWorktree,
   loadRun,
   lock,
   runs,
@@ -281,7 +282,10 @@ try {
           cmd: directCmd,
           ready,
         });
-      } else run = loadRun(repo, requireValue(selected, "--run ID"));
+      } else {
+        run = loadRun(repo, requireValue(selected, "--run ID"));
+        assertWorktree(run, repo);
+      }
       release = lock(run, command);
       run = loadRun(repo, run.id);
       ctx = new Context(run, command, args.slice(1));

@@ -11,7 +11,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { Fault } from "./errors.js";
 import { hash, safePath } from "./files.js";
-import { BROWSER_IDLE_TIMEOUT_MS, stateRoot, saveRun } from "./state.js";
+import { BROWSER_IDLE_TIMEOUT_MS, runDirectory, saveRun } from "./state.js";
 import {
   browserProxyEvents,
   browserProxyLive,
@@ -145,7 +145,7 @@ function identity(ctx: Context, seat: string): Identity {
   };
 }
 function configFile(ctx: Context): string {
-  const dir = join(stateRoot(ctx.run.repo), ctx.run.id);
+  const dir = runDirectory(ctx.run.repo, ctx.run.id);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const file = join(dir, "browser-config.json");
   writeFileSync(file, '{"headed":false,"hideScrollbars":true}\n', {
@@ -911,6 +911,7 @@ export function browserHelp(): Record<string, unknown> {
       "read [PATH|URL]",
       "snapshot [-i|-c|--delta|--full]",
       "proof LABEL",
+      "focused [--expect LABEL]",
       "login SEAT",
       "click|dblclick|type|fill|press|keyboard|hover|focus|check|uncheck|select|drag|scroll|scrollintoview",
       "wait|back|forward|reload",
@@ -1245,6 +1246,67 @@ async function screenshot(
     rmSync(target, { force: true });
   }
 }
+/**
+ * A fixed, read-only page script: raw eval stays refused. It reports the
+ * focused element's identity and never its value, so a password stays unread.
+ */
+const focusedElementScript = `(() => {
+  const element = document.activeElement;
+  if (!element || element === document.body || element === document.documentElement) return null;
+  const text = (value) => (value || "").replace(/\\s+/g, " ").trim();
+  const labelledBy = (element.getAttribute("aria-labelledby") || "")
+    .split(/\\s+/).map((id) => document.getElementById(id)?.textContent || "").join(" ");
+  const tag = element.tagName.toLowerCase();
+  const type = element.getAttribute("type") || undefined;
+  const inputRoles = { checkbox: "checkbox", radio: "radio", button: "button", submit: "button", reset: "button", range: "slider" };
+  const implicit = tag === "input" ? inputRoles[type || ""] || "textbox"
+    : { a: "link", button: "button", select: "combobox", textarea: "textbox" }[tag];
+  return {
+    tag,
+    type,
+    role: element.getAttribute("role") || implicit,
+    label: text(element.getAttribute("aria-label")) || text(labelledBy)
+      || text(element.labels?.[0]?.textContent) || text(element.getAttribute("title"))
+      || text(element.getAttribute("placeholder"))
+      || (tag === "button" || tag === "a" ? text(element.textContent) : ""),
+    id: element.id || undefined,
+  };
+})()`;
+async function focused(
+  ctx: Context,
+  seat: string,
+  id: Identity,
+  domains: string,
+  args: string[],
+): Promise<Record<string, unknown>> {
+  const expected =
+    args[0] === "--expect" && args.length === 2 ? args[1] : undefined;
+  if (args.length && expected === undefined)
+    throw new Fault(
+      "BROWSER_USAGE",
+      "ui focused accepts only --expect LABEL.",
+      "Use spyglass ui focused or spyglass ui focused --expect LABEL.",
+    );
+  const result = await run(ctx, id, domains, [["eval", focusedElementScript]]);
+  const reply = result.data[0] as { result?: { result?: unknown } } | undefined;
+  const element = (reply?.result?.result ?? null) as {
+    label?: string;
+  } | null;
+  const evidence = ctx.artifact(
+    "focused.json",
+    { seat, pageContent: true, focused: element, expected },
+    "page-content",
+  );
+  if (expected !== undefined && element?.label !== expected)
+    throw new Fault(
+      "BROWSER_EXPECTATION_FAILED",
+      `The focused element is ${element ? `"${element.label}"` : "the page body"}, not "${expected}".`,
+      "Inspect the page; failed steps stay in the run log.",
+      1,
+      { seat, pageContent: true, focused: element, expected },
+    );
+  return { seat, pageContent: true, focused: element, artifacts: [evidence] };
+}
 export async function browser(
   ctx: Context,
   args: string[],
@@ -1304,6 +1366,14 @@ export async function browser(
         saveRun(ctx.run);
       }
       return proof(ctx, seat, id, [...policy.domains.split(",")], action[1]);
+    }
+    if (action[0] === "focused") {
+      const fresh = await ensure(ctx, id, policy.domains);
+      if (fresh) {
+        ctx.run.sessions[seat] = id.session;
+        saveRun(ctx.run);
+      }
+      return focused(ctx, seat, id, policy.domains, action.slice(1));
     }
     let input = [...action];
     if (input[0] === "open") {

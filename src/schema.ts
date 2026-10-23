@@ -198,7 +198,13 @@ export const resultSchema = z.strictObject({
   ),
   gates: z
     .array(
-      z.strictObject({ name: z.string(), outcome, steps: z.array(z.string()) }),
+      z.strictObject({
+        name: z.string(),
+        outcome,
+        /** Another run of this repository whose steps prove the gate on the same source. */
+        run: z.string().min(1).optional(),
+        steps: z.array(z.string()),
+      }),
     )
     .default([]),
   limits: z.array(z.string()).default([]),

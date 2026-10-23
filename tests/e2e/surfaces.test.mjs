@@ -1338,3 +1338,73 @@ surfaceTest(
     }
   },
 );
+
+surfaceTest(
+  "ui focused names the focused field without its value and fails on another expected label",
+  async () => {
+    const secret = `focus-secret-${randomUUID()}`;
+    const page = await servePage(
+      `<label>Email <input id="email"></label><label>Password <input id="password" type="password" value="${secret}"></label><script>document.getElementById("password").focus()</script>`,
+    );
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "browser-focus"]),
+        { ok: true, code: 0 },
+      ).run;
+      assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "ui", "open", "/"]),
+        { ok: true, code: 0 },
+      );
+      const focused = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "--run",
+          run,
+          "ui",
+          "focused",
+          "--expect",
+          "Password",
+        ]),
+        { ok: true, code: 0 },
+      );
+      assert.deepEqual(focused.data.focused, {
+        tag: "input",
+        type: "password",
+        role: "textbox",
+        label: "Password",
+        id: "password",
+      });
+      const wrong = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "--run",
+          run,
+          "ui",
+          "focused",
+          "--expect",
+          "Email",
+        ]),
+        { ok: false, code: 1 },
+      );
+      assert.equal(wrong.error.code, "BROWSER_EXPECTATION_FAILED");
+      const log = await readFile(
+        join(dir, ".spyglass/runs", run, "spyglass/log.jsonl"),
+        "utf8",
+      );
+      for (const text of [JSON.stringify(focused), JSON.stringify(wrong), log])
+        assert.doesNotMatch(text, new RegExp(secret), "never read the value");
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+      await page.close();
+    }
+  },
+);

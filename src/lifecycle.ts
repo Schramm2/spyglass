@@ -20,6 +20,7 @@ import {
   assertSource,
   ignored,
   lockInfo,
+  runDirectory,
   runFile,
   saveRun,
   source,
@@ -138,7 +139,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     ownerCleaned: profile.launch.mode !== "external",
     cleanup: false,
   };
-  const directory = dirname(runFile(repo, id));
+  const directory = runDirectory(repo, id);
   mkdirSync(dirname(directory), { recursive: true, mode: 0o700 });
   try {
     mkdirSync(directory, { mode: 0o700 });

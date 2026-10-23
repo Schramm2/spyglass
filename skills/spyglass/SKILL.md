@@ -108,8 +108,10 @@ with a separate Chrome or Chromium session. Read its help before driving:
 spyglass --run <run-id> ui --help
 ```
 
-Use `ui proof` after the user action and after the visible result. Open and
-inspect the actual screenshot with the current harness's image viewer, at the
+Use `ui proof` after the user action and after the visible result. Use
+`ui focused --expect LABEL` when a claim depends on focus, for example the
+password field after a refused sign-in; it never reads the field's value.
+Open and inspect the actual screenshot with the current harness's image viewer, at the
 required viewport. Record the expected state and what the image shows. If no
 available operator can inspect the image, mark the visual claim blocked. A
 saved screenshot, DOM snapshot, or HTTP response alone does not prove a visual
@@ -135,6 +137,11 @@ an isolated target. Show that a deliberate fault makes the intended assertion
 fail, restore the target, and show that the same expectation passes. If the
 control is unsafe or unavailable, record the limit.
 
+For a fault in a separate Git worktree, start the failing run there, then run
+its `down` there. Name that run in the candidate's `failedRun`: all worktrees
+of a repository share their runs. Remove the fault worktree only after the
+candidate report, because its evidence folder holds the failed attempt.
+
 ## 5. Report and clean up
 
 Complete every planned claim as `passed`, `failed`, `blocked`, or `not run`.
@@ -153,6 +160,8 @@ the run's evidence folder under `spyglass/`; do not add the repository path.
 Use `completedChecks.spyglassExitCode` and the recorded status to judge a check;
 `childExitCode` describes only the child process. Control templates include
 `failedRun`; replace it with the earlier run ID for a retained failing baseline.
+Run the repository gates once for a source. Another run on the same source can
+cite those steps with `run` in its gate entry; a gate from changed source fails.
 Use the recorded command status to judge a check. A child exit code of zero
 can still accompany failed assertions.
 

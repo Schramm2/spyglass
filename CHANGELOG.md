@@ -6,6 +6,23 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `ui focused [--expect LABEL]` records the focused element's role, label,
+  type and ID without its value. `--expect` fails when the label differs.
+- A gate in a result can name `run`: another run of the repository whose
+  steps prove the gate. The steps must have this run's source identity.
+
+### Changed
+
+- All worktrees of a repository share one run store, so a control's
+  `failedRun` can name a run from a fault worktree. A command that changes a
+  run must run from that run's own worktree; otherwise it fails with
+  `RUN_OTHER_WORKTREE`. Runs that a linked worktree started before this
+  change are still found.
+- A control whose failed run's evidence folder was removed, for example with
+  its worktree, names that folder in the result failure.
+
 ## [1.0.0] - 2026-10-23
 
 ### Added

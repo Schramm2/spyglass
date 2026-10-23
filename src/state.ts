@@ -7,6 +7,7 @@ import {
   readFileSync,
   readlinkSync,
   readdirSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -90,29 +91,73 @@ export interface Run {
   cleanup: boolean;
   lastDoctor?: string;
 }
-export function stateRoot(repo: string): string {
+function stateDirectory(key: string): string {
   return join(
     process.env.XDG_STATE_HOME || join(homedir(), ".local/state"),
     "spyglass",
-    hash(repo).slice(0, 20),
+    hash(key).slice(0, 20),
   );
 }
-export function runFile(repo: string, id: string): string {
+/**
+ * The main worktree path, shared by every linked worktree of the repository,
+ * so a control's failed run in a fault worktree is visible to its candidate.
+ * Read from the files Git writes, not a git process: `ui` has a time budget.
+ */
+function sharedRepository(repo: string): string {
+  const dotGit = join(repo, ".git");
+  try {
+    if (!lstatSync(dotGit).isFile()) return repo;
+    const gitDir = resolve(
+      repo,
+      readFileSync(dotGit, "utf8")
+        .replace(/^gitdir:\s*/, "")
+        .trim(),
+    );
+    const common = realpathSync(
+      resolve(gitDir, readFileSync(join(gitDir, "commondir"), "utf8").trim()),
+    );
+    return basename(common) === ".git" ? dirname(common) : common;
+  } catch {
+    return repo;
+  }
+}
+/** Runs of the whole repository; one directory per run. */
+function stateRoot(repo: string): string {
+  return stateDirectory(sharedRepository(repo));
+}
+/**
+ * Before runs were shared, each linked worktree kept its runs under its own
+ * path. Keep finding them there so that existing runs can still be cleaned up.
+ */
+function legacyStateRoot(repo: string): string | undefined {
+  return sharedRepository(repo) === repo ? undefined : stateDirectory(repo);
+}
+export function runDirectory(repo: string, id: string): string {
   if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/.test(id) || id.includes(".."))
     throw new Fault(
       "INVALID_RUN",
       "Invalid run name.",
       "Use letters, digits, hyphens and underscores.",
     );
-  return join(stateRoot(repo), id, "run.json");
+  const shared = join(stateRoot(repo), id);
+  const legacy = legacyStateRoot(repo);
+  return !existsSync(shared) && legacy && existsSync(join(legacy, id))
+    ? join(legacy, id)
+    : shared;
+}
+export function runFile(repo: string, id: string): string {
+  return join(runDirectory(repo, id), "run.json");
 }
 export function saveRun(run: Run): void {
   writeJson(runFile(run.repo, run.id), run);
 }
 export function runs(repo: string): Run[] {
-  const root = stateRoot(repo);
-  if (!existsSync(root)) return [];
-  return readdirSync(root).flatMap((id) => {
+  const ids = new Set(
+    [stateRoot(repo), legacyStateRoot(repo)].flatMap((root) =>
+      root && existsSync(root) ? readdirSync(root) : [],
+    ),
+  );
+  return [...ids].flatMap((id) => {
     try {
       return [readJson(runFile(repo, id)) as Run];
     } catch {
@@ -133,6 +178,15 @@ export function loadRun(repo: string, id: string): Run {
       "Run spyglass status or spyglass up.",
     );
   return readJson(file) as Run;
+}
+/** Runs are shared across worktrees for reading; only the run's own worktree drives it. */
+export function assertWorktree(run: Run, repo: string): void {
+  if (run.repo !== repo)
+    throw new Fault(
+      "RUN_OTHER_WORKTREE",
+      `Run ${run.id} belongs to the worktree ${run.repo}.`,
+      `Run this command from ${run.repo}. Run down there before you remove that worktree.`,
+    );
 }
 export function source(repo: string, profile: Profile): Source {
   const r = spawnSync(
@@ -247,11 +301,11 @@ export function steps(run: Run): Step[] {
     .map((l) => JSON.parse(l) as Step);
 }
 export function lockInfo(run: Run): unknown {
-  const path = join(dirname(runFile(run.repo, run.id)), "lock", "owner.json");
+  const path = join(runDirectory(run.repo, run.id), "lock", "owner.json");
   return existsSync(path) ? readJson(path) : null;
 }
 export function lock(run: Run, command: string): () => void {
-  const path = join(dirname(runFile(run.repo, run.id)), "lock");
+  const path = join(runDirectory(run.repo, run.id), "lock");
   try {
     mkdirSync(path, { mode: 0o700 });
   } catch (error) {

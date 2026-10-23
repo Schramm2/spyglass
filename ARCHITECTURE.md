@@ -86,7 +86,7 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 
 | Fact | Owner and location |
 | --- | --- |
-| Run record, lock, browser proxy config | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/` (default `~/.local/state`), outside the repository |
+| Run record, lock, browser proxy config | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/` (default `~/.local/state`), outside the repository. The hash is of the main worktree path, so all worktrees of a repository share one run store; only a run's own worktree changes it |
 | Step log, artifacts, result, report, app log | The evidence folder in the target repository, default `.spyglass/runs/${run}`, which must be Git-ignored |
 | Profile, checks, containers, databases | The target repository |
 | Secret values | Their references (`env:`, `file:`, `dotenv:`, `op://`); never stored |
@@ -95,6 +95,7 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 
 | Rule | Enforced by |
 | --- | --- |
+| A command that changes a run runs from the run's own worktree | `assertWorktree` in `src/state.ts`, E2E tests |
 | Every mutating command holds the run lock; a second one fails with `RUN_BUSY` and `status` stays available | `lock` in `src/state.ts`, E2E tests |
 | Evidence from changed source cannot pass for the recorded source | `assertSource`, `report` checks, E2E tests |
 | A failed step stays in the log; nothing removes log entries | `Context.finish` appends only; not otherwise enforced |
