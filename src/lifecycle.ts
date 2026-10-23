@@ -389,7 +389,7 @@ export async function doctor(ctx: Context): Promise<Record<string, unknown>> {
   safePath(ctx.run.repo, ctx.run.evidence);
   const tools: Record<string, string> = {
     node: process.version,
-    spyglass: "1.0.0",
+    spyglass: "1.1.0",
   };
   for (const [name, args] of [
     ...(ctx.run.web ? [["browser", ["agent-browser", "--version"]]] : []),

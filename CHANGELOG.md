@@ -6,6 +6,8 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-23
+
 ### Added
 
 - `ui focused [--expect LABEL]` records the focused element's role, label,
@@ -30,6 +32,8 @@ This file records the notable changes to Spyglass. The format follows
 
 - The owned-app supervisor no longer recreates a removed evidence folder
   when the app stops.
+- `status` reports `sourceError` for a run whose worktree cannot be read,
+  instead of failing for every run.
 
 ## [1.0.0] - 2026-10-23
 
@@ -70,6 +74,7 @@ This file records the notable changes to Spyglass. The format follows
 - The agent skills `spyglass`, `create-verification-skill` and
   `maintain-verification-skill`.
 
-[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Schramm2/spyglass/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Schramm2/spyglass/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/Schramm2/spyglass/releases/tag/v0.1.0
