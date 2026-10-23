@@ -170,9 +170,23 @@ async function exec(
       "exec requires `-- <command> [args]`.",
       "Run spyglass exec -- <command> [args].",
     );
+  const options = args.slice(1, separator);
+  if (options.length && (options.length !== 2 || options[0] !== "--timeout-ms"))
+    throw new Fault(
+      "INVALID_USAGE",
+      "exec accepts only --timeout-ms MILLISECONDS before --.",
+      "Run spyglass exec --timeout-ms 900000 -- COMMAND [ARGS].",
+    );
+  const timeoutMs = options.length ? Number(options[1]) : 300000;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 86400000)
+    throw new Fault(
+      "INVALID_USAGE",
+      "--timeout-ms must be an integer from 1 to 86400000.",
+      "Use a bounded deadline, for example --timeout-ms 900000.",
+    );
   assertSource(ctx.run);
   const result = await ctx.execute(command, {
-    timeoutMs: 300000,
+    timeoutMs,
     maxBytes: 8 * 1024 * 1024,
   });
   const output = ctx.artifact(
@@ -186,6 +200,7 @@ async function exec(
     stdout: result.stdout,
     stderr: result.stderr,
     timedOut: result.timedOut,
+    timeoutMs,
     artifacts: [output],
     passed: result.exitCode === 0,
   });

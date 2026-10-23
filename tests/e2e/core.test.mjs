@@ -2565,3 +2565,136 @@ test("a state permission failure is distinct from an active run lock", async () 
     await removeRepo(dir);
   }
 });
+
+test("CLI binding overrides are retained and used by named checks", async () => {
+  const dir = await makeRepo({
+    profile: baseProfile({
+      launch: { mode: "none" },
+      web: undefined,
+      api: undefined,
+      bindings: {
+        installation: "${run}",
+        ownerEvidence: "evidence/${installation}",
+      },
+      checks: {
+        binding: {
+          command: [
+            process.execPath,
+            "-e",
+            "console.log(process.argv[1])",
+            "${installation}",
+          ],
+        },
+      },
+    }),
+  });
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(dir, [
+        "up",
+        "--run",
+        "binding-candidate",
+        "--binding",
+        "installation=existing-owner",
+        "--binding",
+        "extra=kept",
+        "--json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    assert.equal(up.data.owner.bindings.installation, "existing-owner");
+    assert.equal(
+      up.data.owner.bindings.ownerEvidence,
+      "evidence/existing-owner",
+    );
+    assert.equal(up.data.owner.bindings.extra, "kept");
+    const check = assertEnvelope(
+      await runCli(dir, ["check", "binding", "--run", run, "--json"]),
+      { ok: true, code: 0 },
+    );
+    assert.match(check.data.stdout, /existing-owner/);
+    const status = assertEnvelope(
+      await runCli(dir, ["status", "--run", run, "--json"]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(status.data.owner.bindings.installation, "existing-owner");
+  } finally {
+    if (run) await runCli(dir, ["down", "--run", run, "--json"]);
+    await removeRepo(dir);
+  }
+});
+
+test("exec applies its explicit deadline and preserves child timeout arguments", async () => {
+  const dir = await makeRepo({
+    profile: baseProfile({
+      launch: { mode: "none" },
+      web: undefined,
+      api: undefined,
+    }),
+  });
+  let run;
+  try {
+    run = assertEnvelope(await runCli(dir, ["up", "--json"]), {
+      ok: true,
+      code: 0,
+    }).run;
+    const failed = assertEnvelope(
+      await runCli(dir, [
+        "exec",
+        "--run",
+        run,
+        "--timeout-ms",
+        "50",
+        "--json",
+        "--",
+        process.execPath,
+        "-e",
+        "setTimeout(()=>{},1000)",
+      ]),
+      { ok: false, code: 1 },
+    );
+    assert.equal(failed.data.timedOut, true);
+    assert.equal(failed.data.exitCode, 124);
+    const passed = assertEnvelope(
+      await runCli(dir, [
+        "exec",
+        "--run",
+        run,
+        "--timeout-ms",
+        "2000",
+        "--json",
+        "--",
+        process.execPath,
+        "-e",
+        "setTimeout(()=>console.log(process.argv[1]),100)",
+        "--",
+        "--timeout-ms",
+      ]),
+      { ok: true, code: 0 },
+    );
+    assert.match(passed.data.stdout, /--timeout-ms/);
+    for (const value of ["0", "-1", "NaN", "86400001", "1.5"]) {
+      const invalid = assertEnvelope(
+        await runCli(dir, [
+          "exec",
+          "--run",
+          run,
+          "--timeout-ms",
+          value,
+          "--json",
+          "--",
+          process.execPath,
+          "-e",
+          "console.log('must not execute')",
+        ]),
+        { ok: false, code: 2 },
+      );
+      assert.doesNotMatch(JSON.stringify(invalid.data), /must not execute/);
+    }
+  } finally {
+    if (run) await runCli(dir, ["down", "--run", run, "--json"]);
+    await removeRepo(dir);
+  }
+});

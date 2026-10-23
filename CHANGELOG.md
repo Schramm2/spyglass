@@ -15,11 +15,13 @@ This file records the notable changes to Spyglass. The format follows
 - Clear `childExitCode` and `spyglassExitCode` fields in completed checks.
   The earlier fields remain as aliases.
 - `failedRun` in each control template, initially the current run ID.
+- `exec --timeout-ms` for long commands, with a maximum of 24 hours.
 - `report` output includes `reportPath`, the absolute path of the HTML page.
 - The terminal quickstart explains what the result file is for.
 
 ### Changed
 
+- Retained profile bindings now include resolved CLI overrides and added values.
 - Default CLI output uses compact text instead of formatted JSON.
   `--json` and schema output keep their structured formats.
 
