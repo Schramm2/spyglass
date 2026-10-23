@@ -1802,7 +1802,7 @@ test("run evidence retains its profile, plan and tool identity for a handoff", a
       .split("\n")
       .map(JSON.parse);
     assert.equal(records[0].run, run);
-    assert.equal(records[0].tool.version, "1.0.0");
+    assert.equal(records[0].tool.version, "1.1.0");
     assert.match(records[0].profileHash, /^[a-f0-9]{64}$/);
     const doctor = assertEnvelope(
       await runCli(dir, ["--json", "doctor", "--run", run]),
