@@ -1264,7 +1264,7 @@ const focusedElementScript = `(() => {
     return text(copy.textContent);
   };
   const tag = element.tagName.toLowerCase();
-  const type = element.getAttribute("type") || undefined;
+  const type = tag === "input" ? element.type : element.getAttribute("type") || undefined;
   const inputRoles = { checkbox: "checkbox", radio: "radio", button: "button", submit: "button",
     reset: "button", range: "slider", search: "searchbox", email: "textbox", tel: "textbox",
     text: "textbox", url: "textbox" };

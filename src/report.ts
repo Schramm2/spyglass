@@ -439,10 +439,13 @@ function citedGateRun(
 ): Map<string, Step> | undefined {
   try {
     const cited = loadRun(run.repo, id);
+    // Compare bindings before templates: a per-run value such as app_${run}
+    // differs in every run without changing what the gate checked.
+    const overrides = (item: Run) =>
+      JSON.stringify(Object.entries(item.bindingOverrides ?? {}).sort());
     if (
       cited.profileHash !== run.profileHash ||
-      JSON.stringify(cited.profile.bindings) !==
-        JSON.stringify(run.profile.bindings)
+      overrides(cited) !== overrides(run)
     )
       findings.push({
         code: "STEP_SOURCE_MISMATCH",

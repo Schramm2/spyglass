@@ -11,7 +11,7 @@ import {
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
-import { Fault } from "./errors.js";
+import { Fault, fault } from "./errors.js";
 import { hash, readJson, safePath, writeJson } from "./files.js";
 import { loadProfile, locateProfile, template } from "./profile.js";
 import { planSchema, profileSchema, validate } from "./schema.js";
@@ -127,6 +127,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     profile,
     profilePath,
     profileHash: hash(JSON.stringify(raw)),
+    bindingOverrides: opts.bindings,
     source: source(repo, profile),
     port,
     web: profile.web,
@@ -201,6 +202,15 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     throw e;
   }
 }
+/** One unreadable worktree must not stop status for every run. */
+function currentSource(run: Run): Record<string, unknown> {
+  if (worktreeRemoved(run)) return { worktreeRemoved: true };
+  try {
+    return { sourceChanges: sourceChanges(run) };
+  } catch (error) {
+    return { sourceError: fault(error).message };
+  }
+}
 export function status(run: Run): Record<string, unknown> {
   const records = steps(run);
   return {
@@ -216,9 +226,7 @@ export function status(run: Run): Record<string, unknown> {
       hash: run.source.hash,
       fileCount: Object.keys(run.source.files).length,
     },
-    ...(worktreeRemoved(run)
-      ? { worktreeRemoved: true }
-      : { sourceChanges: sourceChanges(run) }),
+    ...currentSource(run),
     profile: run.profilePath,
     plan: run.plan,
     result: relative(run.repo, run.resultPath),

@@ -2837,7 +2837,11 @@ test("a control links a failed run from a fault worktree to the candidate in the
 test("a gate from another run counts only on the same source, profile and bindings", async () => {
   const matrix = { claims: [], gates: ["verify"], limits: [] };
   const dir = await makeRepo({
-    profile: baseProfile({ launch: { mode: "none" } }),
+    profile: baseProfile({
+      launch: { mode: "none" },
+      // A per-run binding must not make every other run's gate a mismatch.
+      bindings: { database: "app_${run}" },
+    }),
     plan: matrix,
   });
   const runsCreated = [];

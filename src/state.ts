@@ -65,6 +65,8 @@ export interface Run {
   profile: Profile;
   profilePath: string;
   profileHash: string;
+  /** CLI binding overrides as given, before templates; absent in runs from 1.0.0. */
+  bindingOverrides?: Record<string, string>;
   source: Source;
   port: number;
   web?: string;
@@ -472,7 +474,8 @@ export class Context {
     options: ProcessOptions = {},
   ): Promise<ProcessResult> {
     return runCommand(command, {
-      cwd: this.run.repo,
+      // A removed worktree cannot be a working folder; down still runs.
+      cwd: worktreeRemoved(this.run) ? runHome(this.run) : this.run.repo,
       env: process.env,
       ...options,
     });
