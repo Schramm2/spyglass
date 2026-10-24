@@ -322,10 +322,8 @@ try {
           const log = join(run.evidence, "spyglass/launch.log");
           if (existsSync(log))
             ctx.artifact("launch-final.log", readFileSync(log, "utf8"));
-          data = {
-            ...lifecycle.status(run),
-            ownerCleanupRequired: !run.ownerCleaned,
-          };
+          const { resultRules: _rules, ...stopped } = lifecycle.status(run);
+          data = { ...stopped, ownerCleanupRequired: !run.ownerCleaned };
           break;
         }
         case "check":

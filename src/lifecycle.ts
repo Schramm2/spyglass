@@ -233,7 +233,6 @@ export function status(run: Run): Record<string, unknown> {
     profile: run.profilePath,
     plan: run.plan,
     result: relative(run.repo, run.resultPath),
-    resultRules: resultRules(run),
     export: `export SPYGLASS_RUN=${run.id}`,
     active: lockInfo(run),
     activeSeat: run.activeSeat,
@@ -268,6 +267,8 @@ export function status(run: Run): Record<string, unknown> {
       cleanupRequired: !run.ownerCleaned,
     },
     next: nextCommand(run),
+    // Last, so a long list never cuts the next command from text output.
+    resultRules: resultRules(run),
   };
 }
 /**
@@ -285,6 +286,13 @@ function resultRules(run: Run): string[] {
       "A passed claim lists its successful steps from this run in steps and states what you saw in observed.",
       "Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.",
     );
+  for (const claim of claims) {
+    const named = claim.checks.filter((name) => run.profile.checks[name]);
+    if (named.length)
+      rules.push(
+        `Claim ${claim.id}: cite a successful step of ${named.map((name) => `check ${name}`).join(" and ")}.`,
+      );
+  }
   const behavior = ids("behavior");
   if (behavior.length)
     rules.push(
@@ -298,15 +306,21 @@ function resultRules(run: Run): string[] {
   const sideEffect = ids("side-effect");
   if (sideEffect.length)
     rules.push(
-      `Side-effect claims ${sideEffect.join(", ")}: set independentRead to the step ID of a later successful read that shows the completed state, and list that step in steps.`,
+      `Side-effect claims ${sideEffect.join(", ")}: list the action step and a later read in steps, and set independentRead to the read's step ID. An api read is a GET with a 2xx status other than 202; a db read is a read-only query that is not truncated.`,
     );
-  for (const control of controls)
+  if (controls.length)
     rules.push(
-      `Control ${control.id}: set failedStep to the step that shows the declared failure and restoredStep to a later passing step; set failedRun to the run that holds failedStep; claim ${control.claim} cites restoredStep and passes.`,
+      "Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control's claim passes and cites restoredStep.",
     );
+  for (const control of controls) {
+    const declared = control.command
+      ? `command ${control.command.join(" ")}${control.failure ? ` fails with ${control.failure.code}` : ""}`
+      : `assertion ${control.assertion ?? "(none declared)"}`;
+    rules.push(`Control ${control.id}: claim ${control.claim}, ${declared}.`);
+  }
   if (gates.length)
     rules.push(
-      `Gates ${gates.join(", ")}: list successful steps; to cite another run on the same source, add run; a gate fails when its step used a binding with another value.`,
+      `Gates ${gates.join(", ")}: list successful steps. To cite another run, add run: it needs the same source and profile and its evidence kept, and a gate fails when its step used a binding with another value.`,
     );
   return rules;
 }

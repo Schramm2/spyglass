@@ -421,7 +421,11 @@ function validateGates(
       });
     if (citedRun) {
       const differs = differentOverrides(citedRun, run);
-      const raw = citedRun.rawProfile ?? profileAsHashed(citedRun);
+      const stored = citedRun.rawProfile;
+      const raw =
+        stored && hash(JSON.stringify(stored)) === citedRun.profileHash
+          ? stored
+          : profileAsHashed(citedRun);
       if (!raw && differs.length)
         findings.push({
           code: "STEP_SOURCE_MISMATCH",

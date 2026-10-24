@@ -537,7 +537,13 @@ test("up shows the result rules that this plan's claims, controls and gates need
     gates: ["verify"],
     limits: [],
   };
-  const dir = await makeRepo({ profile: baseProfile(), plan: ruled });
+  const health = {
+    command: [process.execPath, "-e", "console.log('ok')"],
+  };
+  const dir = await makeRepo({
+    profile: baseProfile({ checks: { health } }),
+    plan: ruled,
+  });
   let run;
   try {
     const up = assertEnvelope(
@@ -547,11 +553,16 @@ test("up shows the result rules that this plan's claims, controls and gates need
     run = up.run;
     const rules = up.data.resultRules.join("\n");
     for (const [rule, text] of [
-      ["side-effect", /saved.*independentRead.*later successful read/],
+      ["named check", /Claim works: cite a successful step of check health/],
+      ["side-effect", /saved.*action step and a later read.*independentRead/],
       ["visual", /looks.*inspections.*viewport.*screenshot/],
       ["behavior", /works.*behavior check.*non-image evidence/],
-      ["control", /saved-fault.*failedStep.*restoredStep.*claim saved cites/],
-      ["gate", /verify.*successful steps.*run.*binding/],
+      [
+        "controls",
+        /failedStep.*restoredStep.*observedFailure.*cites restoredStep/,
+      ],
+      ["control", /Control saved-fault: claim saved, assertion health-ready/],
+      ["gate", /verify.*successful steps.*same source and profile.*binding/],
       ["artifact", /artifact path.*relative to the evidence folder/],
     ])
       assert.match(rules, text, `up must state the ${rule} rule: ${rules}`);
@@ -565,6 +576,41 @@ test("up shows the result rules that this plan's claims, controls and gates need
     assert.equal("inspections" in field("works"), false);
     const text = await runCli(dir, ["--run", run, "status"]);
     assert.match(text.stdout, /resultRules:/);
+  } finally {
+    if (run) await runCli(dir, ["--json", "down", "--run", run]);
+    await removeRepo(dir);
+  }
+});
+
+test("text output of a long plan keeps the whole next command", async () => {
+  const claims = Array.from({ length: 12 }, (_, index) => ({
+    ...plan.claims[0],
+    id: `checkout-journey-claim-${index}`,
+    kind: ["behavior", "visual", "side-effect"][index % 3],
+  }));
+  const long = {
+    claims,
+    controls: [0, 1, 2, 3, 4, 5].map((index) => ({
+      id: `checkout-journey-control-${index}`,
+      claim: `checkout-journey-claim-${index}`,
+      expectation: "A deliberate fault is detected.",
+      assertion: "health-ready",
+    })),
+    gates: ["lint", "unit", "e2e"],
+    limits: [],
+  };
+  const dir = await makeRepo({ profile: baseProfile(), plan: long });
+  let run;
+  try {
+    const up = await runCli(dir, ["up", "--plan", "plan.json"]);
+    assert.equal(up.code, 0, up.stderr);
+    run = up.stdout.match(/^id: (\S+)$/m)?.[1];
+    assert.ok(run, up.stdout);
+    assert.match(
+      up.stdout,
+      new RegExp(`^next: spyglass result --file \\S+ --run ${run}$`, "m"),
+      up.stdout,
+    );
   } finally {
     if (run) await runCli(dir, ["--json", "down", "--run", run]);
     await removeRepo(dir);
@@ -3058,7 +3104,32 @@ test("a gate from another run counts only on the same source, profile and used b
       JSON.stringify(otherHost),
       /whose step .* used binding host with a different value/,
     );
+    const runJson = await runRecord(dir, gateRun);
+    const original = await readFile(runJson, "utf8");
+    const withoutProfile = async () => {
+      const stored = JSON.parse(original);
+      delete stored.rawProfile;
+      await writeFile(runJson, JSON.stringify(stored));
+    };
+    const refusedOn = async (run, step, name) =>
+      assert.match(
+        JSON.stringify(
+          assertEnvelope(await record(run, gateRun, step), {
+            ok: false,
+            code: 1,
+          }),
+        ),
+        new RegExp(`whose step .* used binding ${name} with a different value`),
+      );
+    // A run from 1.1.0 kept no profile: the unchanged file gives the names.
+    await withoutProfile();
+    assertEnvelope(await record(ownPort, gateRun, checkGate.step), {
+      ok: true,
+      code: 0,
+    });
+    await refusedOn(otherTarget, checkGate.step, "target");
     // The run keeps its own profile, so an edited file changes nothing.
+    await writeFile(runJson, original);
     await writeJson(
       join(dir, "spyglass.json"),
       baseProfile({ launch: { mode: "none" } }),
@@ -3067,11 +3138,9 @@ test("a gate from another run counts only on the same source, profile and used b
       ok: true,
       code: 0,
     });
-    // A run from 1.1.0 kept no profile: every changed binding counts.
-    const runJson = await runRecord(dir, gateRun);
-    const stored = JSON.parse(await readFile(runJson, "utf8"));
-    delete stored.rawProfile;
-    await writeFile(runJson, JSON.stringify(stored));
+    await refusedOn(otherTarget, checkGate.step, "target");
+    // Without either, every changed binding counts.
+    await withoutProfile();
     const unread = assertEnvelope(
       await record(otherTarget, gateRun, gate.step),
       { ok: false, code: 1 },
