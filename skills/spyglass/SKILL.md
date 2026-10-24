@@ -166,8 +166,9 @@ can still accompany failed assertions. Control templates include
 `failedRun`; replace it with the earlier run ID for a retained failing baseline.
 Run the repository gates once for a source. Another run on the same source can
 cite those steps with `run` in its gate entry, even when each run has its own
-installation ports. A gate fails when the source or profile changed, or when
-its step used a binding with another value.
+external installation ports. A gate fails when the source or profile changed,
+or when its step used a binding with another value, including a binding of a
+launch that Spyglass owns.
 
 Use the repository owner's cleanup command for its resources. Record owner
 cleanup through the profile's cleanup check so the report can verify it. Then stop the

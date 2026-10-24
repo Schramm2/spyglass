@@ -2844,11 +2844,17 @@ test("a gate from another run counts only on the same source, profile and used b
         database: "app_${run}",
         target: "one",
         dsn: "db://${target}",
+        apiPort: "4100",
       },
+      api: "http://127.0.0.1:${apiPort}/api",
       checks: {
         "verify-target": {
           command: [process.execPath, "-e", "console.log(process.env.DSN)"],
           env: { DSN: "${dsn}" },
+        },
+        "verify-api": {
+          command: [process.execPath, "-e", "console.log(process.env.API)"],
+          env: { API: "${api}" },
         },
       },
     }),
@@ -2932,6 +2938,10 @@ test("a gate from another run counts only on the same source, profile and used b
       await runCli(dir, ["--json", "check", "--run", gateRun, "verify-target"]),
       { ok: true, code: 0 },
     );
+    const apiGate = assertEnvelope(
+      await runCli(dir, ["--json", "check", "--run", gateRun, "verify-api"]),
+      { ok: true, code: 0 },
+    );
     const startWith = async (...bindings) => {
       const run = assertEnvelope(
         await runCli(dir, [
@@ -2956,6 +2966,15 @@ test("a gate from another run counts only on the same source, profile and used b
       ok: true,
       code: 0,
     });
+    // A check that reads ${api} reads apiPort through the profile's api.
+    const otherApi = assertEnvelope(
+      await record(ownPort, gateRun, apiGate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(otherApi),
+      /whose step .* used binding apiPort with a different value/,
+    );
     // The named check reads target through dsn, so another target refuses it.
     const otherTarget = await startWith("target=two");
     assertEnvelope(await record(otherTarget, gateRun, gate.step), {
@@ -2969,6 +2988,79 @@ test("a gate from another run counts only on the same source, profile and used b
     assert.match(
       JSON.stringify(mismatch),
       /Gate verify cites run .* whose step .* used binding target with a different value/,
+    );
+  } finally {
+    for (const run of runsCreated)
+      await runCli(dir, ["--json", "down", "--run", run]);
+    await removeRepo(dir);
+  }
+});
+
+test("a binding of a launch that Spyglass owns blocks every cited gate step", async () => {
+  const dir = await makeRepo({
+    profile: baseProfile({
+      bindings: { mode: "live" },
+      launch: {
+        ...baseProfile().launch,
+        env: { PORT: "${port}", MODE: "${mode}" },
+      },
+    }),
+    plan: { claims: [], gates: ["verify"], limits: [] },
+  });
+  const runsCreated = [];
+  const start = async (...bindings) => {
+    const run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--plan",
+        "plan.json",
+        ...bindings.flatMap((binding) => ["--binding", binding]),
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    runsCreated.push(run);
+    return run;
+  };
+  try {
+    const gateRun = await start();
+    const gate = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "exec",
+        "--run",
+        gateRun,
+        "--",
+        process.execPath,
+        "-e",
+        "console.log('gate ok')",
+      ]),
+      { ok: true, code: 0 },
+    );
+    // The app that this exec gate could reach ran in another mode.
+    const stub = await start("mode=stub");
+    await writeJson(join(dir, "result.json"), {
+      operator: "agent",
+      claims: [],
+      gates: [
+        { name: "verify", outcome: "passed", run: gateRun, steps: [gate.step] },
+      ],
+      limits: [],
+    });
+    const refused = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "result",
+        "--run",
+        stub,
+        "--file",
+        "result.json",
+      ]),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(refused),
+      /whose step .* used binding mode with a different value/,
     );
   } finally {
     for (const run of runsCreated)

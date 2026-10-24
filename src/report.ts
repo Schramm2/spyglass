@@ -481,9 +481,11 @@ function citedGateRun(
  * The CLI binding overrides that differ between a cited run and this run, of
  * those the cited step read. Overrides are compared as given, before
  * templates: a per-run value such as app_${run} differs in every run without
- * changing what the gate checked. An `exec` command runs as given and reads
- * no binding. A named check reads the bindings its definition names, directly
- * or through other profile bindings. Any other step can read any binding.
+ * changing what the gate checked. Every step reads the bindings of a launch
+ * that Spyglass owns, because they configure the app the step could reach.
+ * An `exec` command runs as given and reads no other binding. A named check
+ * also reads the bindings its definition names, directly or through other
+ * bindings, `web`, `api` or `evidence`. Any other step reads every binding.
  */
 function differentBindings(cited: Run, run: Run, step: Step): string[] {
   const given = (item: Run, name: string) => item.bindingOverrides?.[name];
@@ -494,12 +496,15 @@ function differentBindings(cited: Run, run: Run, step: Step): string[] {
   const differs = [...names].filter(
     (name) => given(cited, name) !== given(run, name),
   );
-  if (step.command === "exec") return [];
   // The run keeps its profile after templates; the names are in the file.
   const raw = profileAsHashed(cited);
-  const check =
-    step.command === "check" ? raw?.checks[step.args[0] ?? ""] : undefined;
-  if (!raw || !check) return differs;
+  if (!raw) return differs;
+  const derived: Record<string, unknown> = {
+    ...raw.bindings,
+    web: raw.web,
+    api: raw.api,
+    evidence: raw.evidence,
+  };
   const read = new Set<string>();
   const visit = (value: unknown) => {
     for (const [, name] of JSON.stringify(value ?? "").matchAll(
@@ -507,10 +512,16 @@ function differentBindings(cited: Run, run: Run, step: Step): string[] {
     ))
       if (name && !read.has(name)) {
         read.add(name);
-        visit(raw.bindings?.[name]);
+        visit(derived[name]);
       }
   };
-  visit(check);
+  if (raw.launch.mode === "owned")
+    visit({ command: raw.launch.command, env: raw.launch.env });
+  if (step.command === "check") {
+    const check = raw.checks[step.args[0] ?? ""];
+    if (!check) return differs;
+    visit(check);
+  } else if (step.command !== "exec") return differs;
   return differs.filter((name) => read.has(name));
 }
 

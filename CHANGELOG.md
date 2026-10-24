@@ -9,10 +9,12 @@ This file records the notable changes to Spyglass. The format follows
 ### Fixed
 
 - A gate cited from another run compares only the binding overrides that its
-  steps used. An `exec` gate uses none, and a named check uses the bindings
-  its definition names. Runs with their own installation ports can now share
-  one gate run. A changed binding that a step used still fails the result and
-  names the binding.
+  steps used. Every step uses the bindings of a launch that Spyglass owns. An
+  `exec` gate uses no other binding, and a named check also uses the bindings
+  its definition names, including through `web` and `api`. Runs with their
+  own installation ports, under an external launch, can now share one gate
+  run. A changed binding that a step used still fails the result and names
+  the binding.
 
 ## [1.1.0] - 2026-10-23
 
