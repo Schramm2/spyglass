@@ -6,6 +6,8 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-24
+
 ### Added
 
 - `up` and `status` return `resultRules`: the rules that `result` enforces for
@@ -95,7 +97,8 @@ This file records the notable changes to Spyglass. The format follows
 - The agent skills `spyglass`, `create-verification-skill` and
   `maintain-verification-skill`.
 
-[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Schramm2/spyglass/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Schramm2/spyglass/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Schramm2/spyglass/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/Schramm2/spyglass/releases/tag/v0.1.0
