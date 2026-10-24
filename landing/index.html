@@ -23,9 +23,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="tokens.css" />
     <link rel="stylesheet" href="styles.css" />
-    <script>
-      document.documentElement.classList.add("js");
-    </script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
@@ -70,8 +67,9 @@
         </div>
       </section>
 
-      <!-- The lens: a spyglass passes over an agent's claim and shows the
-           step log that the run recorded underneath. Real quickstart output. -->
+      <!-- The lens: a spyglass passes over an example agent claim and shows
+           the step log that the run recorded underneath, which is real
+           quickstart output. -->
       <section class="lens" id="lens" aria-labelledby="lens-title">
         <div class="lens-stage">
           <div class="lens-head">
@@ -88,21 +86,19 @@
                 <span>Done. All checks</span>
                 <span>pass and it works.</span>
               </p>
-              <figcaption>The agent, in chat</figcaption>
+              <figcaption>An example claim from an agent's chat</figcaption>
             </figure>
 
             <div
               class="lens-evidence"
               data-ui
+              role="group"
               aria-label="What the run recorded"
             >
               <pre><code><span class="t-dim">$ spyglass check deliberate-failure --run terminal-trial</span>
-<span class="t-fail">CHECK_FAILED: Check deliberate-failure failed: one or more
-assertions failed; the structured result reports failure.</span>
-Next: Inspect the retained attempt and artifacts, correct the
-cause, then rerun the check.
+<span class="t-fail">CHECK_FAILED: Check deliberate-failure failed: one or more assertions failed; the structured result reports failure.</span>
+Next: Inspect the retained attempt and artifacts, correct the cause, then rerun the check.
 
-<span class="t-dim">$ spyglass check health --run terminal-trial</span>
 <span class="t-dim">$ spyglass status --run terminal-trial</span>
 "completedChecks": [
   { "name": "deliberate-failure", "step": "8cbb29c2-d61", <span class="t-fail">"status": "failed"</span> },
@@ -288,7 +284,7 @@ spyglass report --run terminal-trial</code></pre>
                 loading="lazy"
               />
             </figure>
-            <div class="run-term" data-ui aria-live="polite">
+            <div class="run-term" data-ui>
               <div class="term-bar">
                 <span class="term-dots" aria-hidden="true"
                   ><i></i><i></i><i></i
@@ -496,8 +492,10 @@ Next: Inspect the retained attempt and artifacts, correct the cause, then rerun 
                 <pre><code><span class="t-dim">$ spyglass exec -- git log --oneline -1</span>
 "exitCode": 0,
 "stdout": "08524b2 base\n",
-"path": "ee12d4e9-782-1-git-output.txt",
-"sha256": "0087caed43039ac921cdd657e058b669bc42fe6e4c9e9a9d32ae81c032136ed6"</code></pre>
+"artifacts": [{
+  "path": "ee12d4e9-782-1-git-output.txt",
+  "sha256": "0087caed43039ac921cdd657e058b669bc42fe6e4c9e9a9d32ae81c032136ed6"
+}]</code></pre>
               </div>
             </li>
             <li class="menu-item" data-keys="evidence add import artifact file">
@@ -510,7 +508,7 @@ Next: Inspect the retained attempt and artifacts, correct the cause, then rerun 
                   Copy a file from the evidence folder or a declared import
                   root. Spyglass keeps its checksum and the step that made it.
                 </p>
-                <pre><code><span class="t-dim">$ spyglass evidence add --step 123456 --file runs/owner/result.json --run change-42</span></code></pre>
+                <pre><code>spyglass evidence add --step STEP_ID --file PATH --run ID</code></pre>
               </div>
             </li>
           </ul>
@@ -535,7 +533,7 @@ Next: Inspect the retained attempt and artifacts, correct the cause, then rerun 
       </div>
 
       <!-- Opening window: the instrument, then the evidence folder. -->
-      <section class="opening" aria-labelledby="keep-title">
+      <div class="opening">
         <div class="opening-stage">
           <img
             src="assets/gen/spyglass-brass.jpg"
@@ -545,7 +543,7 @@ Next: Inspect the retained attempt and artifacts, correct the cause, then rerun 
             loading="lazy"
           />
         </div>
-      </section>
+      </div>
 
       <section class="keep wrap" aria-labelledby="keep-title">
         <div class="keep-copy">
@@ -864,7 +862,7 @@ Next: Inspect the retained attempt and artifacts, correct the cause, then rerun 
             a live app.
           </p>
           <div class="call" data-reveal>
-            <pre><code>spyglass status --run agent-handoff
+            <pre><code>spyglass status --run terminal-trial
 spyglass report --run terminal-trial --json</code></pre>
             <button class="copy" type="button" data-copy>Copy</button>
           </div>

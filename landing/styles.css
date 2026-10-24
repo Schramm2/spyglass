@@ -371,7 +371,7 @@ section {
   flex: none;
   min-height: 2.75rem;
   padding: 0 1rem;
-  border: 1px solid #444; /* taste-skill-ignore: a control inside a data-ui fragment */
+  border: 1px solid #444; /* a control inside a real interface fragment */
   border-radius: 8px;
   background: transparent;
   color: var(--ink);
@@ -431,14 +431,13 @@ section {
   display: grid;
   align-content: start;
   gap: 1.25rem;
-  opacity: 0.38;
   transition: opacity 500ms ease;
 }
 .run-step:last-child {
   min-height: auto;
 }
-.run-step.is-active {
-  opacity: 1;
+.js .run-step:not(.is-active) {
+  opacity: 0.38;
 }
 .run-step h3 {
   margin: 0;
@@ -453,7 +452,7 @@ section {
 .run-term {
   background: #050505;
   border-radius: var(--ui-radius);
-  border: 1px solid var(--ui-line); /* taste-skill-ignore: the terminal is a data-ui fragment */
+  border: 1px solid var(--ui-line); /* the terminal is a real interface fragment */
   overflow: hidden;
 }
 .term-bar {
@@ -597,18 +596,22 @@ pre.step-screen,
     background: var(--surface-2);
   }
 }
+/* Without the script every surface shows its body; with it, only the
+   selected one does. */
 .menu-body {
-  display: none;
-}
-.menu-item.is-open .menu-body {
   display: grid;
   grid-template-columns: 5fr 7fr;
   gap: var(--gutter);
   padding: 1.25rem 0.75rem 1.5rem;
-  background: var(--accent);
-  color: var(--accent-ink);
   border-radius: 0 0 6px 6px;
   margin-bottom: 0.5rem;
+}
+.js .menu-item:not(.is-open) .menu-body {
+  display: none;
+}
+.menu-item.is-open .menu-body {
+  background: var(--accent);
+  color: var(--accent-ink);
   animation: body-open 420ms var(--ease-out);
 }
 .menu-body p {
@@ -1349,7 +1352,7 @@ pre.step-screen,
     position: static;
     order: -1;
   }
-  .js .run-term {
+  .run.has-step-screens .run-term {
     display: none;
   }
   .run-step {
@@ -1357,7 +1360,7 @@ pre.step-screen,
     padding-bottom: 3rem;
     opacity: 1;
   }
-  .menu-item.is-open .menu-body {
+  .menu-body {
     grid-template-columns: 1fr;
   }
   .foot-top {

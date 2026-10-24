@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&display=swap"); /* taste-skill-ignore: Geist Mono sets code and pre only */
+/* Geist Mono sets code and pre only. */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&display=swap");
 
 /* Spyglass tokens, shared by the landing page and the docs. Black ground,
    white ink, one brass accent taken from the instrument. Fail and pass
@@ -25,7 +26,7 @@
 
   --font: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-code:
-    "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace; /* taste-skill-ignore: code and pre only */
+    "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace; /* code and pre only */
 
   --step-small: 0.9375rem;
   --step-body: 1.0625rem;
@@ -96,6 +97,10 @@ code {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+/* An author display rule must not undo the hidden attribute. */
+[hidden] {
+  display: none !important;
 }
 .sr-only {
   position: absolute;

@@ -1073,29 +1073,26 @@ spyglass report --run my-change --json          # write the offline report</code
               allowed run origins. Page output is marked as untrusted content.
               Run <code>spyglass ui --help</code> for all operations and limits.
             </p>
+            <p>
+              Evidence: an isolated session, screenshot, DOM, errors and
+              requests. Operations include:
+            </p>
             <ul>
+              <li><code>open PATH|URL</code></li>
+              <li><code>read [PATH|URL]</code></li>
+              <li><code>snapshot [-i|-c|--delta|--full]</code></li>
+              <li><code>proof LABEL</code></li>
               <li>
-                <code>open PATH|URL</code>: open a page. The browser accepts
-                only the configured origins.
+                <code>focused [--expect LABEL]</code>: records the focused
+                element's role, label, type and ID without its value.
+                <code>--expect</code> fails when the label differs.
               </li>
+              <li><code>login SEAT</code></li>
+              <li><code>screenshot PATH</code></li>
               <li>
-                <code>snapshot [-i|-c|--delta|--full]</code>: capture the page
-                state.
+                <code>console</code>, <code>errors</code>,
+                <code>network requests</code>
               </li>
-              <li>
-                <code>proof LABEL</code>: save browser evidence for the page
-                under LABEL. Inspect its screenshot.
-              </li>
-              <li>
-                <code>focused [--expect LABEL]</code>: record the focused
-                element's role, label and type without its value.
-                <code>--expect LABEL</code> fails when the label differs.
-              </li>
-              <li>
-                <code>login SEAT</code>: sign in with a seat, in an isolated
-                session.
-              </li>
-              <li><code>errors</code>: read the page errors.</li>
             </ul>
             <p>
               Use <code>spyglass down</code> to close run-owned sessions. A seat
@@ -1753,7 +1750,11 @@ spyglass schema result</code></pre>
           <h3>Codes in the output</h3>
           <p>
             These codes appear in command output and in the report for the most
-            common failures.
+            common failures. The CLI source in
+            <a href="https://github.com/Schramm2/spyglass/tree/main/src"
+              ><code>src/</code></a
+            >
+            defines them.
           </p>
           <div class="table-scroll">
             <table>

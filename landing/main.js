@@ -1,6 +1,6 @@
 // Spyglass landing page behaviour. Every piece works without this script:
 // the HTML already shows a complete, passing state, and the hidden starting
-// states in styles.css apply only under html.js with motion allowed.
+// states in styles.css apply only under html.js, which this script sets.
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -45,6 +45,11 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
     }, 2500),
   );
 })();
+
+// The hidden starting states in styles.css apply only under html.js. Set it
+// only after the observer that shows the content again is in place, so a
+// script that fails to load leaves the page fully visible.
+document.documentElement.classList.add("js");
 
 // Facts: each figure counts up once when it arrives.
 (() => {
@@ -226,26 +231,12 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 // Run: the step nearest the middle of the screen is active, and the held
 // terminal shows that step's recorded output.
 (() => {
+  const section = document.querySelector(".run");
   const steps = [...document.querySelectorAll(".run-step")];
   const screens = [...document.querySelectorAll(".term-screen")];
   // The drawing's tubes end at about 28% and 55% of its width.
   const scope = document.querySelector(".run-scope img");
-  if (!steps.length || !("IntersectionObserver" in window)) return;
-  const activate = (index) => {
-    steps.forEach((s, i) => s.classList.toggle("is-active", i === index));
-    screens.forEach((s, i) => s.classList.toggle("is-active", i === index));
-    if (scope) scope.style.setProperty("--extend", `${[72, 45, 0][index]}%`);
-  };
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) activate(steps.indexOf(entry.target));
-      }
-    },
-    { rootMargin: "-45% 0px -45% 0px" },
-  );
-  steps.forEach((s) => io.observe(s));
-  activate(0);
+  if (!section || !steps.length) return;
 
   // On a phone the held terminal would cover the steps: put a copy of each
   // step's recorded output under the step instead.
@@ -260,9 +251,31 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
         step.append(copy);
       } else if (!narrow.matches && copy) copy.remove();
     });
+    section.classList.toggle("has-step-screens", narrow.matches);
   };
   narrow.addEventListener("change", place);
   place();
+
+  const activate = (index) => {
+    steps.forEach((s, i) => s.classList.toggle("is-active", i === index));
+    screens.forEach((s, i) => s.classList.toggle("is-active", i === index));
+    if (scope) scope.style.setProperty("--extend", `${[72, 45, 0][index]}%`);
+  };
+  activate(0);
+  if (!("IntersectionObserver" in window)) {
+    // No scroll tracking: show every step at full strength.
+    steps.forEach((s) => s.classList.add("is-active"));
+    return;
+  }
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) activate(steps.indexOf(entry.target));
+      }
+    },
+    { rootMargin: "-45% 0px -45% 0px" },
+  );
+  steps.forEach((s) => io.observe(s));
 })();
 
 // Surfaces: a command menu. Typing filters the rows; arrow keys, hover and
