@@ -3065,6 +3065,46 @@ test("a binding of a launch that Spyglass owns blocks every cited gate step", as
       ]),
       { ok: true, code: 0 },
     );
+    const read = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "--run",
+        gateRun,
+        "api",
+        "GET",
+        "/health",
+        "--expect",
+        "401",
+      ]),
+      { ok: true, code: 0 },
+    );
+    // An API step can read any binding; an exec step reads only the launch's.
+    const extra = await start("extra=1");
+    const cite = (run, step) =>
+      writeJson(join(dir, "result.json"), {
+        operator: "agent",
+        claims: [],
+        gates: [
+          { name: "verify", outcome: "passed", run: gateRun, steps: [step] },
+        ],
+        limits: [],
+      }).then(() =>
+        runCli(dir, [
+          "--json",
+          "result",
+          "--run",
+          run,
+          "--file",
+          "result.json",
+        ]),
+      );
+    assertEnvelope(await cite(extra, gate.step), { ok: true, code: 0 });
+    assert.match(
+      JSON.stringify(
+        assertEnvelope(await cite(extra, read.step), { ok: false, code: 1 }),
+      ),
+      /whose step .* used binding extra with a different value/,
+    );
     // The app that this exec gate could reach ran in another mode.
     const stub = await start("mode=stub");
     await writeJson(join(dir, "result.json"), {
