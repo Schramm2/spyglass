@@ -140,8 +140,11 @@ cause, then rerun the check.
         </div>
         <dl class="facts-row">
           <div data-reveal>
-            <dt><span data-count="6">6</span> surfaces</dt>
-            <dd>Checks, browser, HTTP, PostgreSQL, Compose and commands.</dd>
+            <dt><span data-count="7">7</span> surfaces</dt>
+            <dd>
+              Checks, commands, browser, HTTP, PostgreSQL, Compose and imported
+              evidence.
+            </dd>
           </div>
           <div data-reveal>
             <dt><span data-count="4">4</span> exit codes</dt>
@@ -497,9 +500,23 @@ Next: Inspect the retained attempt and artifacts, correct the cause, then rerun 
 "sha256": "0087caed43039ac921cdd657e058b669bc42fe6e4c9e9a9d32ae81c032136ed6"</code></pre>
               </div>
             </li>
+            <li class="menu-item" data-keys="evidence add import artifact file">
+              <button type="button" class="menu-row" aria-expanded="false">
+                <span class="menu-name">Imported evidence</span>
+                <kbd>evidence</kbd>
+              </button>
+              <div class="menu-body">
+                <p>
+                  Copy a file from the evidence folder or a declared import
+                  root. Spyglass keeps its checksum and the step that made it.
+                </p>
+                <pre><code><span class="t-dim">$ spyglass evidence add --step 123456 --file runs/owner/result.json --run change-42</span></code></pre>
+              </div>
+            </li>
           </ul>
           <p class="menu-empty" id="surface-empty" hidden>
-            No surface matches. Import its evidence with
+            No surface matches. Run the tool with
+            <code>spyglass exec</code> or import its evidence with
             <code>spyglass evidence add</code>.
           </p>
         </div>

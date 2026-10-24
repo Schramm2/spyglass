@@ -492,6 +492,10 @@ section {
   padding: 1.125rem;
   border-radius: var(--ui-radius);
   background: #050505;
+}
+pre.step-screen,
+.step-screen pre {
+  margin: 0;
   font-size: 0.875rem;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -1343,6 +1347,7 @@ section {
      without the script the terminal stacks all three under the steps. */
   .run-hold {
     position: static;
+    order: -1;
   }
   .js .run-term {
     display: none;
