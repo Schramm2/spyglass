@@ -2834,13 +2834,23 @@ test("a control links a failed run from a fault worktree to the candidate in the
   }
 });
 
-test("a gate from another run counts only on the same source, profile and bindings", async () => {
+test("a gate from another run counts only on the same source, profile and used bindings", async () => {
   const matrix = { claims: [], gates: ["verify"], limits: [] };
   const dir = await makeRepo({
     profile: baseProfile({
       launch: { mode: "none" },
       // A per-run binding must not make every other run's gate a mismatch.
-      bindings: { database: "app_${run}" },
+      bindings: {
+        database: "app_${run}",
+        target: "one",
+        dsn: "db://${target}",
+      },
+      checks: {
+        "verify-target": {
+          command: [process.execPath, "-e", "console.log(process.env.DSN)"],
+          env: { DSN: "${dsn}" },
+        },
+      },
     }),
     plan: matrix,
   });
@@ -2918,25 +2928,47 @@ test("a gate from another run counts only on the same source, profile and bindin
       { ok: false, code: 1 },
     );
     assert.match(JSON.stringify(unknown), /Gate verify cites run no-such-run/);
-    const otherBinding = assertEnvelope(
-      await runCli(dir, [
-        "--json",
-        "up",
-        "--plan",
-        "plan.json",
-        "--binding",
-        "mode=stub",
-      ]),
+    const checkGate = assertEnvelope(
+      await runCli(dir, ["--json", "check", "--run", gateRun, "verify-target"]),
       { ok: true, code: 0 },
-    ).run;
-    runsCreated.push(otherBinding);
+    );
+    const startWith = async (...bindings) => {
+      const run = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "up",
+          "--plan",
+          "plan.json",
+          ...bindings.flatMap((binding) => ["--binding", binding]),
+        ]),
+        { ok: true, code: 0 },
+      ).run;
+      runsCreated.push(run);
+      return run;
+    };
+    // An installation's own port is a binding that no gate command uses.
+    const ownPort = await startWith("apiPort=4101");
+    assertEnvelope(await record(ownPort, gateRun, gate.step), {
+      ok: true,
+      code: 0,
+    });
+    assertEnvelope(await record(ownPort, gateRun, checkGate.step), {
+      ok: true,
+      code: 0,
+    });
+    // The named check reads target through dsn, so another target refuses it.
+    const otherTarget = await startWith("target=two");
+    assertEnvelope(await record(otherTarget, gateRun, gate.step), {
+      ok: true,
+      code: 0,
+    });
     const mismatch = assertEnvelope(
-      await record(otherBinding, gateRun, gate.step),
+      await record(otherTarget, gateRun, checkGate.step),
       { ok: false, code: 1 },
     );
     assert.match(
       JSON.stringify(mismatch),
-      /Gate verify cites run .* with a different profile or bindings/,
+      /Gate verify cites run .* whose step .* used binding target with a different value/,
     );
   } finally {
     for (const run of runsCreated)
