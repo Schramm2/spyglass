@@ -12,14 +12,14 @@ const details: Record<
     usage:
       "up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE]",
     description:
-      'Create a run with a fixed source baseline and a pending result template. Evidence must be Git-ignored and unique to the run. owned starts an app; external calls its owner doctor without starting owner resources; none runs checks without a server. Bind only non-secret values. Secret fields use env:, file:, dotenv:path#KEY or op:// references. Direct launch: up --cmd "npm run dev" --ready http://127.0.0.1:3000. Explore without a plan; a complete report requires claims.',
+      'Create a run with a fixed source baseline and a pending result template; its output lists resultRules for that template. Evidence must be Git-ignored and unique to the run. owned starts an app; external calls its owner doctor without starting owner resources; none runs checks without a server. Bind only non-secret values. Secret fields use env:, file:, dotenv:path#KEY or op:// references. Direct launch: up --cmd "npm run dev" --ready http://127.0.0.1:3000. Explore without a plan; a complete report requires claims.',
     example:
       "spyglass up --run change-42 --profile spyglass.json --plan verification-plan.json --binding ownerRun=example --json",
   },
   status: {
     usage: "status [--run ID]",
     description:
-      "List the runs of every worktree of the repository, or inspect one run: source, active command, completed checks, pending claims, capabilities, owner resources, cleanup and the next command. Inspection works while another operator drives the run. completedChecks names childExitCode (child process) and spyglassExitCode (Spyglass command); exitCode and commandExitCode remain aliases. A run whose worktree was removed shows worktreeRemoved; stop it with down from any worktree.",
+      "List the runs of every worktree of the repository, or inspect one run: source, active command, completed checks, pending claims, capabilities, owner resources, cleanup, the next command and resultRules, the rules that result enforces for this plan's claims, controls and gates. Inspection works while another operator drives the run. completedChecks names childExitCode (child process) and spyglassExitCode (Spyglass command); exitCode and commandExitCode remain aliases. A run whose worktree was removed shows worktreeRemoved; stop it with down from any worktree.",
     example: "spyglass status --run change-42 --json",
   },
   doctor: {
@@ -89,7 +89,7 @@ const details: Record<
   result: {
     usage: "result --file PATH --run ID",
     description:
-      "Read the edited result template printed by up. Validate claim IDs, cited steps and artifacts, visual inspection, independent reads, gates and predeclared negative controls. For multiple viewports use inspections with viewport, expected, observed and artifact for each cited screenshot. The single inspection remains supported. Controls include failedRun; replace its current run ID when the failure belongs to an earlier run, also one from another worktree of the repository. Keep that worktree until the report. A gate can name run, another run with the same source identity, profile and bindings whose steps prove it. Use spyglass schema result for the full shape. Recording a result does not complete cleanup or certify semantic coverage.",
+      "Read the edited result template printed by up. Validate claim IDs, cited steps and artifacts, visual inspection, independent reads, gates and predeclared negative controls. For multiple viewports use inspections with viewport, expected, observed and artifact for each cited screenshot. The single inspection remains supported. Controls include failedRun; replace its current run ID when the failure belongs to an earlier run, also one from another worktree of the repository. Keep that worktree until the report. A gate can name run, another run with the same source identity and profile whose steps prove it; it fails when its step used a binding with another value. status and up list the rules for this plan in resultRules. Use spyglass schema result for the full shape. Recording a result does not complete cleanup or certify semantic coverage.",
     example:
       "spyglass result --file .spyglass/runs/change-42/spyglass/result.json --run change-42 --json",
   },

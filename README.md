@@ -132,7 +132,8 @@ handler and the same exit code.
 
 `--run ID` selects a run across shell calls. You can also set `SPYGLASS_RUN`;
 `--run` has priority. `spyglass status --run ID` shows the handoff state of a
-run. `completedChecks.childExitCode` is the child process exit code;
+run. Its `resultRules`, also in the output of `up`, list what this plan's claims,
+controls and gates need in the result. `completedChecks.childExitCode` is the child process exit code;
 `completedChecks.spyglassExitCode` is the Spyglass command exit code. A child
 can exit zero while Spyglass rejects failed assertions. The earlier `exitCode`
 and `commandExitCode` fields remain as aliases.

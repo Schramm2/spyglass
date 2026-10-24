@@ -127,6 +127,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     profile,
     profilePath,
     profileHash: hash(JSON.stringify(raw)),
+    rawProfile: raw,
     bindingOverrides: opts.bindings,
     source: source(repo, profile),
     port,
@@ -185,6 +186,8 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
         steps: [],
         observed: "",
         artifacts: [],
+        ...(c.kind === "side-effect" ? { independentRead: "" } : {}),
+        ...(c.kind === "visual" ? { inspections: [] } : {}),
       })),
       gates: plan.gates.map((name) => ({
         name,
@@ -264,7 +267,73 @@ export function status(run: Run): Record<string, unknown> {
       cleanupRequired: !run.ownerCleaned,
     },
     next: nextCommand(run),
+    // Last, so a long list never cuts the next command from text output.
+    resultRules: resultRules(run),
   };
+}
+/**
+ * The rules that `result` enforces for this plan, named by claim, control and
+ * gate, so an operator fills the template once instead of learning each rule
+ * from a refused submission.
+ */
+function resultRules(run: Run): string[] {
+  const { claims, controls, gates } = run.plan;
+  const ids = (kind: string) =>
+    claims.filter((c) => c.kind === kind).map((c) => c.id);
+  // A rule applies alike to each claim it names, so a long list stays short.
+  const list = (names: string[]) =>
+    names.length > 8
+      ? `${names.slice(0, 8).join(", ")} and ${names.length - 8} more`
+      : names.join(", ");
+  const rules: string[] = [];
+  if (claims.length)
+    rules.push(
+      "A passed claim lists its successful steps from this run in steps and states what you saw in observed.",
+      "Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.",
+    );
+  const byCheck = new Map<string, string[]>();
+  for (const claim of claims)
+    for (const name of claim.checks)
+      if (run.profile.checks[name])
+        byCheck.set(name, [...(byCheck.get(name) ?? []), claim.id]);
+  for (const [name, cited] of byCheck)
+    rules.push(
+      `Claims ${list(cited)}: cite a successful step of check ${name}.`,
+    );
+  const behavior = ids("behavior");
+  if (behavior.length)
+    rules.push(
+      `Behavior claims ${list(behavior)}: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.`,
+    );
+  const visual = ids("visual");
+  if (visual.length)
+    rules.push(
+      `Visual claims ${list(visual)}: fill inspections with the viewport, expected, observed and a screenshot artifact from a cited step.`,
+    );
+  const sideEffect = ids("side-effect");
+  if (sideEffect.length)
+    rules.push(
+      `Side-effect claims ${list(sideEffect)}: list the action step and a later read in steps, and set independentRead to the read's step ID. An api read is a GET with a 2xx status other than 202; a db read is a read-only query that is not truncated.`,
+    );
+  if (controls.length)
+    rules.push(
+      "Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control's claim passes and cites restoredStep.",
+    );
+  for (const control of controls) {
+    // The same choice as the control check in report.ts.
+    const declared =
+      control.command && control.failure && !control.assertion
+        ? `command ${control.command.join(" ")} fails with ${control.failure.code} containing "${control.failure.contains}"`
+        : control.assertion && !control.command && !control.failure
+          ? `assertion ${control.assertion}`
+          : "cannot pass: the plan must declare either an assertion or a command with an expected failure";
+    rules.push(`Control ${control.id}: claim ${control.claim}, ${declared}.`);
+  }
+  if (gates.length)
+    rules.push(
+      `Gates ${gates.join(", ")}: list successful steps. To cite another run, add run: it needs the same source and profile and its evidence kept, and a gate fails when its step used a binding with another value.`,
+    );
+  return rules;
 }
 function nextCommand(run: Run): string {
   if (run.plan.claims.length && !run.result)
@@ -444,10 +513,11 @@ export async function doctor(ctx: Context): Promise<Record<string, unknown>> {
   if (Object.keys(ctx.run.sessions).length || ctx.run.browserProxy)
     browser = await (await import("./browser.js")).browserDoctor(ctx);
   ctx.run.lastDoctor = ctx.step.id;
+  const { resultRules: _rules, ...state } = status(ctx.run);
   return {
     ready: true,
     environment,
-    ...status(ctx.run),
+    ...state,
     ...(database ? { database } : {}),
     ...(browser ?? {}),
   };

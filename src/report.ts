@@ -421,8 +421,11 @@ function validateGates(
       });
     if (citedRun) {
       const differs = differentOverrides(citedRun, run);
-      // The run keeps its profile after templates; the names are in the file.
-      const raw = profileAsHashed(citedRun);
+      const stored = citedRun.rawProfile;
+      const raw =
+        stored && hash(JSON.stringify(stored)) === citedRun.profileHash
+          ? stored
+          : profileAsHashed(citedRun);
       if (!raw && differs.length)
         findings.push({
           code: "STEP_SOURCE_MISMATCH",
@@ -546,7 +549,10 @@ function readBindings(
   return differs.filter((name) => read.has(name));
 }
 
-/** The run's profile file before templates, if it is still the one it hashed. */
+/**
+ * A run from 1.1.0 kept only its profile after templates, so the binding names
+ * come from its profile file, if that is still the one it hashed.
+ */
 function profileAsHashed(run: Run): Profile | undefined {
   try {
     const raw = loadProfile(run.profilePath);

@@ -50,7 +50,8 @@ that those steps completed and that the artifacts exist with their checksums,
 so a claim cannot pass on a statement alone. An agent normally writes this
 file; in this trial, you write it.
 
-Open `.spyglass/runs/terminal-trial/spyglass/result.json` in your editor. Set
+The `resultRules` that `up` printed list what this plan's claim and control
+need. Open `.spyglass/runs/terminal-trial/spyglass/result.json` in your editor. Set
 `operator` to `human`. For `health-ready`, set `outcome` to `passed`, copy the
 health step ID into `steps`, and copy its artifact path into `artifacts`.
 Write your observation in `observed`.

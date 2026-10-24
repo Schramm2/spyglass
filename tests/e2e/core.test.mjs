@@ -13,6 +13,7 @@ import {
   readRunFile,
   removeRepo,
   runCli,
+  runRecord,
   spawnCapture,
   startCli,
   waitFor,
@@ -515,6 +516,131 @@ test("a source change blocks later evidence from claiming the original run is cu
     if (run) await runCli(dir, ["--json", "--run", run, "down"]);
     await removeRepo(dir);
   }
+});
+
+test("up shows the result rules that this plan's claims, controls and gates need", async () => {
+  const claim = (id, kind) => ({ ...plan.claims[0], id, kind });
+  const ruled = {
+    claims: [
+      claim("saved", "side-effect"),
+      claim("looks", "visual"),
+      claim("works", "behavior"),
+    ],
+    controls: [
+      {
+        id: "saved-fault",
+        claim: "saved",
+        expectation: "A broken save is refused.",
+        assertion: "health-ready",
+      },
+      { id: "loose", claim: "works", expectation: "Nothing is declared." },
+    ],
+    gates: ["verify"],
+    limits: [],
+  };
+  const health = {
+    command: [process.execPath, "-e", "console.log('ok')"],
+  };
+  const dir = await makeRepo({
+    profile: baseProfile({ checks: { health } }),
+    plan: ruled,
+  });
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--plan", "plan.json"]),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    const rules = up.data.resultRules.join("\n");
+    for (const [rule, text] of [
+      [
+        "named check",
+        /Claims saved, looks, works: cite a successful step of check health\./,
+      ],
+      ["undeclared control", /Control loose: claim works, cannot pass/],
+      ["side-effect", /saved.*action step and a later read.*independentRead/],
+      ["visual", /looks.*inspections.*viewport.*screenshot/],
+      ["behavior", /works.*behavior check.*non-image evidence/],
+      [
+        "controls",
+        /failedStep.*restoredStep.*observedFailure.*cites restoredStep/,
+      ],
+      ["control", /Control saved-fault: claim saved, assertion health-ready/],
+      ["gate", /verify.*successful steps.*same source and profile.*binding/],
+      ["artifact", /artifact path.*relative to the evidence folder/],
+    ])
+      assert.match(rules, text, `up must state the ${rule} rule: ${rules}`);
+    const template = JSON.parse(
+      await readFile(join(dir, up.data.result), "utf8"),
+    );
+    const field = (id) => template.claims.find((c) => c.id === id);
+    assert.equal(field("saved").independentRead, "");
+    assert.deepEqual(field("looks").inspections, []);
+    assert.equal("independentRead" in field("works"), false);
+    assert.equal("inspections" in field("works"), false);
+    const text = await runCli(dir, ["--run", run, "status"]);
+    assert.match(text.stdout, /resultRules:/);
+  } finally {
+    if (run) await runCli(dir, ["--json", "down", "--run", run]);
+    await removeRepo(dir);
+  }
+});
+
+test("text output keeps the whole next command and the result rules of a plan", async () => {
+  const planOf = (claimCount, controlCount, prefix) => ({
+    claims: Array.from({ length: claimCount }, (_, index) => ({
+      ...plan.claims[0],
+      id: `${prefix}claim-${index}`,
+      kind: ["behavior", "visual", "side-effect"][index % 3],
+    })),
+    controls: Array.from({ length: controlCount }, (_, index) => ({
+      id: `${prefix}control-${index}`,
+      claim: `${prefix}claim-${index}`,
+      expectation: "A deliberate fault is detected.",
+      assertion: "health-ready",
+    })),
+    gates: ["lint", "unit", "e2e"],
+    limits: [],
+  });
+  const textUp = async (shape) => {
+    const dir = await makeRepo({
+      profile: baseProfile({
+        checks: { health: { command: [process.execPath, "-e", "0"] } },
+      }),
+      plan: shape,
+    });
+    let run;
+    try {
+      const up = await runCli(dir, ["up", "--plan", "plan.json"]);
+      assert.equal(up.code, 0, up.stderr);
+      run = up.stdout.match(/^id: (\S+)$/m)?.[1];
+      assert.ok(run, up.stdout);
+      assert.match(
+        up.stdout,
+        new RegExp(`^next: spyglass result --file \\S+ --run ${run}$`, "m"),
+        up.stdout,
+      );
+      assert.ok(up.stdout.length < 4000, "text output must stay bounded");
+      assert.match(
+        up.stdout,
+        /^  cleanupRequired: (?:true|false)$/m,
+        up.stdout,
+      );
+      return up.stdout;
+    } finally {
+      if (run) await runCli(dir, ["--json", "down", "--run", run]);
+      await removeRepo(dir);
+    }
+  };
+  // A plan of usual size shows every rule.
+  const usual = await textUp(planOf(6, 2, ""));
+  assert.match(usual, /- Control control-1: claim claim-1/, usual);
+  assert.match(usual, /- Gates lint, unit, e2e: list successful steps/, usual);
+  assert.doesNotMatch(usual, /Full rules:/, usual);
+  // A long plan cuts the rules and says where the full list is.
+  const long = await textUp(planOf(12, 6, "checkout-journey-"));
+  assert.match(long, /… Full rules: \S+log\.jsonl/, long);
 });
 
 test("an incomplete claim matrix produces a readable report and stays incomplete", async () => {
@@ -3004,11 +3130,56 @@ test("a gate from another run counts only on the same source, profile and used b
       JSON.stringify(otherHost),
       /whose step .* used binding host with a different value/,
     );
-    // Without the profile as hashed, every changed binding counts.
+    const runJson = await runRecord(dir, gateRun);
+    const original = await readFile(runJson, "utf8");
+    const withoutProfile = async () => {
+      const stored = JSON.parse(original);
+      delete stored.rawProfile;
+      await writeFile(runJson, JSON.stringify(stored));
+    };
+    const refusedOn = async (run, step, name) =>
+      assert.match(
+        JSON.stringify(
+          assertEnvelope(await record(run, gateRun, step), {
+            ok: false,
+            code: 1,
+          }),
+        ),
+        new RegExp(`whose step .* used binding ${name} with a different value`),
+      );
+    // A run from 1.1.0 kept no profile: the unchanged file gives the names.
+    await withoutProfile();
+    assertEnvelope(await record(ownPort, gateRun, checkGate.step), {
+      ok: true,
+      code: 0,
+    });
+    await refusedOn(otherTarget, checkGate.step, "target");
+    // The run keeps its own profile, so an edited file changes nothing.
+    await writeFile(runJson, original);
     await writeJson(
       join(dir, "spyglass.json"),
       baseProfile({ launch: { mode: "none" } }),
     );
+    assertEnvelope(await record(otherTarget, gateRun, gate.step), {
+      ok: true,
+      code: 0,
+    });
+    await refusedOn(otherTarget, checkGate.step, "target");
+    // A stored profile that does not hash to the run's profile is not used.
+    const tampered = JSON.parse(original);
+    tampered.rawProfile.bindings.target = "two";
+    await writeFile(runJson, JSON.stringify(tampered));
+    assert.match(
+      JSON.stringify(
+        assertEnvelope(await record(otherTarget, gateRun, gate.step), {
+          ok: false,
+          code: 1,
+        }),
+      ),
+      /whose profile file is no longer the one it hashed/,
+    );
+    // Without either, every changed binding counts.
+    await withoutProfile();
     const unread = assertEnvelope(
       await record(otherTarget, gateRun, gate.step),
       { ok: false, code: 1 },
