@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Spyglass: proof for every code change</title>
+    <title>Spyglass: see what really ran</title>
     <meta
       name="description"
       content="Spyglass is a CLI for coding agents and their reviewers. It verifies code changes with real tools and keeps the evidence."
@@ -18,172 +18,282 @@
       content="https://raw.githubusercontent.com/Schramm2/spyglass/main/landing/assets/social-preview.png"
     />
     <meta name="theme-color" content="#000000" />
-    <link rel="icon" href="assets/logo-mark-white.png" />
+    <link rel="icon" href="assets/logo-mark-brass.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap"
-    />
+    <link rel="stylesheet" href="tokens.css" />
     <link rel="stylesheet" href="styles.css" />
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
-    <header class="bar wrap">
+    <header class="corner" id="top">
       <a class="brand" href="#top" aria-label="Spyglass home">
-        <img src="assets/logo-mark-white.png" alt="" width="32" height="32" />
+        <img src="assets/logo-mark.svg" alt="" width="28" height="28" />
         <span>Spyglass</span>
       </a>
-      <nav aria-label="Main">
-        <a href="#how">How it works</a>
+      <nav class="corner-links" aria-label="Main">
+        <a href="#run">How it works</a>
         <a href="#surfaces">Surfaces</a>
-        <a href="#report">Report</a>
-        <a class="bar-cta" href="https://github.com/Schramm2/spyglass"
-          >GitHub</a
-        >
+        <a href="docs/">Docs</a>
+        <a href="https://github.com/Schramm2/spyglass">GitHub</a>
       </nav>
     </header>
 
     <main id="main">
-      <!-- Hero: the page checks one real artifact from a real run -->
-      <section class="hero" id="top">
-        <div class="hero-copy wrap">
-          <h1 class="lines">
-            <span class="line"
-              ><span data-line style="--i: 0">Proof for every</span></span
-            >
-            <span class="line"
-              ><span data-line style="--i: 1">code change</span></span
-            >
-          </h1>
-          <p class="hero-lead" data-after-lines>
-            Spyglass is a CLI for coding agents and the people who review their
-            work. It verifies code changes with real tools and keeps the
-            evidence.
+      <!-- Hero: type only. The two lines step across the screen. -->
+      <section class="hero" aria-labelledby="hero-title">
+        <h1 class="hero-title lines" id="hero-title">
+          <span class="line line-a"
+            ><span data-line style="--i: 0">See what</span></span
+          >
+          <span class="line line-b"
+            ><span data-line style="--i: 1">really ran</span></span
+          >
+        </h1>
+        <div class="hero-foot">
+          <p class="hero-lead" data-load style="--d: 520ms">
+            Spyglass is a CLI that verifies a coding agent's change with a real
+            browser, HTTP, PostgreSQL and your own checks, and keeps the
+            evidence after cleanup.
           </p>
-          <div class="actions" data-after-lines>
-            <a
-              class="button"
-              href="https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md"
-              >Start the quickstart</a
+          <a
+            class="button"
+            data-load
+            style="--d: 600ms"
+            href="https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md"
+            >Start the quickstart</a
+          >
+        </div>
+      </section>
+
+      <!-- The lens: a spyglass passes over an agent's claim and shows the
+           step log that the run recorded underneath. Real quickstart output. -->
+      <section class="lens" id="lens" aria-labelledby="lens-title">
+        <div class="lens-stage">
+          <div class="lens-head">
+            <h2 id="lens-title" class="head">Look closer</h2>
+            <p class="lens-note">
+              An agent says it is done. Under the claim is what the run
+              recorded.
+            </p>
+          </div>
+
+          <div class="lens-field" id="lens-field">
+            <figure class="lens-claim" aria-label="What the agent says">
+              <p class="claim-text">
+                <span>Done. All checks</span>
+                <span>pass and it works.</span>
+              </p>
+              <figcaption>The agent, in chat</figcaption>
+            </figure>
+
+            <div
+              class="lens-evidence"
+              data-ui
+              aria-label="What the run recorded"
             >
-            <a class="link" href="https://github.com/Schramm2/spyglass"
-              >View the source</a
-            >
+              <pre><code><span class="t-dim">$ spyglass check deliberate-failure --run terminal-trial</span>
+<span class="t-fail">CHECK_FAILED: Check deliberate-failure failed: one or more
+assertions failed; the structured result reports failure.</span>
+Next: Inspect the retained attempt and artifacts, correct the
+cause, then rerun the check.
+
+<span class="t-dim">$ spyglass check health --run terminal-trial</span>
+<span class="t-dim">$ spyglass status --run terminal-trial</span>
+"completedChecks": [
+  { "name": "deliberate-failure", "step": "8cbb29c2-d61", <span class="t-fail">"status": "failed"</span> },
+  { "name": "health", "step": "b97266d0-842", <span class="t-pass">"status": "passed"</span> }
+]</code></pre>
+            </div>
+
+            <img
+              class="lens-ring"
+              src="assets/gen/lens-ring.webp"
+              alt=""
+              width="812"
+              height="812"
+            />
+          </div>
+
+          <p class="lens-foot">
+            Both attempts stay in
+            <code>.spyglass/runs/terminal-trial/spyglass/log.jsonl</code>. The
+            failed one is not erased by the pass.
+          </p>
+        </div>
+      </section>
+
+      <!-- Facts: the numbers that define the tool, from the README and docs. -->
+      <section class="facts wrap" aria-labelledby="facts-title">
+        <div class="facts-top">
+          <h2 id="facts-title" class="facts-title" data-reveal>
+            Real tools, kept proof
+          </h2>
+          <p class="facts-note" data-reveal>
+            Each verification step becomes a recorded fact with its source
+            identity, its artifacts and their checksums. No mocks.
+          </p>
+        </div>
+        <dl class="facts-row">
+          <div data-reveal>
+            <dt><span data-count="6">6</span> surfaces</dt>
+            <dd>Checks, browser, HTTP, PostgreSQL, Compose and commands.</dd>
+          </div>
+          <div data-reveal>
+            <dt><span data-count="4">4</span> exit codes</dt>
+            <dd>Success, failed verification, bad input, environment.</dd>
+          </div>
+          <div data-reveal>
+            <dt><span data-count="91.7" data-decimals="1">91.7</span> ms</dt>
+            <dd>Median time a browser command adds. The budget is 150 ms.</dd>
+          </div>
+          <div data-reveal>
+            <dt><span data-count="0">0</span> prompts</dt>
+            <dd>Versioned JSON with <code>--json</code>. Built for agents.</dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- Live: the visitor's browser hashes a retained screenshot. -->
+      <section
+        class="integrity wrap"
+        id="integrity"
+        aria-labelledby="integrity-title"
+      >
+        <div class="integrity-copy">
+          <h2 id="integrity-title" class="head" data-reveal>
+            Check it yourself
+          </h2>
+          <p data-reveal>
+            This is a real screenshot that
+            <code>spyglass ui proof home</code> kept in the demo run
+            <code>terminal-trial</code>. Your browser hashes the file now and
+            compares it with the checksum in the run log. Change one byte and
+            the report refuses it.
+          </p>
+        </div>
+        <div class="integrity-card" id="integrity-card" data-ui data-reveal>
+          <div class="integrity-shot">
+            <img
+              id="artifact-img"
+              src="assets/proof-home.png"
+              alt="The demo app's Sign in page, as the Spyglass browser captured it."
+              width="1280"
+              height="577"
+            />
+            <svg class="seal" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="54" />
+              <path d="M38 61 l15 15 l30 -32" />
+            </svg>
+          </div>
+          <dl class="ui-rows">
+            <div>
+              <dt>artifact</dt>
+              <dd>5006265f-e3c-1-proof-home.png</dd>
+            </div>
+            <div>
+              <dt>step</dt>
+              <dd>ui proof home</dd>
+            </div>
+            <div>
+              <dt>recorded sha256</dt>
+              <dd>
+                <code class="hash" id="hash-recorded"
+                  >d2af3e3fcfcdfce5361e46296d767c221463bee746126fb2220172ad1f597785</code
+                >
+              </dd>
+            </div>
+            <div>
+              <dt>this browser</dt>
+              <dd id="hash-now" aria-live="polite">
+                Computed when scripts run.
+              </dd>
+            </div>
+          </dl>
+          <div class="integrity-foot">
+            <p class="verdict" id="verdict" aria-live="polite">
+              The run log recorded this checksum when the browser took the
+              screenshot.
+            </p>
+            <button class="ui-button" id="tamper" type="button" hidden>
+              Change one byte
+            </button>
           </div>
         </div>
-
-        <figure class="hero-stage">
-          <div class="integrity" data-ui>
-            <div class="ui-head">
-              <span>artifact integrity</span>
-              <span class="ui-dim">run terminal-trial</span>
-            </div>
-            <div class="integrity-shot">
-              <img
-                id="artifact-img"
-                src="assets/proof-home.png"
-                alt="The demo app's Sign in page, as the Spyglass browser captured it."
-                width="1280"
-                height="577"
-              />
-            </div>
-            <dl class="ui-rows">
-              <div>
-                <dt>artifact</dt>
-                <dd>5006265f-e3c-1-proof-home.png</dd>
-              </div>
-              <div>
-                <dt>step</dt>
-                <dd>ui proof home</dd>
-              </div>
-              <div>
-                <dt>recorded sha256</dt>
-                <dd>
-                  <code class="hash" id="hash-recorded"
-                    >d2af3e3fcfcdfce5361e46296d767c221463bee746126fb2220172ad1f597785</code
-                  >
-                </dd>
-              </div>
-              <div>
-                <dt>this browser</dt>
-                <dd id="hash-now" aria-live="polite">
-                  Computed when scripts run.
-                </dd>
-              </div>
-            </dl>
-            <div class="integrity-foot">
-              <p class="verdict" id="verdict" aria-live="polite">
-                The run log recorded this checksum when the browser took the
-                screenshot.
-              </p>
-              <button class="ui-button" id="tamper" type="button" hidden>
-                Change one byte
-              </button>
-            </div>
-          </div>
-          <figcaption class="stage-note">
-            A real screenshot that <code>spyglass ui proof home</code> kept in
-            the demo run terminal-trial. Your browser hashes the file now and
-            compares it with the checksum in the run log.
-          </figcaption>
-        </figure>
       </section>
 
-      <!-- Intro statement -->
-      <section class="intro wrap" aria-labelledby="why-title">
-        <h2 id="why-title" class="intro-title" data-reveal>
-          A statement is not proof
-        </h2>
-        <p class="statement" data-reveal>
-          An agent says the tests pass
-          <span
-            class="thumb thumb-terminal"
-            role="img"
-            aria-label="terminal"
-          ></span>
-          and the page works
-          <span
-            class="thumb thumb-page"
-            role="img"
-            aria-label="screenshot"
-          ></span
-          >. Spyglass keeps the step, the evidence
-          <span
-            class="thumb thumb-print"
-            role="img"
-            aria-label="checksum"
-          ></span>
-          and every failed attempt.
-        </p>
-      </section>
-
-      <!-- How it works -->
-      <section class="how" id="how" aria-labelledby="how-title">
+      <!-- How a run works: the steps pass while the terminal holds. -->
+      <section class="run" id="run" aria-labelledby="run-title">
         <div class="wrap">
-          <h2 id="how-title" class="head" data-reveal>
+          <h2 id="run-title" class="head" data-reveal>
             One run, start to finish
           </h2>
-          <figure class="how-figure" data-reveal>
-            <img
-              src="assets/how-it-works.png"
-              alt="One run: a code change, verified with real tools (browser, HTTP, database and checks), gives evidence (screenshots, logs, rows and checksums), and the evidence goes into a report."
-              width="1600"
-              height="560"
-              loading="lazy"
-            />
-          </figure>
-
-          <ol class="exchanges">
-            <li class="exchange" data-reveal>
-              <p class="say">First, start a run on the source you have.</p>
+        </div>
+        <div class="run-story wrap">
+          <ol class="run-steps">
+            <li class="run-step is-active" data-step="0">
+              <h3>Start a run on the source you have</h3>
+              <p>
+                <code>up</code> records the commit and the working-tree hash.
+                Evidence from changed source cannot prove a claim about this
+                source.
+              </p>
               <div class="call">
                 <pre><code>spyglass up --run terminal-trial --plan verification-plan.json</code></pre>
                 <button class="copy" type="button" data-copy>Copy</button>
               </div>
-              <div class="response" data-ui>
-                <pre><code>{
+            </li>
+            <li class="run-step" data-step="1">
+              <h3>Drive real tools</h3>
+              <p>
+                Run checks, the browser, HTTP and database reads. A failed
+                attempt stays in the record next to the pass.
+              </p>
+              <div class="call">
+                <pre><code>spyglass check deliberate-failure --run terminal-trial
+spyglass check health --run terminal-trial
+spyglass status --run terminal-trial</code></pre>
+                <button class="copy" type="button" data-copy>Copy</button>
+              </div>
+            </li>
+            <li class="run-step" data-step="2">
+              <h3>Record, clean up, report</h3>
+              <p>
+                Name the steps that prove each claim. The report stays
+                incomplete until the proof exists and cleanup is done.
+              </p>
+              <div class="call">
+                <pre><code>spyglass result --run terminal-trial --file .spyglass/runs/terminal-trial/spyglass/result.json
+spyglass down --run terminal-trial
+spyglass report --run terminal-trial</code></pre>
+                <button class="copy" type="button" data-copy>Copy</button>
+              </div>
+            </li>
+          </ol>
+
+          <div class="run-hold">
+            <figure class="run-scope">
+              <img
+                src="assets/gen/cross-section.jpg"
+                alt="A drawn cross-section of a collapsible telescope: an eyepiece tube, a middle draw tube and the objective tube with its lens."
+                width="2172"
+                height="430"
+                loading="lazy"
+              />
+            </figure>
+            <div class="run-term" data-ui aria-live="polite">
+              <div class="term-bar">
+                <span class="term-dots" aria-hidden="true"
+                  ><i></i><i></i><i></i
+                ></span>
+                <span class="term-title">terminal-trial</span>
+              </div>
+              <div class="term-screens">
+                <pre class="term-screen is-active" data-screen="0"><code>{
   "id": "terminal-trial",
   "state": "ready",
   "source": {
@@ -194,237 +304,378 @@
   "result": ".spyglass/runs/terminal-trial/spyglass/result.json",
   "next": "spyglass result --file .spyglass/runs/terminal-trial/spyglass/result.json --run terminal-trial"
 }</code></pre>
-              </div>
-            </li>
-
-            <li class="exchange" data-reveal>
-              <p class="say">
-                Then drive real tools. A failed attempt stays in the record.
-              </p>
-              <div class="call">
-                <pre><code>spyglass check deliberate-failure --run terminal-trial
-spyglass check health --run terminal-trial
-spyglass status --run terminal-trial</code></pre>
-                <button class="copy" type="button" data-copy>Copy</button>
-              </div>
-              <div class="response" data-ui>
-                <pre><code><span class="t-fail">CHECK_FAILED: Check deliberate-failure failed: one or more assertions failed; the structured result reports failure.</span>
+                <pre
+                  class="term-screen"
+                  data-screen="1"
+                ><code><span class="t-fail">CHECK_FAILED: Check deliberate-failure failed: one or more assertions failed; the structured result reports failure.</span>
 Next: Inspect the retained attempt and artifacts, correct the cause, then rerun the check.
 
 "completedChecks": [
   { "name": "deliberate-failure", "step": "8cbb29c2-d61", "status": "failed" },
   { "name": "health", "step": "b97266d0-842", "status": "passed" }
 ]</code></pre>
-              </div>
-            </li>
-
-            <li class="exchange exchange-final" data-reveal>
-              <p class="say">
-                Finally, record the result, clean up and write the report.
-              </p>
-              <div class="call">
-                <pre><code>spyglass result --run terminal-trial --file .spyglass/runs/terminal-trial/spyglass/result.json
-spyglass down --run terminal-trial
-spyglass report --run terminal-trial</code></pre>
-                <button class="copy" type="button" data-copy>Copy</button>
-              </div>
-              <div class="response response-wide" data-ui>
-                <div class="mini-report">
-                  <div class="mr-head">
-                    <span class="mr-title">Spyglass verification report</span>
-                    <span class="pill pill-pass">passed</span>
+                <div class="term-screen" data-screen="2">
+                  <div class="mini-report">
+                    <div class="mr-head">
+                      <span class="mr-title">Spyglass verification report</span>
+                      <span class="pill pill-pass">passed</span>
+                    </div>
+                    <p class="mr-meta">
+                      Run terminal-trial · spyglass-demo · operator human
+                    </p>
+                    <dl class="mr-claim">
+                      <div>
+                        <dt>health-ready</dt>
+                        <dd>passed</dd>
+                      </div>
+                      <div>
+                        <dt>Observed</dt>
+                        <dd>GET /health returned HTTP 200 with status ok.</dd>
+                      </div>
+                      <div>
+                        <dt>Steps</dt>
+                        <dd>b97266d0-842</dd>
+                      </div>
+                      <div>
+                        <dt>Evidence</dt>
+                        <dd>b97266d0-842-1-health-output.txt</dd>
+                      </div>
+                    </dl>
+                    <ul class="mr-env">
+                      <li>
+                        <span class="dot dot-pass"></span>source identity:
+                        Current source matches the baseline recorded at up.
+                      </li>
+                      <li>
+                        <span class="dot dot-pass"></span>artifact integrity: 9
+                        of 9 recorded artifacts match their checksums.
+                      </li>
+                      <li>
+                        <span class="dot dot-pass"></span>cleanup: Spyglass
+                        cleanup: true; external owner cleanup: true.
+                      </li>
+                    </ul>
                   </div>
-                  <p class="mr-meta">
-                    Run terminal-trial · spyglass-demo · operator human
-                  </p>
-                  <dl class="mr-claim">
-                    <div>
-                      <dt>health-ready</dt>
-                      <dd>passed</dd>
-                    </div>
-                    <div>
-                      <dt>Observed</dt>
-                      <dd>GET /health returned HTTP 200 with status ok.</dd>
-                    </div>
-                    <div>
-                      <dt>Steps</dt>
-                      <dd>b97266d0-842</dd>
-                    </div>
-                    <div>
-                      <dt>Evidence</dt>
-                      <dd>b97266d0-842-1-health-output.txt</dd>
-                    </div>
-                  </dl>
-                  <ul class="mr-env">
-                    <li>
-                      <span class="dot dot-pass"></span>source identity: Current
-                      source matches the baseline recorded at up.
-                    </li>
-                    <li>
-                      <span class="dot dot-pass"></span>artifact integrity: 9 of
-                      9 recorded artifacts match their checksums.
-                    </li>
-                    <li>
-                      <span class="dot dot-pass"></span>cleanup: Spyglass
-                      cleanup: true; external owner cleanup: true.
-                    </li>
-                  </ul>
                 </div>
               </div>
-            </li>
-          </ol>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Surfaces -->
+      <!-- Surfaces: the product's command menu, scaled up. -->
       <section
         class="surfaces wrap"
         id="surfaces"
         aria-labelledby="surfaces-title"
       >
-        <h2 id="surfaces-title" class="head" data-reveal>Six real surfaces</h2>
-        <div class="cells">
-          <article class="cell" data-reveal>
-            <div class="cell-text">
-              <h3>Repository checks</h3>
-              <p>
-                Run the checks you already have. A check that exits zero but
-                reports a failed assertion still fails.
-              </p>
-            </div>
-            <div class="frag" data-ui>
-              <pre><code><span class="t-dim">$ spyglass check deliberate-failure</span>
+        <h2 id="surfaces-title" class="sr-only">Surfaces</h2>
+        <div class="menu" data-ui>
+          <label class="menu-search">
+            <span class="sr-only">Filter the surfaces</span>
+            <input
+              id="surface-filter"
+              type="search"
+              placeholder="Find a surface"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+          <ul class="menu-list" id="surface-list">
+            <li
+              class="menu-item is-open"
+              data-keys="check tests repository checks assertions"
+            >
+              <button type="button" class="menu-row" aria-expanded="true">
+                <span class="menu-name">Repository checks</span>
+                <kbd>check</kbd>
+              </button>
+              <div class="menu-body">
+                <p>
+                  Run the checks you already have. A check that exits zero but
+                  reports a failed assertion still fails.
+                </p>
+                <pre><code><span class="t-dim">$ spyglass check deliberate-failure</span>
 "exitCode": 0,
-"claims": [{
-  "id": "health-ready",
-  "ok": false,
-  "detail": "Deliberate fixture failure"
-}],
+"claims": [{ "id": "health-ready", "ok": false, "detail": "Deliberate fixture failure" }],
 "overall": false,
 <span class="t-fail">"passed": false</span></code></pre>
-            </div>
-          </article>
-
-          <article class="cell cell-flip" data-reveal>
-            <div class="cell-text">
-              <h3>Web browser</h3>
-              <p>
-                An isolated browser opens only the origins in your profile. Each
-                proof keeps a screenshot, the page tree, errors and requests.
-              </p>
-            </div>
-            <div class="frag frag-browser" data-ui>
-              <img
-                src="assets/proof-home.png"
-                alt="Screenshot from spyglass ui proof home: the demo app's Sign in form."
-                width="1280"
-                height="577"
-                loading="lazy"
-              />
-              <pre><code><span class="t-dim">$ spyglass ui snapshot</span>
+              </div>
+            </li>
+            <li
+              class="menu-item"
+              data-keys="ui web browser screenshot page chromium"
+            >
+              <button type="button" class="menu-row" aria-expanded="false">
+                <span class="menu-name">Web browser</span>
+                <kbd>ui</kbd>
+              </button>
+              <div class="menu-body">
+                <p>
+                  An isolated browser opens only the origins in your profile.
+                  Each proof keeps a screenshot, the page tree, errors and
+                  requests.
+                </p>
+                <pre><code><span class="t-dim">$ spyglass ui snapshot</span>
 - heading "Sign in" [level=1, ref=e1]
 - textbox "Email " [required, ref=e3]
 - textbox "Password " [required, ref=e4]
 - button "Sign in" [ref=e2]</code></pre>
-            </div>
-          </article>
-
-          <article class="cell" data-reveal>
-            <div class="cell-text">
-              <h3>HTTP</h3>
-              <p>
-                Send a real request and state the status you expect. Redirects
-                are not followed, and credentials are masked.
-              </p>
-            </div>
-            <div class="frag" data-ui>
-              <pre><code><span class="t-dim">$ spyglass api GET /health --expect 200</span>
+              </div>
+            </li>
+            <li class="menu-item" data-keys="api http request status rest">
+              <button type="button" class="menu-row" aria-expanded="false">
+                <span class="menu-name">HTTP</span>
+                <kbd>api</kbd>
+              </button>
+              <div class="menu-body">
+                <p>
+                  Send a real request and state the status you expect. Redirects
+                  are not followed, and credentials are masked.
+                </p>
+                <pre><code><span class="t-dim">$ spyglass api GET /health --expect 200</span>
 <span class="t-fail">API_EXPECTATION_FAILED: API returned HTTP 401; expected 200.</span>
 "status": 401,
 "body": { "error": "sign in required" },
 "path": "8a427527-232-1-api-response.json"</code></pre>
-            </div>
-          </article>
-
-          <article class="cell cell-flip" data-reveal>
-            <div class="cell-text">
-              <h3>PostgreSQL</h3>
-              <p>
-                One statement in a read-only transaction, with a row bound. A
-                statement that starts as a write is not sent at all.
-              </p>
-            </div>
-            <div class="frag" data-ui>
-              <pre><code><span class="t-dim">$ spyglass db 'SELECT 42::int AS answer' --expect-rows 1</span>
+              </div>
+            </li>
+            <li
+              class="menu-item"
+              data-keys="db postgresql postgres sql database rows"
+            >
+              <button type="button" class="menu-row" aria-expanded="false">
+                <span class="menu-name">PostgreSQL</span>
+                <kbd>db</kbd>
+              </button>
+              <div class="menu-body">
+                <p>
+                  One statement in a read-only transaction, with a row bound. A
+                  statement that starts as a write is not sent at all.
+                </p>
+                <pre><code><span class="t-dim">$ spyglass db 'SELECT 42::int AS answer' --expect-rows 1</span>
 "rows": [{ "answer": 42 }],
 "rowCount": 1,
-
 <span class="t-dim">$ spyglass db 'CREATE TABLE spyglass_write_guard(id integer)'</span>
-<span class="t-fail">DATABASE_READ_ONLY: Spyglass accepts read-only SQL only.</span>
-Next: Use SELECT, WITH, VALUES, TABLE, SHOW or EXPLAIN. The query was not sent.</code></pre>
-            </div>
-          </article>
-
-          <article class="cell" data-reveal>
-            <div class="cell-text">
-              <h3>Docker Compose</h3>
-              <p>
-                Read the status of the project's own containers, then read the
-                logs from a named mark in the run.
-              </p>
-            </div>
-            <div class="frag" data-ui>
-              <pre><code><span class="t-dim">$ spyglass ps</span>
-"service": "db",
-"state": "running",
-"health": "healthy",
-"missing": [],
-
+<span class="t-fail">DATABASE_READ_ONLY: Spyglass accepts read-only SQL only.</span></code></pre>
+              </div>
+            </li>
+            <li
+              class="menu-item"
+              data-keys="ps logs mark docker compose containers"
+            >
+              <button type="button" class="menu-row" aria-expanded="false">
+                <span class="menu-name">Docker Compose</span>
+                <kbd>ps</kbd>
+              </button>
+              <div class="menu-body">
+                <p>
+                  Read the status of the project's own containers, then read the
+                  logs from a named mark in the run.
+                </p>
+                <pre><code><span class="t-dim">$ spyglass ps</span>
+"service": "db", "state": "running", "health": "healthy",
 <span class="t-dim">$ spyglass logs db --since before-check</span>
 "mark": "before-check",
 "markedAt": "2026-10-22T20:02:58.207Z"</code></pre>
-            </div>
-          </article>
-
-          <article class="cell cell-flip" data-reveal>
-            <div class="cell-text">
-              <h3>Any other command</h3>
-              <p>
-                Wrap a command to keep its real exit status and bounded output
-                as an artifact with a checksum.
-              </p>
-            </div>
-            <div class="frag" data-ui>
-              <pre><code><span class="t-dim">$ spyglass exec -- git log --oneline -1</span>
+              </div>
+            </li>
+            <li class="menu-item" data-keys="exec command shell other">
+              <button type="button" class="menu-row" aria-expanded="false">
+                <span class="menu-name">Any other command</span>
+                <kbd>exec</kbd>
+              </button>
+              <div class="menu-body">
+                <p>
+                  Wrap a command to keep its real exit status and bounded output
+                  as an artifact with a checksum.
+                </p>
+                <pre><code><span class="t-dim">$ spyglass exec -- git log --oneline -1</span>
 "exitCode": 0,
 "stdout": "08524b2 base\n",
-"artifacts": [{
-  "path": "ee12d4e9-782-1-git-output.txt",
-  "sha256": "0087caed43039ac921cdd657e058b669bc42fe6e4c9e9a9d32ae81c032136ed6"
-}]</code></pre>
-            </div>
-          </article>
+"path": "ee12d4e9-782-1-git-output.txt",
+"sha256": "0087caed43039ac921cdd657e058b669bc42fe6e4c9e9a9d32ae81c032136ed6"</code></pre>
+              </div>
+            </li>
+          </ul>
+          <p class="menu-empty" id="surface-empty" hidden>
+            No surface matches. Import its evidence with
+            <code>spyglass evidence add</code>.
+          </p>
         </div>
       </section>
 
-      <!-- Showcase: the report decides -->
-      <section class="showcase wrap" id="report" aria-labelledby="report-title">
-        <div class="showcase-intro" data-reveal>
-          <h2 id="report-title" class="head">The report decides</h2>
-          <p>
-            Change the run below. Each state shows what
-            <code>spyglass report</code> or <code>spyglass result</code> printed
-            for the quickstart demo in that state.
+      <!-- Marquee: the codes Spyglass reports when proof is missing. -->
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-track">
+          <span>STALE_SOURCE</span><span>CHECK_FAILED</span
+          ><span>CLAIM_INCOMPLETE</span><span>INDEPENDENT_READ_MISSING</span
+          ><span>BROWSER_ORIGIN_BLOCKED</span
+          ><span>VISUAL_INSPECTION_MISSING</span
+          ><span>API_EXPECTATION_FAILED</span><span>DATABASE_READ_ONLY</span
+          ><span>RUN_BUSY</span><span>CLEANUP_PENDING</span>
+        </div>
+      </div>
+
+      <!-- Opening window: the instrument, then the evidence folder. -->
+      <section class="opening" aria-labelledby="keep-title">
+        <div class="opening-stage">
+          <img
+            src="assets/gen/spyglass-brass.jpg"
+            alt="A brass hand telescope, fully extended, on a black ground."
+            width="1672"
+            height="941"
+            loading="lazy"
+          />
+        </div>
+      </section>
+
+      <section class="keep wrap" aria-labelledby="keep-title">
+        <div class="keep-copy">
+          <h2 id="keep-title" class="head" data-reveal>The evidence stays</h2>
+          <p data-reveal>
+            Screenshots, responses, query rows and logs go to a Git-ignored
+            evidence folder with checksums. <code>spyglass down</code> stops
+            what the run started. It does not remove the evidence, so another
+            agent or person can read the run later.
           </p>
         </div>
+        <figure class="tree" data-reveal>
+          <svg
+            class="tree-svg"
+            viewBox="0 0 500 410"
+            role="img"
+            aria-labelledby="tree-title"
+          >
+            <title id="tree-title">
+              The evidence folder of the run terminal-trial: the step log, the
+              result, and artifacts that each keep their checksum.
+            </title>
+            <g class="tree-lines">
+              <path d="M26 52 V100" />
+              <path d="M26 100 H58" />
+              <path d="M74 120 V364" />
+              <path d="M74 156 H104" />
+              <path d="M74 208 H104" />
+              <path d="M74 260 H104" />
+              <path d="M74 312 H104" />
+              <path d="M74 364 H104" />
+            </g>
+            <g class="tree-folder">
+              <rect x="10" y="20" width="32" height="24" rx="3" />
+              <rect x="58" y="88" width="32" height="24" rx="3" />
+            </g>
+            <text class="tree-dir" x="52" y="38">
+              .spyglass/runs/terminal-trial/
+            </text>
+            <text class="tree-dir" x="100" y="106">spyglass/</text>
+            <g class="tree-files">
+              <text x="118" y="162">log.jsonl</text>
+              <text x="118" y="214">result.json</text>
+              <text x="118" y="266">5006265f-e3c-1-proof-home.png</text>
+              <text x="118" y="318">b97266d0-842-1-health-output.txt</text>
+              <text x="118" y="370">…-index.html</text>
+            </g>
+            <g class="tree-notes">
+              <text x="118" y="182">every step, failed attempts too</text>
+              <text x="118" y="234">the claims and what proves them</text>
+              <text x="118" y="286">sha256 d2af3e3f…1f597785</text>
+              <text x="118" y="338">cited by the claim health-ready</text>
+              <text x="118" y="390">the offline report</text>
+            </g>
+            <g class="tree-seals">
+              <circle cx="478" cy="262" r="12" />
+              <circle cx="478" cy="314" r="12" />
+              <path d="M471 262 l5 5 l9 -10" />
+              <path d="M471 314 l5 5 l9 -10" />
+            </g>
+          </svg>
+        </figure>
+      </section>
 
-        <div class="panel" data-reveal>
-          <div class="panel-demo" data-ui>
+      <!-- Showcase: the report decides. Recorded output for each state. -->
+      <section class="decide" id="report" aria-labelledby="report-title">
+        <div class="wrap decide-grid">
+          <div class="decide-intro">
+            <h2 id="report-title" class="head" data-reveal>
+              The report decides
+            </h2>
+            <p data-reveal>
+              Change the run. Each state shows what
+              <code>spyglass report</code> or <code>spyglass result</code>
+              printed for the quickstart demo in that state. Only one state
+              passes.
+            </p>
+            <form
+              class="panel-controls"
+              id="rs-controls"
+              aria-label="Run state"
+              data-reveal
+            >
+              <fieldset>
+                <legend>The claim cites</legend>
+                <label
+                  ><input type="radio" name="result" value="none" /><span
+                    >nothing yet</span
+                  ></label
+                >
+                <label
+                  ><input type="radio" name="result" value="failed" /><span
+                    >the failed attempt</span
+                  ></label
+                >
+                <label
+                  ><input
+                    type="radio"
+                    name="result"
+                    value="passed"
+                    checked
+                  /><span>the passing check</span></label
+                >
+              </fieldset>
+              <fieldset>
+                <legend>Source after up</legend>
+                <label
+                  ><input
+                    type="radio"
+                    name="source"
+                    value="recorded"
+                    checked
+                  /><span>unchanged</span></label
+                >
+                <label
+                  ><input type="radio" name="source" value="edited" /><span
+                    >server.mjs edited</span
+                  ></label
+                >
+              </fieldset>
+              <fieldset>
+                <legend>Cleanup</legend>
+                <label
+                  ><input type="radio" name="cleanup" value="pending" /><span
+                    >not yet</span
+                  ></label
+                >
+                <label
+                  ><input
+                    type="radio"
+                    name="cleanup"
+                    value="done"
+                    checked
+                  /><span>spyglass down</span></label
+                >
+              </fieldset>
+            </form>
+          </div>
+
+          <div class="panel-demo" data-ui data-reveal>
             <div class="rs-head">
               <code class="rs-command" id="rs-command"
                 >spyglass report --run terminal-trial</code
               >
-              <span class="pill" id="rs-status" aria-live="polite">passed</span>
+              <span class="pill pill-pass" id="rs-status" aria-live="polite"
+                >passed</span
+              >
             </div>
             <p class="rs-exit" aria-live="polite">
               <code id="rs-exit">exit 0</code>
@@ -443,11 +694,11 @@ Next: Use SELECT, WITH, VALUES, TABLE, SHOW or EXPLAIN. The query was not sent.<
                   </div>
                   <div>
                     <dt>Steps</dt>
-                    <dd>305c833e-0cc</dd>
+                    <dd>e596a812-f93</dd>
                   </div>
                   <div>
                     <dt>Evidence</dt>
-                    <dd>305c833e-0cc-1-health-output.txt</dd>
+                    <dd>e596a812-f93-1-health-output.txt</dd>
                   </div>
                 </dl>
               </div>
@@ -470,59 +721,10 @@ Next: Use SELECT, WITH, VALUES, TABLE, SHOW or EXPLAIN. The query was not sent.<
               </div>
             </div>
           </div>
-
-          <form class="panel-controls" id="rs-controls" aria-label="Run state">
-            <fieldset>
-              <legend>Claim cites</legend>
-              <label
-                ><input type="radio" name="result" value="none" /> nothing
-                yet</label
-              >
-              <label
-                ><input type="radio" name="result" value="failed" /> the failed
-                attempt</label
-              >
-              <label
-                ><input type="radio" name="result" value="passed" checked /> the
-                passing check</label
-              >
-            </fieldset>
-            <fieldset>
-              <legend>Source after up</legend>
-              <label
-                ><input type="radio" name="source" value="recorded" checked />
-                unchanged</label
-              >
-              <label
-                ><input type="radio" name="source" value="edited" /> server.mjs
-                edited</label
-              >
-            </fieldset>
-            <fieldset>
-              <legend>Cleanup</legend>
-              <label
-                ><input type="radio" name="cleanup" value="pending" /> not
-                yet</label
-              >
-              <label
-                ><input type="radio" name="cleanup" value="done" checked />
-                spyglass down</label
-              >
-            </fieldset>
-            <a
-              class="link panel-link"
-              href="https://github.com/Schramm2/spyglass/blob/main/docs/failure-cases.md"
-              >All failure cases</a
-            >
-          </form>
         </div>
-        <p class="showcase-note" data-reveal>
-          Only one state passes: the claim cites the passing check, the source
-          is unchanged and cleanup is done.
-        </p>
       </section>
 
-      <!-- Proof: the failures it must catch -->
+      <!-- Proof: the failures it must catch, from docs/failure-cases.md. -->
       <section
         class="failures wrap"
         id="failures"
@@ -532,7 +734,7 @@ Next: Use SELECT, WITH, VALUES, TABLE, SHOW or EXPLAIN. The query was not sent.<
           <span>Failures it</span>
           <span class="indent">refuses to pass</span>
         </h2>
-        <table class="ftable" data-reveal>
+        <table class="ftable">
           <caption class="sr-only">
             Failure cases that the Spyglass CLI must detect, from
             docs/failure-cases.md, with the code it reports.
@@ -623,59 +825,104 @@ Next: Use SELECT, WITH, VALUES, TABLE, SHOW or EXPLAIN. The query was not sent.<
             </tr>
           </tbody>
         </table>
+        <a class="link" href="docs/#failure-cases">All failure cases</a>
       </section>
 
-      <!-- Close -->
-      <section class="close wrap" aria-labelledby="close-title">
-        <figure class="close-figure">
+      <!-- Handoff: another operator picks up the run from its log. -->
+      <section class="handoff wrap" aria-labelledby="handoff-title">
+        <figure class="handoff-picture" data-reveal>
           <img
-            src="assets/hero.png"
-            alt="Spyglass. Verify code changes with real tools, and keep the evidence."
-            width="1600"
-            height="640"
+            src="assets/gen/logbook.jpg"
+            alt="An open handwritten logbook with a closed brass telescope across it."
+            width="1672"
+            height="941"
             loading="lazy"
           />
         </figure>
-        <h2 id="close-title" class="sr-only">Try Spyglass</h2>
-        <p class="close-line">
-          Spyglass 1.1.0 is free and MIT licensed. The quickstart takes about
-          five minutes.
-        </p>
-        <div class="actions">
-          <a
-            class="button"
-            href="https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md"
-            >Start the quickstart</a
-          >
-          <a
-            class="link"
-            href="https://github.com/Schramm2/spyglass#installation"
-            >Install from source</a
-          >
+        <div class="handoff-copy">
+          <h2 id="handoff-title" class="head" data-reveal>Hand over the log</h2>
+          <p data-reveal>
+            The run outlives the chat. A second agent or a reviewer opens a new
+            terminal, reads the state and continues, or reads the report without
+            a live app.
+          </p>
+          <div class="call" data-reveal>
+            <pre><code>spyglass status --run agent-handoff
+spyglass report --run terminal-trial --json</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <ul class="skills" data-reveal>
+            <li>
+              <a
+                href="https://github.com/Schramm2/spyglass/blob/main/skills/spyglass/SKILL.md"
+                ><strong>spyglass</strong> Run a verification.</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://github.com/Schramm2/spyglass/blob/main/skills/create-verification-skill/SKILL.md"
+                ><strong>create-verification-skill</strong> Write a repository's
+                own <code>verify-&lt;app&gt;</code> skill.</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://github.com/Schramm2/spyglass/blob/main/skills/maintain-verification-skill/SKILL.md"
+                ><strong>maintain-verification-skill</strong> Keep that skill
+                current.</a
+              >
+            </li>
+          </ul>
         </div>
+      </section>
+
+      <!-- Call to action: the whole band is one link. -->
+      <section class="cta" aria-labelledby="cta-title">
+        <h2 id="cta-title" class="sr-only">Try Spyglass</h2>
+        <a
+          class="cta-band"
+          href="https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md"
+        >
+          <span class="cta-top">
+            <span class="cta-note"
+              >Start the quickstart. It runs a local demo app in about five
+              minutes and uses no paid services.</span
+            >
+            <svg class="cta-arrow" viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M12 36 L36 12 M16 12 H36 V32" />
+            </svg>
+          </span>
+          <span class="cta-word">Verify</span>
+        </a>
       </section>
     </main>
 
-    <footer class="foot wrap">
-      <span class="foot-what">A verification CLI for coding agents</span>
-      <nav class="foot-links" aria-label="Project">
-        <a href="https://github.com/Schramm2/spyglass">GitHub</a>
-        <a
-          href="https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md"
-          >Quickstart</a
-        >
-        <a
-          href="https://github.com/Schramm2/spyglass/blob/main/docs/failure-cases.md"
-          >Failure cases</a
-        >
-        <a href="https://github.com/Schramm2/spyglass/blob/main/SECURITY.md"
-          >Security</a
-        >
-      </nav>
-      <span class="foot-legal">© 2026 Matthew Schramm · MIT</span>
+    <footer class="foot" aria-labelledby="foot-title">
+      <div class="foot-top wrap">
+        <div class="foot-invite">
+          <h2 id="foot-title" class="foot-title">Read the whole manual</h2>
+          <a class="button button-ink" href="docs/">Open the docs</a>
+        </div>
+        <nav class="foot-links" aria-label="Project">
+          <a href="https://github.com/Schramm2/spyglass">GitHub</a>
+          <a href="https://github.com/Schramm2/spyglass#installation"
+            >Install from source</a
+          >
+          <a href="docs/#failure-cases">Failure cases</a>
+          <a href="https://github.com/Schramm2/spyglass/blob/main/SECURITY.md"
+            >Security</a
+          >
+        </nav>
+      </div>
+      <div class="foot-legal wrap">
+        <span>Spyglass 1.1.0 · © 2026 Matthew Schramm · MIT</span>
+        <span>Photographs are generated images, not product shots.</span>
+      </div>
+      <p class="foot-word" aria-hidden="true">Spyglass</p>
     </footer>
 
     <script src="report-states.js"></script>
+    <script src="copy.js"></script>
     <script src="main.js"></script>
   </body>
 </html>
