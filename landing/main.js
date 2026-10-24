@@ -107,7 +107,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
     const open = Math.min(1, Math.max(0, (p - 0.72) / 0.24));
     const ease = (t) => 1 - Math.pow(1 - t, 3);
 
-    let x = width * (0.18 + 0.64 * read);
+    let x = width * (0.14 + 0.38 * read);
     let y = height * (0.5 + 0.18 * Math.sin(read * Math.PI * 2));
     if (pointer && open === 0) ({ x, y } = pointer);
     let r = base * ease(arrive) + (full - base) * ease(open);

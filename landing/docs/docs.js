@@ -26,11 +26,14 @@
   if (!("IntersectionObserver" in window)) return;
   const visible = new Set();
   const mark = () => {
-    const current = targets.find((el) => visible.has(el));
+    // A command block sits inside the Commands section: prefer the block.
+    const current =
+      targets.find((el) => visible.has(el) && el.classList.contains("cmd")) ??
+      targets.find((el) => visible.has(el));
     for (const a of links.values()) a.removeAttribute("aria-current");
     if (!current) return;
     links.get(current.id).setAttribute("aria-current", "true");
-    // A command is inside the Commands section: mark both.
+    // Mark the Commands section too while one of its blocks is current.
     if (current.classList.contains("cmd"))
       links.get("commands")?.setAttribute("aria-current", "true");
   };
