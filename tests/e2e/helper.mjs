@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -57,6 +65,19 @@ export async function removeRepo(dir) {
 
 function stateHome(dir) {
   return join(tmpdir(), `${basename(dir)}-state`);
+}
+
+/** The stored record of one run of a test repository. */
+export async function runRecord(dir, id) {
+  const entries = await readdir(stateHome(dir), {
+    recursive: true,
+    withFileTypes: true,
+  });
+  const found = entries.find(
+    (entry) => entry.name === "run.json" && basename(entry.parentPath) === id,
+  );
+  assert.ok(found, `run ${id} has no stored record`);
+  return join(found.parentPath, found.name);
 }
 
 export async function writeJson(path, value) {

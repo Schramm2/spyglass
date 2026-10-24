@@ -13,6 +13,7 @@ import {
   readRunFile,
   removeRepo,
   runCli,
+  runRecord,
   spawnCapture,
   startCli,
   waitFor,
@@ -513,6 +514,59 @@ test("a source change blocks later evidence from claiming the original run is cu
     assert.doesNotMatch(JSON.stringify(stale.data), /must not become evidence/);
   } finally {
     if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("up shows the result rules that this plan's claims, controls and gates need", async () => {
+  const claim = (id, kind) => ({ ...plan.claims[0], id, kind });
+  const ruled = {
+    claims: [
+      claim("saved", "side-effect"),
+      claim("looks", "visual"),
+      claim("works", "behavior"),
+    ],
+    controls: [
+      {
+        id: "saved-fault",
+        claim: "saved",
+        expectation: "A broken save is refused.",
+        assertion: "health-ready",
+      },
+    ],
+    gates: ["verify"],
+    limits: [],
+  };
+  const dir = await makeRepo({ profile: baseProfile(), plan: ruled });
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--plan", "plan.json"]),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    const rules = up.data.resultRules.join("\n");
+    for (const [rule, text] of [
+      ["side-effect", /saved.*independentRead.*later successful read/],
+      ["visual", /looks.*inspections.*viewport.*screenshot/],
+      ["behavior", /works.*behavior check.*non-image evidence/],
+      ["control", /saved-fault.*failedStep.*restoredStep.*claim saved cites/],
+      ["gate", /verify.*successful steps.*run.*binding/],
+      ["artifact", /artifact path.*relative to the evidence folder/],
+    ])
+      assert.match(rules, text, `up must state the ${rule} rule: ${rules}`);
+    const template = JSON.parse(
+      await readFile(join(dir, up.data.result), "utf8"),
+    );
+    const field = (id) => template.claims.find((c) => c.id === id);
+    assert.equal(field("saved").independentRead, "");
+    assert.deepEqual(field("looks").inspections, []);
+    assert.equal("independentRead" in field("works"), false);
+    assert.equal("inspections" in field("works"), false);
+    const text = await runCli(dir, ["--run", run, "status"]);
+    assert.match(text.stdout, /resultRules:/);
+  } finally {
+    if (run) await runCli(dir, ["--json", "down", "--run", run]);
     await removeRepo(dir);
   }
 });
@@ -3004,11 +3058,20 @@ test("a gate from another run counts only on the same source, profile and used b
       JSON.stringify(otherHost),
       /whose step .* used binding host with a different value/,
     );
-    // Without the profile as hashed, every changed binding counts.
+    // The run keeps its own profile, so an edited file changes nothing.
     await writeJson(
       join(dir, "spyglass.json"),
       baseProfile({ launch: { mode: "none" } }),
     );
+    assertEnvelope(await record(otherTarget, gateRun, gate.step), {
+      ok: true,
+      code: 0,
+    });
+    // A run from 1.1.0 kept no profile: every changed binding counts.
+    const runJson = await runRecord(dir, gateRun);
+    const stored = JSON.parse(await readFile(runJson, "utf8"));
+    delete stored.rawProfile;
+    await writeFile(runJson, JSON.stringify(stored));
     const unread = assertEnvelope(
       await record(otherTarget, gateRun, gate.step),
       { ok: false, code: 1 },

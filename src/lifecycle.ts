@@ -127,6 +127,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     profile,
     profilePath,
     profileHash: hash(JSON.stringify(raw)),
+    rawProfile: raw,
     bindingOverrides: opts.bindings,
     source: source(repo, profile),
     port,
@@ -185,6 +186,8 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
         steps: [],
         observed: "",
         artifacts: [],
+        ...(c.kind === "side-effect" ? { independentRead: "" } : {}),
+        ...(c.kind === "visual" ? { inspections: [] } : {}),
       })),
       gates: plan.gates.map((name) => ({
         name,
@@ -230,6 +233,7 @@ export function status(run: Run): Record<string, unknown> {
     profile: run.profilePath,
     plan: run.plan,
     result: relative(run.repo, run.resultPath),
+    resultRules: resultRules(run),
     export: `export SPYGLASS_RUN=${run.id}`,
     active: lockInfo(run),
     activeSeat: run.activeSeat,
@@ -265,6 +269,46 @@ export function status(run: Run): Record<string, unknown> {
     },
     next: nextCommand(run),
   };
+}
+/**
+ * The rules that `result` enforces for this plan, named by claim, control and
+ * gate, so an operator fills the template once instead of learning each rule
+ * from a refused submission.
+ */
+function resultRules(run: Run): string[] {
+  const { claims, controls, gates } = run.plan;
+  const ids = (kind: string) =>
+    claims.filter((c) => c.kind === kind).map((c) => c.id);
+  const rules: string[] = [];
+  if (claims.length)
+    rules.push(
+      "A passed claim lists its successful steps from this run in steps and states what you saw in observed.",
+      "Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.",
+    );
+  const behavior = ids("behavior");
+  if (behavior.length)
+    rules.push(
+      `Behavior claims ${behavior.join(", ")}: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.`,
+    );
+  const visual = ids("visual");
+  if (visual.length)
+    rules.push(
+      `Visual claims ${visual.join(", ")}: fill inspections with the viewport, expected, observed and a screenshot artifact from a cited step.`,
+    );
+  const sideEffect = ids("side-effect");
+  if (sideEffect.length)
+    rules.push(
+      `Side-effect claims ${sideEffect.join(", ")}: set independentRead to the step ID of a later successful read that shows the completed state, and list that step in steps.`,
+    );
+  for (const control of controls)
+    rules.push(
+      `Control ${control.id}: set failedStep to the step that shows the declared failure and restoredStep to a later passing step; set failedRun to the run that holds failedStep; claim ${control.claim} cites restoredStep and passes.`,
+    );
+  if (gates.length)
+    rules.push(
+      `Gates ${gates.join(", ")}: list successful steps; to cite another run on the same source, add run; a gate fails when its step used a binding with another value.`,
+    );
+  return rules;
 }
 function nextCommand(run: Run): string {
   if (run.plan.claims.length && !run.result)

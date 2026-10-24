@@ -67,6 +67,8 @@ export interface Run {
   profileHash: string;
   /** CLI binding overrides as given, before templates; absent in runs from 1.0.0. */
   bindingOverrides?: Record<string, string>;
+  /** The profile as hashed, before templates; absent in runs from 1.1.0 and earlier. */
+  rawProfile?: Profile;
   source: Source;
   port: number;
   web?: string;

@@ -153,7 +153,8 @@ side-effect claim names its independent read. A visual claim includes your
 image inspection. Report gates, environment checks, stand-ins, uncovered paths,
 owner cleanup, and remaining limits separately.
 
-Edit the result template printed by `up`, then record it with
+Edit the result template printed by `up`. Its `resultRules` list what each
+claim, control and gate of this plan needs; `status` repeats them. Then record it with
 `spyglass --run <run-id> result --file <result-file> --json`. The CLI checks
 step IDs and evidence; fix a missing proof by running the required check. The
 report uses only a recorded result: an edited file that you did not submit

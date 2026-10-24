@@ -6,6 +6,13 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `up` and `status` return `resultRules`: the rules that `result` enforces for
+  this plan, named by claim, control and gate. The result template also holds
+  an empty `independentRead` for each side-effect claim and an empty
+  `inspections` list for each visual claim.
+
 ### Fixed
 
 - A gate cited from another run compares only the binding overrides that its
@@ -15,6 +22,10 @@ This file records the notable changes to Spyglass. The format follows
   own installation ports, under an external launch, can now share one gate
   run. A changed binding that a step used still fails the result and names
   the binding.
+- Each run keeps its profile as hashed, before templates. A cited gate reads
+  the bindings its steps used from the run, not from a profile file that can
+  change later. For a run from 1.1.0, Spyglass reads the file, and every
+  changed binding counts when the file differs.
 
 ## [1.1.0] - 2026-10-23
 
