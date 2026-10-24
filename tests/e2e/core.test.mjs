@@ -622,6 +622,11 @@ test("text output keeps the whole next command and the result rules of a plan", 
         up.stdout,
       );
       assert.ok(up.stdout.length < 4000, "text output must stay bounded");
+      assert.match(
+        up.stdout,
+        /^  cleanupRequired: (?:true|false)$/m,
+        up.stdout,
+      );
       return up.stdout;
     } finally {
       if (run) await runCli(dir, ["--json", "down", "--run", run]);
@@ -3160,6 +3165,19 @@ test("a gate from another run counts only on the same source, profile and used b
       code: 0,
     });
     await refusedOn(otherTarget, checkGate.step, "target");
+    // A stored profile that does not hash to the run's profile is not used.
+    const tampered = JSON.parse(original);
+    tampered.rawProfile.bindings.target = "two";
+    await writeFile(runJson, JSON.stringify(tampered));
+    assert.match(
+      JSON.stringify(
+        assertEnvelope(await record(otherTarget, gateRun, gate.step), {
+          ok: false,
+          code: 1,
+        }),
+      ),
+      /whose profile file is no longer the one it hashed/,
+    );
     // Without either, every changed binding counts.
     await withoutProfile();
     const unread = assertEnvelope(

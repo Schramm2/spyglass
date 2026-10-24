@@ -59,9 +59,10 @@ let run: Run | undefined;
 let release: (() => void) | undefined;
 function render(data: Record<string, unknown>): string {
   if ("schema" in data) return JSON.stringify(data.schema, null, 2);
-  // The next command and the rules print after the other fields, inside the
-  // same bound: an operator acts on each, so a long field must not cut them.
-  const { next, resultRules, ...compact } = data;
+  // Owner cleanup, the next command and the rules print after the other
+  // fields, inside the same bound: an operator acts on each, so a long field
+  // must not cut them.
+  const { owner, ownerCleanupRequired, next, resultRules, ...compact } = data;
   if (compact.source && typeof compact.source === "object") {
     const s = compact.source as Record<string, unknown>;
     compact.source = { commit: s.commit, hash: s.hash };
@@ -108,7 +109,7 @@ function render(data: Record<string, unknown>): string {
     allRules.length > 2000
       ? allRules.slice(0, 2000) + `\n… Full rules: ${full}`
       : allRules;
-  const tail = [next === undefined ? "" : lines({ next }).join("\n"), rules]
+  const tail = [lines({ owner, ownerCleanupRequired, next }).join("\n"), rules]
     .filter(Boolean)
     .join("\n");
   const limit = 3500 - tail.length;

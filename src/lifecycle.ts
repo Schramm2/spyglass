@@ -322,7 +322,7 @@ function resultRules(run: Run): string[] {
   for (const control of controls) {
     // The same choice as the control check in report.ts.
     const declared =
-      control.command && control.failure
+      control.command && control.failure && !control.assertion
         ? `command ${control.command.join(" ")} fails with ${control.failure.code} containing "${control.failure.contains}"`
         : control.assertion && !control.command && !control.failure
           ? `assertion ${control.assertion}`
