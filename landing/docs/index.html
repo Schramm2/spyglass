@@ -1635,6 +1635,21 @@ spyglass schema result</code></pre>
                   </td>
                 </tr>
                 <tr>
+                  <td>Gate</td>
+                  <td>
+                    A cited gate step used a binding override whose value
+                    differs from this run's: a named check against another
+                    database or API, or any step against an app that Spyglass
+                    launched with another setting.
+                  </td>
+                  <td>
+                    The result fails and names the binding. A binding that the
+                    step did not use, such as an external installation's own
+                    port beside an <code>exec</code> gate, does not block the
+                    gate.
+                  </td>
+                </tr>
+                <tr>
                   <td>Browser</td>
                   <td>A claim needs to know which element has focus.</td>
                   <td>
