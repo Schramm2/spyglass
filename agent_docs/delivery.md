@@ -65,17 +65,37 @@ run, such as the opt-in surface tests.
 
 ## Version and release
 
-The version string is in five places. Change all of them together:
+Change every copy of the version string together. Find them with
+`grep -rn '"X.Y.Z"\|X\.Y\.Z' package.json package-lock.json src README.md landing tests`:
 
-- `package.json` `version`
-- `src/cli.ts:169` and `src/cli.ts:170` (`--version` output)
-- `src/state.ts:305` (the tool identity in each step record)
-- `src/lifecycle.ts:368` (the tool identity in `doctor`)
+- `package.json` and the two `version` fields of `package-lock.json`;
+- `src/cli.ts` (`--version` output), `src/state.ts` (the tool identity in
+  each step record) and `src/lifecycle.ts` (the tool identity in `doctor`);
+- the step record assertion in `tests/e2e/core.test.mjs`;
+- `README.md`, the footer of `landing/index.html`, and the footer and clone
+  command of `landing/docs/index.html`.
 
-`tests/e2e/core.test.mjs:1750` asserts the step record version, and
-`README.md` names the current version. Move the `[Unreleased]` entries in
-`CHANGELOG.md` to a new version heading and update the compare links at its
-end. Tag the release commit `vX.Y.Z`.
+The grep can also match a dependency in `package-lock.json` that has the same
+version; leave that one unchanged.
+
+Move the `[Unreleased]` entries in `CHANGELOG.md` to a new version heading and
+update the compare links at its end. A new command, option or output field is
+a minor release; a fix only is a patch. Tag the merged release commit
+`vX.Y.Z`.
+
+A GitHub release, when the user asks for one, has two assets. Build them from
+the tag and check them after upload:
+
+```sh
+git archive --format=tar.gz --prefix=spyglass-X.Y.Z/ vX.Y.Z > spyglass-X.Y.Z-source.tar.gz
+shasum -a 256 spyglass-X.Y.Z-source.tar.gz > spyglass-X.Y.Z-SHA256SUMS
+gh release create vX.Y.Z --title "Spyglass X.Y.Z" --notes-file NOTES.md --latest \
+  spyglass-X.Y.Z-source.tar.gz spyglass-X.Y.Z-SHA256SUMS
+gh release download vX.Y.Z && shasum -a 256 -c spyglass-X.Y.Z-SHA256SUMS
+```
+
+Then build the extracted archive with `npm ci && npm run build` and check that
+`node dist/cli.js --version` prints the new version.
 
 `package.json` has `"private": true`. Spyglass is not on npm. Do not publish
 it, remove `private` or create a GitHub release unless the user asks for it.
