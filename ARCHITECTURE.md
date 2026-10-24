@@ -86,7 +86,7 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 
 | Fact | Owner and location |
 | --- | --- |
-| Run record, lock, browser proxy config | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/` (default `~/.local/state`), outside the repository. The hash is of the main worktree path, so all worktrees of a repository share one run store; only a run's own worktree changes it |
+| Run record, lock, browser proxy config | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/` (default `~/.local/state`), outside the repository. The hash is of the main worktree path, so all worktrees of a repository share one run store; only a run's own worktree changes it. The run record keeps the profile twice: after templates (`profile`) and as hashed, before templates (`rawProfile`, from 1.2.0) |
 | Step log, artifacts, result, report, app log | The evidence folder in the target repository, default `.spyglass/runs/${run}`, which must be Git-ignored |
 | Profile, checks, containers, databases | The target repository |
 | Secret values | Their references (`env:`, `file:`, `dotenv:`, `op://`); never stored |
@@ -98,6 +98,7 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 | A command that changes a run runs from the run's own worktree; `down` of a run whose worktree was removed runs from any worktree | `assertWorktree` in `src/state.ts`, E2E tests |
 | Every mutating command holds the run lock; a second one fails with `RUN_BUSY` and `status` stays available | `lock` in `src/state.ts`, E2E tests |
 | Evidence from changed source cannot pass for the recorded source | `assertSource`, `report` checks, E2E tests |
+| A gate cited from another run needs the same source and profile, and fails when one of its steps used a binding override with another value | `validateGates` and `readBindings` in `src/report.ts`, E2E tests |
 | A failed step stays in the log; nothing removes log entries | `Context.finish` appends only; not otherwise enforced |
 | Text and JSON written through `Context` are masked; images are not | `Secrets`, `Context.artifact`, E2E tests |
 | The browser reaches only the configured origins | `src/browser-proxy.ts` and `--allowed-domains` in `src/browser.ts`; surface tests |
