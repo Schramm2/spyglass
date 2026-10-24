@@ -1,0 +1,315 @@
+/* Geist Mono sets code and pre only. */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&display=swap");
+
+/* Spyglass tokens, shared by the landing page and the docs. Black ground,
+   white ink, one brass accent taken from the instrument. Fail and pass
+   colours appear only inside real CLI and report fragments (data-ui). */
+
+:root {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #0f0f0f;
+  --surface-2: #171717;
+  --surface-3: #222222;
+  --ink: #ffffff;
+  --soft: #a8a8a8;
+  --paper: #e9e8e4;
+  --paper-2: #d9d7d1;
+  --paper-ink: #0b0b0b;
+  --paper-soft: #46453f;
+  --accent: #d4a24c;
+  --accent-strong: #e8b862;
+  --accent-ink: #000000;
+  --fail: #ff7462;
+  --pass: #8fdc9a;
+  --ui-line: #2a2a2a;
+
+  --font: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-code:
+    "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace; /* code and pre only */
+
+  --step-small: 0.9375rem;
+  --step-body: 1.0625rem;
+  --step-lead: clamp(1.1875rem, 1.05rem + 0.45vw, 1.375rem);
+  --step-head: clamp(2.5rem, 1.2rem + 4.4vw, 5.5rem);
+  --step-display: clamp(4.5rem, 15vw, 15rem);
+
+  --margin: clamp(1rem, 3vw, 2.5rem);
+  --gutter: clamp(1rem, 2vw, 2rem);
+  --section: clamp(6rem, 11vw, 10rem);
+  --radius: 0px;
+  --ui-radius: 10px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
+  --t-press: 140ms;
+  --t-hover: 180ms;
+  --t-ui: 240ms;
+  --t-reveal: 800ms;
+  --stagger-line: 90ms;
+  --stagger-item: 70ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--step-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+img {
+  height: auto;
+}
+a {
+  color: inherit;
+}
+code,
+pre,
+kbd {
+  font-family: var(--font-code);
+}
+code {
+  font-size: 0.9em;
+}
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+/* An author display rule must not undo the hidden attribute. */
+[hidden] {
+  display: none !important;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.skip {
+  position: absolute;
+  left: var(--margin);
+  top: -4rem;
+  z-index: 50;
+  padding: 0.75rem 1rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.skip:focus {
+  top: 1rem;
+}
+.wrap {
+  padding-inline: var(--margin);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: 0 1.5rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    transform var(--t-press) var(--ease-out),
+    background-color var(--t-hover) ease;
+}
+.button:active {
+  transform: scale(0.97);
+}
+.button-ink {
+  background: var(--paper-ink);
+  color: var(--paper);
+}
+.link {
+  text-decoration: underline;
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  transition: text-decoration-color var(--t-hover) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    background: var(--accent-strong);
+  }
+  .button-ink:hover {
+    background: #2a2a2a;
+  }
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Interface fragments: real CLI output keeps the product's small borders. */
+[data-ui] pre {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.t-dim {
+  color: var(--soft);
+}
+.t-fail {
+  color: var(--fail);
+}
+.t-pass {
+  color: var(--pass);
+}
+.call {
+  position: relative;
+  background: var(--surface-2);
+  border-radius: var(--ui-radius);
+  padding: 1rem 5.5rem 1rem 1.125rem;
+}
+.call pre {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.copy {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--step-small);
+  cursor: pointer;
+  transition:
+    background-color var(--t-hover) ease,
+    transform var(--t-press) var(--ease-out);
+}
+.copy:active {
+  transform: scale(0.95);
+}
+@media (hover: hover) and (pointer: fine) {
+  .copy:hover {
+    background: #333;
+  }
+}
+
+/* The report fragment, shared by the run section and the showcase. */
+.mini-report {
+  font-size: var(--step-small);
+}
+.mr-head,
+.rs-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.mr-title {
+  font-weight: 600;
+}
+.mr-meta {
+  margin: 0.25rem 0 1rem;
+  color: var(--soft);
+}
+.pill {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  background: var(--surface-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.pill-pass {
+  background: var(--pass);
+  color: #04210a;
+}
+.pill-fail {
+  background: var(--fail);
+  color: #2b0500;
+}
+.mr-claim {
+  margin: 0;
+  display: grid;
+  gap: 0.375rem;
+}
+.mr-claim > div {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 1rem;
+}
+.mr-claim dt {
+  color: var(--soft);
+}
+.mr-claim dd {
+  margin: 0;
+  word-break: break-word;
+}
+.mr-env {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.375rem;
+}
+.mr-env li {
+  display: flex;
+  gap: 0.625rem;
+  align-items: baseline;
+}
+.dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  transform: translateY(-0.1em);
+}
+.dot-pass {
+  background: var(--pass);
+}
+.dot-fail {
+  background: var(--fail);
+}
+.dot-pending {
+  background: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

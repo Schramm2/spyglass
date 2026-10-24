@@ -1,9 +1,14 @@
 // Spyglass landing page behaviour. Every piece works without this script:
-// the HTML already shows a complete, passing state.
+// the HTML already shows a complete, passing state, and the hidden starting
+// states in styles.css apply only under html.js, which this script sets.
+
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 // Reveal each part once as it enters the viewport, staggered inside a section.
 (() => {
-  const targets = document.querySelectorAll("[data-reveal]");
+  const targets = document.querySelectorAll(
+    "[data-reveal], .menu, .tree, .ftable",
+  );
   if (!("IntersectionObserver" in window)) {
     targets.forEach((el) => el.classList.add("is-in"));
     return;
@@ -12,6 +17,12 @@
     section.querySelectorAll("[data-reveal]").forEach((el, index) => {
       el.style.setProperty("--d", Math.min(index, 5));
     });
+  });
+  document.querySelectorAll(".menu-item").forEach((el, index) => {
+    el.style.setProperty("--d", index);
+  });
+  document.querySelectorAll(".ftable tbody tr").forEach((row, index) => {
+    row.style.transitionDelay = `${index * 60}ms`;
   });
   const io = new IntersectionObserver(
     (entries) => {
@@ -36,14 +47,126 @@
 })();
 
 // The hidden starting states in styles.css apply only under html.js. Set it
-// only after the observer that shows the content again is in place.
+// only after the observer that shows the content again is in place, so a
+// script that fails to load leaves the page fully visible.
 document.documentElement.classList.add("js");
 
-// Hero: hash the retained screenshot in this browser and compare it with the
+// Facts: each figure counts up once when it arrives.
+(() => {
+  const figures = document.querySelectorAll("[data-count]");
+  if (reduceMotion.matches || !("IntersectionObserver" in window)) return;
+  const run = (el) => {
+    const target = Number(el.dataset.count);
+    const decimals = Number(el.dataset.decimals || 0);
+    const start = performance.now();
+    const duration = 1100;
+    const frame = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 4);
+      el.textContent = (target * eased).toFixed(decimals);
+      if (t < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  };
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        io.unobserve(entry.target);
+        run(entry.target);
+      }
+    },
+    { threshold: 0.6 },
+  );
+  figures.forEach((el) => io.observe(el));
+})();
+
+// The lens. The scroll moves a spyglass lens across the agent's claim; at
+// the end the lens opens onto the whole step log. On a fine pointer the
+// lens follows the pointer while it is over the claim.
+(() => {
+  const section = document.getElementById("lens");
+  const field = document.getElementById("lens-field");
+  if (!section || !field || reduceMotion.matches) return;
+
+  const narrow = matchMedia("(max-width: 900px)");
+  let pointer = null;
+  let queued = false;
+
+  function progress() {
+    const box = section.getBoundingClientRect();
+    const travel = box.height - innerHeight;
+    return Math.min(1, Math.max(0, -box.top / Math.max(1, travel)));
+  }
+
+  function paint() {
+    queued = false;
+    const p = progress();
+    const { width, height } = field.getBoundingClientRect();
+    const base = Math.min(width, height) * 0.2 + 20;
+    const full = Math.hypot(width, height);
+    // 0 → 0.12: the lens arrives; 0.12 → 0.72: it reads along the claim;
+    // 0.72 → 1: it opens onto the whole record.
+    const arrive = Math.min(1, p / 0.12);
+    const read = Math.min(1, Math.max(0, (p - 0.12) / 0.6));
+    const open = Math.min(1, Math.max(0, (p - 0.72) / 0.24));
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+
+    let x = width * (0.14 + 0.38 * read);
+    let y = height * (0.5 + 0.18 * Math.sin(read * Math.PI * 2));
+    if (pointer && open === 0) ({ x, y } = pointer);
+    let r = base * ease(arrive) + (full - base) * ease(open);
+    // The claim gives way quickly once the lens starts to open.
+    let claim = Math.max(0, 1 - open * 5);
+    // On a narrow screen the lens does not read along the claim: it grows
+    // from the centre while the claim gives way to the record.
+    if (narrow.matches) {
+      const grow = ease(Math.min(1, Math.max(0, (p - 0.1) / 0.7)));
+      x = width / 2;
+      y = height / 2;
+      r = full * grow;
+      claim = Math.max(0, 1 - grow * 2.5);
+    }
+
+    field.style.setProperty("--x", `${x}px`);
+    field.style.setProperty("--y", `${y}px`);
+    field.style.setProperty("--r", `${r}px`);
+    field.style.setProperty("--ring", String(narrow.matches ? 0 : 1 - open));
+    field.style.setProperty("--claim", String(claim));
+    section.classList.toggle(
+      "is-open",
+      narrow.matches ? claim === 0 : open > 0,
+    );
+  }
+
+  const queue = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(paint);
+  };
+
+  addEventListener("scroll", queue, { passive: true });
+  addEventListener("resize", queue);
+  field.addEventListener("pointermove", (event) => {
+    if (event.pointerType !== "mouse") return;
+    const box = field.getBoundingClientRect();
+    pointer = { x: event.clientX - box.left, y: event.clientY - box.top };
+    section.classList.add("is-free");
+    queue();
+  });
+  field.addEventListener("pointerleave", () => {
+    pointer = null;
+    section.classList.remove("is-free");
+    queue();
+  });
+  paint();
+})();
+
+// Hash the retained screenshot in this browser and compare it with the
 // checksum that the run log recorded. "Change one byte" flips a byte of a
 // copy of the download, so the visitor sees the integrity check fail.
 (() => {
-  const card = document.querySelector(".integrity");
+  const card = document.getElementById("integrity-card");
   const img = document.getElementById("artifact-img");
   const now = document.getElementById("hash-now");
   const verdict = document.getElementById("verdict");
@@ -105,19 +228,104 @@ document.documentElement.classList.add("js");
   });
 })();
 
-// Copy buttons on each command panel.
-document.querySelectorAll("[data-copy]").forEach((button) => {
-  button.addEventListener("click", async () => {
-    const code = button.parentElement.querySelector("code").textContent;
-    try {
-      await navigator.clipboard.writeText(code);
-      button.textContent = "Copied";
-    } catch {
-      button.textContent = "Select it";
+// Run: the step nearest the middle of the screen is active, and the held
+// terminal shows that step's recorded output.
+(() => {
+  const section = document.querySelector(".run");
+  const steps = [...document.querySelectorAll(".run-step")];
+  const screens = [...document.querySelectorAll(".term-screen")];
+  // The drawing's tubes end at about 28% and 55% of its width.
+  const scope = document.querySelector(".run-scope img");
+  if (!section || !steps.length) return;
+
+  // On a phone the held terminal would cover the steps: put a copy of each
+  // step's recorded output under the step instead.
+  const narrow = matchMedia("(max-width: 900px)");
+  const place = () => {
+    steps.forEach((step, i) => {
+      let copy = step.querySelector(".step-screen");
+      if (narrow.matches && !copy) {
+        copy = screens[i].cloneNode(true);
+        copy.className = "step-screen";
+        copy.setAttribute("data-ui", "");
+        step.append(copy);
+      } else if (!narrow.matches && copy) copy.remove();
+    });
+    section.classList.toggle("has-step-screens", narrow.matches);
+  };
+  narrow.addEventListener("change", place);
+  place();
+
+  const activate = (index) => {
+    steps.forEach((s, i) => s.classList.toggle("is-active", i === index));
+    screens.forEach((s, i) => s.classList.toggle("is-active", i === index));
+    if (scope) scope.style.setProperty("--extend", `${[72, 45, 0][index]}%`);
+  };
+  activate(0);
+  if (!("IntersectionObserver" in window)) {
+    // No scroll tracking: show every step at full strength.
+    steps.forEach((s) => s.classList.add("is-active"));
+    return;
+  }
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) activate(steps.indexOf(entry.target));
+      }
+    },
+    { rootMargin: "-45% 0px -45% 0px" },
+  );
+  steps.forEach((s) => io.observe(s));
+})();
+
+// Surfaces: a command menu. Typing filters the rows; arrow keys, hover and
+// taps move the selection, which opens the surface's recorded output.
+(() => {
+  const input = document.getElementById("surface-filter");
+  const items = [...document.querySelectorAll(".menu-item")];
+  const empty = document.getElementById("surface-empty");
+  if (!input || !items.length) return;
+  const fine = matchMedia("(hover: hover) and (pointer: fine)");
+
+  const visible = () => items.filter((item) => !item.hidden);
+  const select = (target) => {
+    for (const item of items) {
+      const open = item === target;
+      item.classList.toggle("is-open", open);
+      item.querySelector(".menu-row").setAttribute("aria-expanded", open);
     }
-    setTimeout(() => (button.textContent = "Copy"), 1600);
+  };
+
+  items.forEach((item) => {
+    const row = item.querySelector(".menu-row");
+    row.addEventListener("click", () => select(item));
+    row.addEventListener("pointerenter", () => {
+      if (fine.matches) select(item);
+    });
   });
-});
+
+  input.addEventListener("input", () => {
+    const words = input.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    for (const item of items) {
+      const haystack = `${item.textContent} ${item.dataset.keys}`.toLowerCase();
+      item.hidden = !words.every((word) => haystack.includes(word));
+    }
+    const shown = visible();
+    empty.hidden = shown.length > 0;
+    if (shown.length && !shown.some((i) => i.classList.contains("is-open")))
+      select(shown[0]);
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const shown = visible();
+    if (!shown.length) return;
+    const current = shown.findIndex((i) => i.classList.contains("is-open"));
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    select(shown[(current + step + shown.length) % shown.length]);
+  });
+})();
 
 // Showcase: show the recorded CLI output for the selected run state.
 (() => {
@@ -204,7 +412,7 @@ document.querySelectorAll("[data-copy]").forEach((button) => {
         : "spyglass report --run terminal-trial";
     status.textContent =
       state.command === "result" ? state.error.code : state.status;
-    status.className = `pill ${passed ? "" : "pill-fail"}`;
+    status.className = `pill ${passed ? "pill-pass" : "pill-fail"}`;
     exit.textContent = `exit ${state.exit}`;
 
     body.replaceChildren();

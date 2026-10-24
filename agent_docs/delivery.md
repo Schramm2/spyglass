@@ -26,7 +26,8 @@ changes the public contract. In the same pull request:
 - add an entry under `[Unreleased]` in `CHANGELOG.md`;
 - update the command table or text in `README.md`, and the help in
   `src/help.ts`;
-- update the skill text in `skills/` that names the command or field.
+- update the skill text in `skills/` that names the command or field;
+- update the matching section of the docs page, `landing/docs/index.html`.
 
 The version number changes only at release time; see "Version and release".
 

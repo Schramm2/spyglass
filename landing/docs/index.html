@@ -1,0 +1,2010 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spyglass docs</title>
+    <meta
+      name="description"
+      content="The Spyglass manual: install, quickstart, concepts, every command, surfaces, configuration, results, exit codes and failure cases."
+    />
+    <meta name="theme-color" content="#000000" />
+    <link
+      rel="icon"
+      href="../assets/logo-mark-brass.svg"
+      type="image/svg+xml"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="docs.css" />
+    <script>
+      document.documentElement.classList.add("js");
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#manual">Skip to the manual</a>
+
+    <header class="docs-bar">
+      <a class="brand" href="../" aria-label="Spyglass home">
+        <img src="../assets/logo-mark.svg" alt="" width="26" height="26" />
+        <span>Spyglass</span>
+        <span>Docs</span>
+      </a>
+      <div class="docs-search" role="search">
+        <label class="sr-only" for="docs-filter">Search the docs</label>
+        <input
+          id="docs-filter"
+          type="search"
+          placeholder="Search commands, terms and failures"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+      <nav class="docs-bar-links" aria-label="Project">
+        <a href="../">Home</a>
+        <a href="https://github.com/Schramm2/spyglass">GitHub</a>
+      </nav>
+    </header>
+
+    <div class="docs-hero">
+      <div class="docs-intro">
+        <h1>The Spyglass manual</h1>
+        <p>
+          Everything a person or an agent needs to verify a change with
+          Spyglass: install it, run the quickstart, then look up each command,
+          term and failure code.
+        </p>
+      </div>
+      <nav class="docs-start" aria-label="Start here">
+        <a href="#install"
+          ><strong>Install</strong> Node 24, Git and a build from source</a
+        >
+        <a href="#quickstart"
+          ><strong>Quickstart</strong> A local demo in about five minutes</a
+        >
+        <a href="#commands"
+          ><strong>Commands</strong> Every command, its usage and an example</a
+        >
+        <a href="#failure-cases"
+          ><strong>Failure cases</strong> What each code means</a
+        >
+      </nav>
+      <figure class="docs-scope">
+        <img
+          src="../assets/gen/cross-section.jpg"
+          alt="A drawn cross-section of a collapsible telescope."
+          width="2172"
+          height="430"
+        />
+      </figure>
+    </div>
+
+    <div class="docs-body">
+      <nav class="toc" aria-label="Contents">
+        <details id="toc-details" open>
+          <summary>Contents</summary>
+          <ol>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#install">Install</a></li>
+            <li><a href="#quickstart">Quickstart</a></li>
+            <li><a href="#workflow">Workflow</a></li>
+            <li><a href="#concepts">Concepts</a></li>
+            <li>
+              <a href="#commands">Commands</a>
+              <ol>
+                <li>
+                  <a href="#cmd-init"><code>init</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-up"><code>up</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-status"><code>status</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-doctor"><code>doctor</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-down"><code>down</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-check"><code>check</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-exec"><code>exec</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-api"><code>api</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-db"><code>db</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-ps"><code>ps</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-mark"><code>mark</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-logs"><code>logs</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-evidence"><code>evidence</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-result"><code>result</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-report"><code>report</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-schema"><code>schema</code></a>
+                </li>
+                <li>
+                  <a href="#cmd-ui"><code>ui</code></a>
+                </li>
+              </ol>
+            </li>
+            <li><a href="#surfaces">Surfaces</a></li>
+            <li><a href="#configuration">Configuration</a></li>
+            <li><a href="#results">Plans and results</a></li>
+            <li><a href="#output">Output and exit codes</a></li>
+            <li><a href="#failure-cases">Failure cases</a></li>
+            <li><a href="#skills">Agent skills</a></li>
+            <li><a href="#limitations">Limitations</a></li>
+            <li><a href="#development">Development</a></li>
+          </ol>
+        </details>
+      </nav>
+
+      <main class="manual" id="manual">
+        <section class="doc" id="overview" aria-labelledby="overview-title">
+          <h2 id="overview-title">Overview</h2>
+          <p class="doc-source">
+            Source:
+            <a href="https://github.com/Schramm2/spyglass/blob/main/README.md"
+              >README.md</a
+            >
+          </p>
+          <p>
+            Spyglass is a command-line tool for coding agents and the people who
+            review their work. It connects browser actions, HTTP calls, database
+            reads and repository checks to one <strong>run</strong>. Each run
+            records its source identity, every attempt (failed attempts too) and
+            its artifacts. The evidence stays after cleanup, so another agent or
+            person can inspect the result later without the original chat or
+            shell.
+          </p>
+          <p>
+            An agent can say "the tests pass" or "the page works". That
+            statement is not proof. Spyglass makes each verification step a
+            recorded fact:
+          </p>
+          <ul>
+            <li>
+              <strong>Real tools, no mocks.</strong> Spyglass drives a real
+              browser, real HTTP requests, a real PostgreSQL database and the
+              repository's own checks.
+            </li>
+            <li>
+              <strong>Evidence that stays.</strong> Screenshots, responses,
+              query rows and logs go to a Git-ignored evidence folder with
+              checksums. Cleanup does not remove them.
+            </li>
+            <li>
+              <strong>Honest results.</strong> Failed attempts stay in the
+              record. A report stays incomplete until each claim has a completed
+              step and its evidence.
+            </li>
+            <li>
+              <strong>Source identity.</strong> Each run records the commit and
+              working-tree state. Evidence from source that changed after the
+              run started cannot pass as proof for the original source.
+            </li>
+            <li>
+              <strong>Safe by default.</strong> The browser can open only the
+              configured origins. Database queries run in a read-only
+              transaction. Reports mask credentials, cookies and authorization
+              headers.
+            </li>
+            <li>
+              <strong>Built for agents.</strong> Each command gives a versioned
+              JSON result with <code>--json</code>, uses stable exit codes and
+              never prompts.
+            </li>
+          </ul>
+          <div class="callout">
+            <p>
+              Spyglass does not decide whether a claim covers the request, or
+              whether a screenshot looks correct. The
+              <strong>operator</strong> (the agent or person) selects the claims
+              and judges the results. Spyglass makes sure that the cited steps
+              completed, the artifacts exist, the source is current and the
+              cleanup is done.
+            </p>
+          </div>
+        </section>
+
+        <section class="doc" id="install" aria-labelledby="install-title">
+          <h2 id="install-title">Install</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#installation"
+              >README.md</a
+            >
+          </p>
+          <h3>Requirements</h3>
+          <ul>
+            <li><a href="https://nodejs.org/">Node.js</a> 24 or later</li>
+            <li>Git</li>
+          </ul>
+          <p>These tools are necessary only for some surfaces:</p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Tool</th>
+                  <th scope="col">Necessary for</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="https://www.npmjs.com/package/agent-browser"
+                      ><code>agent-browser</code></a
+                    >
+                    0.38.2
+                  </td>
+                  <td>
+                    <code>up</code> for a profile with a <code>web</code>
+                    origin. Browser checks (<code>ui</code>) also need its
+                    Chromium.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Docker Compose</td>
+                  <td>
+                    Container status and logs (<code>ps</code>,
+                    <code>logs</code>)
+                  </td>
+                </tr>
+                <tr>
+                  <td>A PostgreSQL database</td>
+                  <td>
+                    Database reads (<code>db</code>). The driver is included.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Spyglass does not install tools, fetch secrets or start your app
+            during <code>init</code>.
+          </p>
+          <h3>Install from source</h3>
+          <p>Spyglass is not on npm yet. Install it from source:</p>
+          <div class="call">
+            <pre><code>git clone --branch v1.1.0 https://github.com/Schramm2/spyglass.git
+cd spyglass
+npm ci
+npm run build
+npm link
+spyglass --version</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+        </section>
+
+        <section class="doc" id="quickstart" aria-labelledby="quickstart-title">
+          <h2 id="quickstart-title">Quickstart</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md"
+              >docs/quickstart.md</a
+            >
+          </p>
+          <p>
+            Use this disposable demo to learn the workflow that an agent uses.
+            It starts a local HTTP app, records a failed assertion and a later
+            passing check, and keeps its report after cleanup. It does not use
+            paid services.
+          </p>
+          <h3>Prepare the demo</h3>
+          <p>
+            From the Spyglass checkout, copy the fixture and examples into a new
+            temporary repository. Keep the printed directory for the trial.
+          </p>
+          <div class="call">
+            <pre><code>trial=$(mktemp -d /tmp/spyglass-trial.XXXXXX)
+mkdir -p "$trial/fixtures"
+cp -R fixtures/demo-app "$trial/fixtures/"
+cp examples/demo.profile.json "$trial/spyglass.json"
+cp examples/demo.plan.json "$trial/verification-plan.json"
+printf '.spyglass/\n' > "$trial/.gitignore"
+cd "$trial"
+git init -q
+git add .
+git -c user.name='Spyglass Trial' -c user.email='trial@example.invalid' commit -qm 'Demo baseline'
+printf '%s\n' "$trial"</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <h3>Start, fail and check</h3>
+          <div class="call">
+            <pre><code>spyglass up --run terminal-trial --plan verification-plan.json
+spyglass check deliberate-failure --run terminal-trial
+spyglass check health --run terminal-trial
+spyglass status --run terminal-trial</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            The deliberate check must exit 1 with <code>CHECK_FAILED</code>. The
+            health check must exit 0 and show <code>health-ready: true</code>.
+            Both attempts stay in
+            <code>.spyglass/runs/terminal-trial/spyglass/log.jsonl</code>. Each
+            output names its step. The health output also names its artifact.
+          </p>
+          <h3>Record what you observed</h3>
+          <p>
+            The step log records what happened. The result file records what it
+            proves: for each claim, you name the steps and artifacts that prove
+            it.
+            <code>result</code> checks that those steps completed and that the
+            artifacts exist with their checksums, so a claim cannot pass on a
+            statement alone. An agent normally writes this file; in this trial,
+            you write it.
+          </p>
+          <p>
+            Open
+            <code>.spyglass/runs/terminal-trial/spyglass/result.json</code> in
+            your editor. Set <code>operator</code> to <code>human</code>. For
+            <code>health-ready</code>, set <code>outcome</code> to
+            <code>passed</code>, copy the health step ID into
+            <code>steps</code>, and copy its artifact path into
+            <code>artifacts</code>. Write your observation in
+            <code>observed</code>.
+          </p>
+          <p>
+            Fill the prepared <code>failure-detection</code> entry in the
+            top-level <code>controls</code> array. Use the two step IDs from the
+            failed and passing commands:
+          </p>
+          <div class="call">
+            <pre><code>{
+  "id": "failure-detection",
+  "failedStep": "FAILED_STEP_ID",
+  "restoredStep": "HEALTH_STEP_ID",
+  "observedFailure": "The deliberate check failed health-ready.",
+  "observedPass": "The health response returned HTTP 200 and status ok."
+}</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            Keep the existing limits. This result proves the health command and
+            the failed assertion check. It does not prove a UI or persistent
+            data.
+          </p>
+          <div class="call">
+            <pre><code>spyglass result --run terminal-trial --file .spyglass/runs/terminal-trial/spyglass/result.json
+spyglass doctor --run terminal-trial
+spyglass down --run terminal-trial
+spyglass report --run terminal-trial</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            Open the page at <code>reportPath</code> in the
+            <code>report</code> output. Check that it includes both attempts,
+            the observation, the source identity, the limit and cleanup. A
+            report run before cleanup must remain incomplete. Running
+            <code>report</code> after cleanup needs no live app.
+          </p>
+          <h3>Continue an agent's run</h3>
+          <p>
+            In a prepared trial, an agent has started the run
+            <code>agent-handoff</code>, recorded one check and left the run
+            idle. Continue it without the agent's chat or shell:
+          </p>
+          <div class="call">
+            <pre><code>spyglass status --run agent-handoff</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            Use the status output to find the completed check, its outcome and
+            the pending claim. Run the check that the claim still needs, record
+            the result as in "Record what you observed", then run
+            <code>down</code> and <code>report</code> for
+            <code>agent-handoff</code>. If another operator is driving the run,
+            Spyglass refuses your command with <code>RUN_BUSY</code>; wait until
+            that command finishes.
+          </p>
+          <h3>Handoff</h3>
+          <figure class="doc-figure">
+            <img
+              src="../assets/gen/logbook.jpg"
+              alt="An open handwritten logbook with a closed brass telescope across it."
+              width="1672"
+              height="941"
+              loading="lazy"
+            />
+          </figure>
+          <p>
+            Open a new terminal, change to the printed trial directory, and run:
+          </p>
+          <div class="call">
+            <pre><code>spyglass status --run terminal-trial
+spyglass report --run terminal-trial --json</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            The run should remain stopped and its report should still be
+            complete. A person or agent can inspect it without the original
+            shell or chat. Record any unclear step or missing information as a
+            usability defect.
+          </p>
+        </section>
+
+        <section class="doc" id="workflow" aria-labelledby="workflow-title">
+          <h2 id="workflow-title">Workflow</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#quick-start"
+              >README.md</a
+            >
+          </p>
+          <p>In your own repository, the workflow is:</p>
+          <div class="call">
+            <pre><code>spyglass init                                   # write spyglass.json; review it
+spyglass up --run my-change --plan verification-plan.json --json
+spyglass check verify --run my-change --json    # run a named check
+spyglass result --run my-change --file PATH     # record claim results
+spyglass doctor --run my-change --json
+spyglass down --run my-change --json            # clean up owned resources
+spyglass report --run my-change --json          # write the offline report</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            Add <code>.spyglass/</code> to your <code>.gitignore</code>. It
+            holds the evidence folder.
+          </p>
+          <p>
+            <code>up --plan</code> writes a pending result file and prints its
+            path. Put the step IDs, artifact paths and observations from your
+            checks into that file. Then record it with
+            <code>spyglass result</code>. If a check fails, keep the original
+            expectation. Repair the source and start a new run.
+          </p>
+        </section>
+
+        <section class="doc" id="concepts" aria-labelledby="concepts-title">
+          <h2 id="concepts-title">Concepts</h2>
+          <p class="doc-source">
+            Source:
+            <a href="https://github.com/Schramm2/spyglass/blob/main/GLOSSARY.md"
+              >GLOSSARY.md</a
+            >
+          </p>
+          <p>
+            These terms name the parts of a verification, from the repository
+            setup to the retained report.
+          </p>
+          <h3>Runs and evidence</h3>
+          <dl class="terms">
+            <div>
+              <dt>Run</dt>
+              <dd>
+                One verification with a fixed source identity and isolated
+                resources.
+                <span class="avoid"
+                  >Avoid: session (a browser session belongs to a seat inside a
+                  run)</span
+                >
+              </dd>
+            </div>
+            <div>
+              <dt>Step</dt>
+              <dd>
+                One recorded CLI operation within a run, including a failed one.
+              </dd>
+            </div>
+            <div>
+              <dt>Attempt</dt>
+              <dd>
+                One execution of a check. Failed attempts stay in the record.
+              </dd>
+            </div>
+            <div>
+              <dt>Artifact</dt>
+              <dd>
+                A retained file tied to the step that produced it and to its
+                source identity.
+              </dd>
+            </div>
+            <div>
+              <dt>Evidence folder</dt>
+              <dd>
+                A Git-ignored directory in the target repository that holds a
+                run's step log, artifacts and report, and survives cleanup.
+              </dd>
+            </div>
+            <div>
+              <dt>Source identity</dt>
+              <dd>
+                The commit and working-tree state that a run records when it
+                starts. Evidence from changed source cannot prove a claim about
+                the recorded source.
+                <span class="avoid"
+                  >Avoid: snapshot (<code>ui snapshot</code> captures the page
+                  state)</span
+                >
+              </dd>
+            </div>
+            <div>
+              <dt>Import root</dt>
+              <dd>
+                A directory that a profile declares as a safe origin for
+                imported artifacts.
+              </dd>
+            </div>
+            <div>
+              <dt>Mark</dt>
+              <dd>
+                A named timestamp in a run that later log reads start from.
+              </dd>
+            </div>
+            <div>
+              <dt>Report</dt>
+              <dd>
+                The offline record of a run: its claims, steps, artifacts,
+                controls, limits and cleanup. It stays incomplete until each
+                required claim has its proof.
+              </dd>
+            </div>
+          </dl>
+          <h3>Plans and results</h3>
+          <dl class="terms">
+            <div>
+              <dt>Plan</dt>
+              <dd>
+                The claims, controls, gates and limits that a run must cover,
+                fixed when the run starts.
+              </dd>
+            </div>
+            <div>
+              <dt>Claim</dt>
+              <dd>
+                An observable acceptance condition, with its entry point,
+                precondition, expected result and the checks that supply its
+                evidence.
+              </dd>
+            </div>
+            <div>
+              <dt>Result</dt>
+              <dd>
+                The operator's record of the outcome and evidence of each claim,
+                control and gate in a plan.
+              </dd>
+            </div>
+            <div>
+              <dt>Control</dt>
+              <dd>
+                A deliberate failing attempt and its restored passing attempt,
+                which show that a check detects the failure it is meant to
+                detect.
+              </dd>
+            </div>
+            <div>
+              <dt>Gate</dt>
+              <dd>
+                A repository-required check named in the plan. The result
+                records its outcome and the steps that prove it.
+              </dd>
+            </div>
+            <div>
+              <dt>Limit</dt>
+              <dd>
+                A stated part of the behavior that a run's evidence does not
+                cover.
+              </dd>
+            </div>
+            <div>
+              <dt>Independent read</dt>
+              <dd>
+                A step after a side effect completes that reads the result
+                through a separate path, such as a database read after an API
+                write.
+              </dd>
+            </div>
+            <div>
+              <dt>Inspection</dt>
+              <dd>
+                The operator's record of what a screenshot shows at a stated
+                viewport, compared with the expected appearance.
+              </dd>
+            </div>
+          </dl>
+          <h3>Repository setup</h3>
+          <dl class="terms">
+            <div>
+              <dt>Profile</dt>
+              <dd>
+                The configuration of one target repository: tools, commands,
+                bindings, seats, checks and evidence rules.
+              </dd>
+            </div>
+            <div>
+              <dt>Lifecycle mode</dt>
+              <dd>
+                The rule for who starts and stops the target app:
+                <code>owned</code> (Spyglass), <code>external</code> (the
+                repository's own tool) or <code>none</code> (no persistent
+                target).
+              </dd>
+            </div>
+            <div>
+              <dt>Owner</dt>
+              <dd>
+                The repository's own tool that starts, checks or cleans up its
+                resources when the lifecycle mode is <code>external</code>.
+              </dd>
+            </div>
+            <div>
+              <dt>Binding</dt>
+              <dd>
+                A named value that fills a placeholder in a profile for one run,
+                such as a port or an installation name.
+              </dd>
+            </div>
+            <div>
+              <dt>Seat</dt>
+              <dd>A named test identity with credential references.</dd>
+            </div>
+            <div>
+              <dt>Check</dt>
+              <dd>
+                A named, repeatable command or journey in a profile that
+                supplies evidence.
+                <span class="avoid"
+                  >Avoid: test (a test is one kind of check)</span
+                >
+              </dd>
+            </div>
+            <div>
+              <dt>Surface</dt>
+              <dd>
+                A kind of target that Spyglass can drive or observe: repository
+                checks, commands, the browser, HTTP, PostgreSQL, Docker Compose
+                and imported evidence.
+              </dd>
+            </div>
+            <div>
+              <dt>Adapter</dt>
+              <dd>
+                The part of Spyglass that connects one tool to a surface and to
+                the run and evidence contracts.
+              </dd>
+            </div>
+            <div>
+              <dt>Adapter gap</dt>
+              <dd>
+                A required behavior that works for a user but that no adapter
+                can drive or observe.
+              </dd>
+            </div>
+          </dl>
+          <h3>People</h3>
+          <dl class="terms">
+            <div>
+              <dt>Operator</dt>
+              <dd>
+                The agent or person who selects claims, drives the run and
+                judges the results.
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="doc" id="commands" aria-labelledby="commands-title">
+          <h2 id="commands-title">Commands</h2>
+          <p class="doc-source">
+            Source:
+            <a href="https://github.com/Schramm2/spyglass/blob/main/src/help.ts"
+              >src/help.ts</a
+            >,
+            <a href="https://github.com/Schramm2/spyglass/blob/main/src/cli.ts"
+              >src/cli.ts</a
+            >,
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/src/browser.ts"
+              >src/browser.ts</a
+            >
+          </p>
+          <p>
+            The options are <code>--json</code> and <code>--help</code>. Run
+            selection is <code>--run ID</code> or <code>SPYGLASS_RUN</code>. Run
+            <code>spyglass --help</code> for all commands, and
+            <code>spyglass COMMAND --help</code> for one command.
+          </p>
+          <p>
+            Exit codes: <code>0</code> success; <code>1</code> failed
+            verification; <code>2</code> invalid input;
+            <code>3</code> environment failure. A successful command is evidence
+            for a step. It does not by itself prove a claim.
+          </p>
+          <article
+            class="cmd"
+            id="cmd-init"
+            data-keys="init profile spyglass.json setup discover"
+          >
+            <h3><code>init</code></h3>
+            <pre class="usage"><code>spyglass init [--force]</code></pre>
+            <p>
+              Read repository verification guidance and task runners. Write
+              spyglass.json with observed and guessed fields. Review owner
+              setup, guessed readiness and addresses before up. No app starts.
+              --force prints changed fields before replacement.
+            </p>
+            <div class="call">
+              <pre><code>spyglass init --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-up"
+            data-keys="up start create run plan binding profile baseline"
+          >
+            <h3><code>up</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE]</code></pre>
+            <p>
+              Create a run with a fixed source baseline and a pending result
+              template. Evidence must be Git-ignored and unique to the run.
+              owned starts an app; external calls its owner doctor without
+              starting owner resources; none runs checks without a server. Bind
+              only non-secret values. Secret fields use env:, file:,
+              dotenv:path#KEY or op:// references. Direct launch: up --cmd "npm
+              run dev" --ready http://127.0.0.1:3000. Explore without a plan; a
+              complete report requires claims.
+            </p>
+            <div class="call">
+              <pre><code>spyglass up --run change-42 --profile spyglass.json --plan verification-plan.json --binding ownerRun=example --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-status"
+            data-keys="status inspect handoff runs worktree completedChecks"
+          >
+            <h3><code>status</code></h3>
+            <pre class="usage"><code>spyglass status [--run ID]</code></pre>
+            <p>
+              List the runs of every worktree of the repository, or inspect one
+              run: source, active command, completed checks, pending claims,
+              capabilities, owner resources, cleanup and the next command.
+              Inspection works while another operator drives the run.
+              completedChecks names childExitCode (child process) and
+              spyglassExitCode (Spyglass command); exitCode and commandExitCode
+              remain aliases. A run whose worktree was removed shows
+              worktreeRemoved; stop it with down from any worktree.
+            </p>
+            <div class="call">
+              <pre><code>spyglass status --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-doctor"
+            data-keys="doctor readiness source owner role permissions"
+          >
+            <h3><code>doctor</code></h3>
+            <pre class="usage"><code>spyglass doctor --run ID</code></pre>
+            <p>
+              Check immutable source, readiness and the configured owner doctor.
+              Database profiles report role permissions when credentials are
+              available. A writable role is a limit: read-only transactions
+              cannot prevent every function side effect. Diagnostics retain
+              their evidence; a source mismatch never resets the baseline.
+            </p>
+            <div class="call">
+              <pre><code>spyglass doctor --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article class="cmd" id="cmd-down" data-keys="down stop cleanup">
+            <h3><code>down</code></h3>
+            <pre class="usage"><code>spyglass down --run ID</code></pre>
+            <p>
+              Stop only the run-owned app process group and browser sessions.
+              Keep evidence and run records. For external resources, run the
+              profile check with cleanup:true through the owner before the final
+              report. Repeated down is safe.
+            </p>
+            <div class="call">
+              <pre><code>spyglass down --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-check"
+            data-keys="check named profile command assertions artifacts cleanup"
+          >
+            <h3><code>check</code></h3>
+            <pre class="usage"><code>spyglass check NAME --run ID</code></pre>
+            <p>
+              Run a profile command with its bindings, environment and deadline.
+              result:exit checks the child exit; result:json requires nonempty
+              valid assertions; result:engine imports the owner journey result.
+              Failed assertions, skips and artifact errors remain failures even
+              when the child exits zero. Declared artifacts must be in allowed
+              import roots. cleanup:true records successful owner cleanup.
+            </p>
+            <div class="call">
+              <pre><code>spyglass check verify --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-exec"
+            data-keys="exec command timeout child exit"
+          >
+            <h3><code>exec</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass exec [--timeout-ms MILLISECONDS] --run ID -- COMMAND [ARGUMENTS]</code></pre>
+            <p>
+              Run a trusted command as separate arguments and retain output. The
+              default deadline is 300 seconds; --timeout-ms selects an integer
+              from 1 to 86400000 milliseconds. The output limit is 8 MiB.
+              data.exitCode retains the child status; the CLI exits 1 for a
+              failed child. Global options go before --. exec is not a sandbox
+              and command success alone proves only its declared command-level
+              condition.
+            </p>
+            <div class="call">
+              <pre><code>spyglass exec --run change-42 --json -- npm test</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-api"
+            data-keys="api http request seat expect"
+          >
+            <h3><code>api</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS]</code></pre>
+            <p>
+              Request a path relative to profile.api. A named seat resolves its
+              token reference privately. Requests stay on the configured origin;
+              redirects are retained but not followed. Invalid JSON is rejected
+              before sending. Save the masked request and response, print a
+              short body, and compare --expect when given. HTTP 202 means
+              accepted, not completed: wait for completion and then make a
+              separate read. Keep raw credentials out of argv.
+            </p>
+            <div class="call">
+              <pre><code>spyglass api GET /jobs/123 --run change-42 --seat member --expect 200 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-db"
+            data-keys="db database postgresql sql query rows"
+          >
+            <h3><code>db</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass db SQL --run ID [--expect-rows N]</code></pre>
+            <p>
+              Run one PostgreSQL statement through the extended protocol in a
+              read-only transaction. profile.db.connection must be a secret
+              reference. Retained results are bounded to 1,000 rows and 1 MiB;
+              overflow is a failed check. No psql meta-commands. Role warnings
+              describe remaining function-side-effect limits. Use the owner
+              database; this command creates no server.
+            </p>
+            <div class="call">
+              <pre><code>spyglass db "SELECT 42 AS answer" --run change-42 --expect-rows 1 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-ps"
+            data-keys="ps compose containers health"
+          >
+            <h3><code>ps</code></h3>
+            <pre class="usage"><code>spyglass ps --run ID</code></pre>
+            <p>
+              Inspect only profile.compose.project with its declared files.
+              Print container state and health. A required service that is not
+              running fails; this command changes no container.
+            </p>
+            <div class="call">
+              <pre><code>spyglass ps --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-mark"
+            data-keys="mark timestamp label logs"
+          >
+            <h3><code>mark</code></h3>
+            <pre class="usage"><code>spyglass mark LABEL --run ID</code></pre>
+            <p>
+              Save a timestamp in this run for later process or Compose log
+              inspection.
+            </p>
+            <div class="call">
+              <pre><code>spyglass mark before-action --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-logs"
+            data-keys="logs compose since mark"
+          >
+            <h3><code>logs</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass logs [SERVICE] --since MARK --run ID</code></pre>
+            <p>
+              Read retained app logs or the declared Compose project since an
+              existing mark. Save masked evidence. Missing marks fail and list
+              the known marks. Diagnostics remain available after a drive fails.
+            </p>
+            <div class="call">
+              <pre><code>spyglass logs app --since before-action --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-evidence"
+            data-keys="evidence add import artifact checksum"
+          >
+            <h3><code>evidence</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass evidence add --step STEP_ID --file PATH --run ID</code></pre>
+            <p>
+              Copy a regular file from the evidence folder or a profile.imports
+              root. Retain its checksum and producing-step reference. Original
+              files remain unchanged. Reject unsafe paths, symlinks and
+              unsupported formats. Use named-check artifact declarations for
+              normal check output.
+            </p>
+            <div class="call">
+              <pre><code>spyglass evidence add --step 123456 --file runs/owner/result.json --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-result"
+            data-keys="result record claims controls gates inspection"
+          >
+            <h3><code>result</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass result --file PATH --run ID</code></pre>
+            <p>
+              Read the edited result template printed by up. Validate claim IDs,
+              cited steps and artifacts, visual inspection, independent reads,
+              gates and predeclared negative controls. For multiple viewports
+              use inspections with viewport, expected, observed and artifact for
+              each cited screenshot. The single inspection remains supported.
+              Controls include failedRun; replace its current run ID when the
+              failure belongs to an earlier run, also one from another worktree
+              of the repository. Keep that worktree until the report. A gate can
+              name run, another run with the same source identity, profile and
+              bindings whose steps prove it. Use spyglass schema result for the
+              full shape. Recording a result does not complete cleanup or
+              certify semantic coverage.
+            </p>
+            <div class="call">
+              <pre><code>spyglass result --file .spyglass/runs/change-42/spyglass/result.json --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-report"
+            data-keys="report html json offline"
+          >
+            <h3><code>report</code></h3>
+            <pre class="usage"><code>spyglass report --run ID</code></pre>
+            <p>
+              Write retained offline HTML and JSON from the run log, recorded
+              result, source and artifact checksums. Only a result recorded with
+              spyglass result counts. data.reportPath is the absolute path of
+              the HTML page. Works after cleanup without contacting the app.
+              Missing claims, controls, required gates, cleanup, altered
+              evidence or source changes produce a diagnostic report and exit 1.
+              Prior failed attempts remain visible.
+            </p>
+            <div class="call">
+              <pre><code>spyglass report --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-schema"
+            data-keys="schema json profile plan result"
+          >
+            <h3><code>schema</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass schema profile|plan|result</code></pre>
+            <p>
+              Print the version 1 JSON schema without a repository or run.
+              --json wraps it in the standard result envelope.
+            </p>
+            <div class="call">
+              <pre><code>spyglass schema profile --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-ui"
+            data-keys="ui browser open snapshot proof focused login errors screenshot"
+          >
+            <h3><code>ui</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass ui [--seat SEAT] &lt;agent-browser command&gt;</code></pre>
+            <p>
+              Drive the web browser of a run. Each run and seat gets a new
+              headless browser session. Spyglass uses an explicit config and
+              allowed run origins. Page output is marked as untrusted content.
+              Run <code>spyglass ui --help</code> for all operations and limits.
+            </p>
+            <p>
+              Evidence: an isolated session, screenshot, DOM, errors and
+              requests. Operations include:
+            </p>
+            <ul>
+              <li><code>open PATH|URL</code></li>
+              <li><code>read [PATH|URL]</code></li>
+              <li><code>snapshot [-i|-c|--delta|--full]</code></li>
+              <li><code>proof LABEL</code></li>
+              <li>
+                <code>focused [--expect LABEL]</code>: records the focused
+                element's role, label, type and ID without its value.
+                <code>--expect</code> fails when the label differs.
+              </li>
+              <li><code>login SEAT</code></li>
+              <li><code>screenshot PATH</code></li>
+              <li>
+                <code>console</code>, <code>errors</code>,
+                <code>network requests</code>
+              </li>
+            </ul>
+            <p>
+              Use <code>spyglass down</code> to close run-owned sessions. A seat
+              browser left idle for <code>browser.idleTimeoutMs</code> (default
+              1 hour) shuts down. The next <code>ui</code> command reports
+              <code>BROWSER_EXPIRED</code>.
+            </p>
+            <div class="call">
+              <pre><code>spyglass ui open / --run change-42</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="doc" id="surfaces" aria-labelledby="surfaces-title">
+          <h2 id="surfaces-title">Surfaces</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#surfaces"
+              >README.md</a
+            >
+          </p>
+          <p>
+            A surface is a kind of target that Spyglass can drive or observe.
+            Version 1 supports these surfaces:
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Surface</th>
+                  <th scope="col">Commands</th>
+                  <th scope="col">Evidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Existing tests and journeys</td>
+                  <td><code>check NAME</code></td>
+                  <td>Exit status, assertions, declared artifacts</td>
+                </tr>
+                <tr>
+                  <td>Other commands</td>
+                  <td><code>exec -- COMMAND ARGS</code></td>
+                  <td>Bounded stdout and stderr, real exit status</td>
+                </tr>
+                <tr>
+                  <td>Web browser</td>
+                  <td>
+                    <code>ui open /</code>, <code>ui snapshot</code>,
+                    <code>ui proof LABEL</code>, <code>ui focused</code>
+                  </td>
+                  <td>
+                    Isolated session, screenshot, DOM, errors and requests
+                  </td>
+                </tr>
+                <tr>
+                  <td>HTTP</td>
+                  <td><code>api GET /path --expect 200</code></td>
+                  <td>
+                    Masked request and response; redirects are not followed
+                  </td>
+                </tr>
+                <tr>
+                  <td>PostgreSQL</td>
+                  <td><code>db 'SELECT ...' --expect-rows 1</code></td>
+                  <td>
+                    One statement in a read-only transaction, with rows and role
+                    limits
+                  </td>
+                </tr>
+                <tr>
+                  <td>Docker Compose</td>
+                  <td>
+                    <code>ps</code>, <code>mark LABEL</code>,
+                    <code>logs SERVICE --since LABEL</code>
+                  </td>
+                  <td>Project-scoped status and timestamped logs</td>
+                </tr>
+                <tr>
+                  <td>Other evidence</td>
+                  <td><code>evidence add --step ID --file PATH</code></td>
+                  <td>Checked copy from a declared import root</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <figure class="doc-figure doc-shot">
+            <img
+              src="../assets/proof-home.png"
+              alt="The demo app's Sign in page, as the Spyglass browser captured it with ui proof home."
+              width="1280"
+              height="577"
+              loading="lazy"
+            />
+            <figcaption>
+              A real screenshot that <code>spyglass ui proof home</code> kept in
+              the quickstart demo run.
+            </figcaption>
+          </figure>
+          <p>
+            Run <code>spyglass --help</code> for all commands, and
+            <code>spyglass COMMAND --help</code> for the arguments of one
+            command.
+          </p>
+        </section>
+
+        <section
+          class="doc"
+          id="configuration"
+          aria-labelledby="configuration-title"
+        >
+          <h2 id="configuration-title">Configuration</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#configuration"
+              >README.md</a
+            >
+          </p>
+          <p>
+            <code>spyglass init</code> writes a <strong>profile</strong>
+            (<code>spyglass.json</code>). It contains the tools, commands,
+            bindings and evidence rules for one repository. Review the guessed
+            fields before you run
+            <code>up</code>. See the
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/examples/demo.profile.json"
+              >example profile</a
+            >
+            and the
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/examples/demo.plan.json"
+              >example plan</a
+            >.
+          </p>
+          <p>
+            The JSON schemas are in
+            <a href="https://github.com/Schramm2/spyglass/tree/main/schemas"
+              ><code>schemas/</code></a
+            >. You can also print them:
+          </p>
+          <div class="call">
+            <pre><code>spyglass schema profile
+spyglass schema plan
+spyglass schema result</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <h3>Lifecycle modes</h3>
+          <p>A profile selects one lifecycle mode:</p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Mode</th>
+                  <th scope="col">Who starts and stops the app</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>owned</code></td>
+                  <td>
+                    Spyglass starts a process group and stops it on
+                    <code>down</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>external</code></td>
+                  <td>
+                    The repository's own tool starts and stops its resources.
+                    Spyglass records its doctor and checks. A named check with
+                    <code>cleanup: true</code> records the owner's cleanup.
+                    <code>down</code> closes only the Spyglass browser.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>none</code></td>
+                  <td>
+                    There is no persistent target, for example a library
+                    journey.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            For a long command, use
+            <code>spyglass exec --timeout-ms 900000 --run ID -- COMMAND</code>.
+            The default is 300 seconds; the maximum is 24 hours. The selected
+            deadline is retained with the result. CLI binding overrides are
+            retained with their resolved values, including bindings added only
+            on the command line.
+          </p>
+          <h3>Credentials</h3>
+          <p>Do not put credential values in a profile. Use references:</p>
+          <ul>
+            <li><code>env:NAME</code></li>
+            <li><code>file:path</code></li>
+            <li><code>dotenv:path#KEY</code></li>
+            <li><code>op://vault/item/field</code> (1Password CLI)</li>
+          </ul>
+          <p>
+            A <strong>seat</strong> is a named test identity with credential
+            references. Screenshots can contain private data. Examine the page
+            state before you take one.
+          </p>
+        </section>
+
+        <section class="doc" id="results" aria-labelledby="results-title">
+          <h2 id="results-title">Plans and results</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#output-and-exit-codes"
+              >README.md</a
+            >
+          </p>
+          <p>
+            <code>up --plan</code> writes a pending result file and prints its
+            path. Record the edited file with <code>spyglass result</code>.
+          </p>
+          <h3>Inspections</h3>
+          <p>
+            A visual result can use <code>inspections</code>, with one entry per
+            viewport. Each entry has <code>viewport</code>,
+            <code>expected</code>, <code>observed</code> and
+            <code>artifact</code>; the artifact must be a valid screenshot from
+            a cited step. The earlier single <code>inspection</code> remains
+            supported.
+          </p>
+          <h3>Controls</h3>
+          <p>
+            Control templates include <code>failedRun</code>, initially the
+            current run; replace it when the intended failure belongs to a
+            retained earlier run.
+          </p>
+          <h3>Worktrees</h3>
+          <p>
+            All worktrees of a repository share their runs. Put a fault in a
+            separate worktree, record its failing run there, and name that run
+            in
+            <code>failedRun</code>. Run <code>down</code> for the fault run in
+            its own worktree; Spyglass refuses commands that change a run from
+            another worktree (<code>RUN_OTHER_WORKTREE</code>). Keep the fault
+            worktree until the candidate report: its evidence folder holds the
+            failed attempt. Run IDs are unique in the repository. If a worktree
+            is removed while its run is active, <code>status</code> shows
+            <code>worktreeRemoved</code> and <code>down</code> stops that run
+            from any worktree.
+          </p>
+          <h3>Gates</h3>
+          <p>
+            A gate can cite another run with <code>run</code>, for example one
+            run that executes the repository gates for several journeys. Its
+            steps must have passed on the same source identity, profile and
+            bindings as the run that records the result.
+          </p>
+        </section>
+
+        <section class="doc" id="output" aria-labelledby="output-title">
+          <h2 id="output-title">Output and exit codes</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#output-and-exit-codes"
+              >README.md</a
+            >
+          </p>
+          <p>
+            Default output is compact, indented text for people.
+            <code>--json</code>
+            gives one versioned result object on stdout and diagnostics on
+            stderr. The two modes use the same handler and the same exit code.
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Exit code</th>
+                  <th scope="col">Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>0</code></td>
+                  <td>Success</td>
+                </tr>
+                <tr>
+                  <td><code>1</code></td>
+                  <td>Failed verification</td>
+                </tr>
+                <tr>
+                  <td><code>2</code></td>
+                  <td>Incorrect input</td>
+                </tr>
+                <tr>
+                  <td><code>3</code></td>
+                  <td>Environment failure</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <code>--run ID</code> selects a run across shell calls. You can also
+            set <code>SPYGLASS_RUN</code>; <code>--run</code> has priority.
+            <code>spyglass status --run ID</code> shows the handoff state of a
+            run. <code>completedChecks.childExitCode</code> is the child process
+            exit code; <code>completedChecks.spyglassExitCode</code> is the
+            Spyglass command exit code. A child can exit zero while Spyglass
+            rejects failed assertions. The earlier <code>exitCode</code> and
+            <code>commandExitCode</code> fields remain as aliases.
+          </p>
+        </section>
+
+        <section
+          class="doc"
+          id="failure-cases"
+          aria-labelledby="failure-cases-title"
+        >
+          <h2 id="failure-cases-title">Failure cases</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/failure-cases.md"
+              >docs/failure-cases.md</a
+            >
+          </p>
+          <p>
+            These cases define failures that the public CLI must detect. The
+            end-to-end tests run the built CLI in temporary Git repositories.
+            They test observable results and retained evidence.
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Area</th>
+                  <th scope="col">Failure case</th>
+                  <th scope="col">Required result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Input</td>
+                  <td>
+                    The profile has an unsupported version or an unknown field.
+                  </td>
+                  <td>
+                    The command exits with usage/profile status and names the
+                    invalid field. It does not launch the app.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Setup</td>
+                  <td>Two profiles match the repository.</td>
+                  <td>
+                    The command asks for an explicit profile through an error
+                    and next action. It does not prompt.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Setup</td>
+                  <td>A CLI binding overrides a profile default.</td>
+                  <td>
+                    Execution and retained binding records use the same resolved
+                    override.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Command</td>
+                  <td>A command exceeds its selected deadline.</td>
+                  <td>
+                    The attempt retains timeout status and output; an invalid
+                    deadline is rejected before execution.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Run</td>
+                  <td>The app exits before its readiness check succeeds.</td>
+                  <td>
+                    The run remains recorded as failed, its ID is returned, and
+                    status and cleanup remain available.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Run</td>
+                  <td>Two operators try to change one run at once.</td>
+                  <td>
+                    One mutation owns the lock. Status can inspect the active
+                    command. The second mutation fails with a recovery action.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Source</td>
+                  <td>Source changes after the run starts.</td>
+                  <td>
+                    Later evidence cannot be presented as proof for the original
+                    source. The run records both source identities or rejects
+                    the stale result.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Check</td>
+                  <td>
+                    A check exits zero but reports a failed assertion or skipped
+                    required assertion.
+                  </td>
+                  <td>
+                    The check fails and retains the command result, assertion
+                    details, skips, and artifacts.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Claim</td>
+                  <td>
+                    A required claim has no completed step or required evidence.
+                  </td>
+                  <td>
+                    The claim cannot pass. The report stays incomplete and names
+                    the missing proof.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Claim</td>
+                  <td>
+                    A side-effect claim has no independent read after the action
+                    completes.
+                  </td>
+                  <td>The claim cannot pass.</td>
+                </tr>
+                <tr>
+                  <td>Evidence</td>
+                  <td>
+                    An imported artifact is missing, outside an approved root,
+                    or changes during import.
+                  </td>
+                  <td>
+                    The import fails and does not claim the artifact as
+                    evidence.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Secret</td>
+                  <td>A request or page reflects a test credential.</td>
+                  <td>
+                    Reports and artifacts do not expose credential values,
+                    cookies, or authorization headers.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A browser action targets an origin outside the profile
+                    allowlist.
+                  </td>
+                  <td>
+                    The action fails with the required capability or policy
+                    named. It does not use another browser session.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A screenshot succeeds but a visual claim has no inspection
+                    record.
+                  </td>
+                  <td>The visual claim remains incomplete.</td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    An inspection for a viewport names a missing or unrelated
+                    screenshot.
+                  </td>
+                  <td>
+                    The result fails and names the inspection's missing proof.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Operator</td>
+                  <td>A child exits zero but its assertions fail.</td>
+                  <td>
+                    Status names the child and Spyglass exit codes separately.
+                    Default output is readable text.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Output</td>
+                  <td>
+                    External output contains terminal controls or a new line
+                    that resembles a Spyglass field.
+                  </td>
+                  <td>
+                    Text output escapes the control bytes and keeps external
+                    content inside its field.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Compatibility</td>
+                  <td>
+                    A version 1 result has a single inspection and no
+                    inspections array.
+                  </td>
+                  <td>
+                    Both the CLI and the published schema accept the result.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Control</td>
+                  <td>A control needs a failure from an earlier run.</td>
+                  <td>
+                    The result template includes the failed run ID, which the
+                    operator can replace with the retained baseline run.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Control</td>
+                  <td>
+                    The failed attempt ran in a separate worktree of the same
+                    repository, for an isolated fault.
+                  </td>
+                  <td>
+                    The candidate's result finds the failed run by its ID. A
+                    command that changes a run from another worktree fails and
+                    names the run's worktree. If that worktree's evidence was
+                    removed, the control fails and names the missing folder.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Gate</td>
+                  <td>A result cites a gate that passed in another run.</td>
+                  <td>
+                    The gate counts only when its steps passed on this run's
+                    source identity. Otherwise the result fails and names the
+                    source mismatch.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Gate</td>
+                  <td>
+                    A cited gate step used a binding override whose value
+                    differs from this run's: a named check against another
+                    database or API, or any step against an app that Spyglass
+                    launched with another setting.
+                  </td>
+                  <td>
+                    The result fails and names the binding. A binding that the
+                    step did not use, such as an external installation's own
+                    port beside an <code>exec</code> gate, does not block the
+                    gate.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>A claim needs to know which element has focus.</td>
+                  <td>
+                    <code>ui focused</code> records the focused element's role,
+                    label and type without its value.
+                    <code>--expect LABEL</code> fails when the label differs.
+                  </td>
+                </tr>
+                <tr>
+                  <td>HTTP</td>
+                  <td>
+                    A request returns an unexpected status or an asynchronous
+                    submission is checked before completion.
+                  </td>
+                  <td>
+                    The expected-status check fails, or the workflow waits for
+                    completion before an independent read.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Database</td>
+                  <td>A query attempts to write data.</td>
+                  <td>Spyglass rejects it before execution.</td>
+                </tr>
+                <tr>
+                  <td>Database</td>
+                  <td>
+                    A query contains multiple statements, attempts to escape its
+                    transaction, or contains a psql meta-command.
+                  </td>
+                  <td>
+                    PostgreSQL's extended protocol rejects multiple statements.
+                    Client meta-commands never run. No side effect occurs.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Database</td>
+                  <td>
+                    A query returns more rows or encoded output than the
+                    supported bound.
+                  </td>
+                  <td>
+                    The query fails with a clear limit and does not retain an
+                    unbounded result.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Database</td>
+                  <td>
+                    A query returns a different row count than
+                    <code>--expect-rows</code>.
+                  </td>
+                  <td>
+                    The command fails and retains the observed count and bounded
+                    result.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Containers</td>
+                  <td>A run stops.</td>
+                  <td>
+                    Spyglass stops its own processes and browser. The repository
+                    owner cleans its containers; shared services and evidence
+                    remain.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Report</td>
+                  <td>
+                    The operator edits the result file but does not record it
+                    with <code>result</code>.
+                  </td>
+                  <td>
+                    The report ignores the unrecorded file, stays incomplete
+                    with <code>RESULT_MISSING</code>, and
+                    <code>status</code> names <code>result</code> as the next
+                    command until a result is recorded.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Report</td>
+                  <td>Required work or owner cleanup is missing.</td>
+                  <td>
+                    The report files are still produced, but the run is
+                    incomplete and exits with failed-check status.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Operator</td>
+                  <td>
+                    A required input is missing while JSON mode is active.
+                  </td>
+                  <td>
+                    Stdout contains one versioned result object, stderr contains
+                    diagnostics, and the command exits without prompting.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Codes in the output</h3>
+          <p>
+            These codes appear in command output and in the report for the most
+            common failures. The CLI source in
+            <a href="https://github.com/Schramm2/spyglass/tree/main/src"
+              ><code>src/</code></a
+            >
+            defines them.
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Code</th>
+                  <th scope="col">Failure</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>STALE_SOURCE</code></td>
+                  <td>Source changes after the run starts.</td>
+                </tr>
+                <tr>
+                  <td><code>CHECK_FAILED</code></td>
+                  <td>A check exits zero but reports a failed assertion.</td>
+                </tr>
+                <tr>
+                  <td><code>CLAIM_INCOMPLETE</code></td>
+                  <td>A required claim has no completed step.</td>
+                </tr>
+                <tr>
+                  <td><code>INDEPENDENT_READ_MISSING</code></td>
+                  <td>
+                    A side effect has no independent read after it completes.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>BROWSER_ORIGIN_BLOCKED</code></td>
+                  <td>An action targets an origin outside the allowlist.</td>
+                </tr>
+                <tr>
+                  <td><code>VISUAL_INSPECTION_MISSING</code></td>
+                  <td>A screenshot exists but nobody inspected it.</td>
+                </tr>
+                <tr>
+                  <td><code>API_EXPECTATION_FAILED</code></td>
+                  <td>A request returns an unexpected status.</td>
+                </tr>
+                <tr>
+                  <td><code>DATABASE_READ_ONLY</code></td>
+                  <td>A query tries to write data.</td>
+                </tr>
+                <tr>
+                  <td><code>DATABASE_ROW_COUNT</code></td>
+                  <td>A query returns a different row count than expected.</td>
+                </tr>
+                <tr>
+                  <td><code>RUN_BUSY</code></td>
+                  <td>Two operators change one run at once.</td>
+                </tr>
+                <tr>
+                  <td><code>CLEANUP_PENDING</code></td>
+                  <td>Cleanup did not happen.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="doc" id="skills" aria-labelledby="skills-title">
+          <h2 id="skills-title">Agent skills</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#agent-skills"
+              >README.md</a
+            >
+          </p>
+          <p>
+            The
+            <a href="https://github.com/Schramm2/spyglass/tree/main/skills"
+              ><code>skills/</code></a
+            >
+            directory holds the agent skills for Spyglass. They use the
+            <a href="https://agentskills.io">Agent Skills</a> format.
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Skill</th>
+                  <th scope="col">Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a
+                      href="https://github.com/Schramm2/spyglass/blob/main/skills/spyglass/SKILL.md"
+                      ><code>spyglass</code></a
+                    >
+                  </td>
+                  <td>Run a verification with Spyglass.</td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://github.com/Schramm2/spyglass/blob/main/skills/create-verification-skill/SKILL.md"
+                      ><code>create-verification-skill</code></a
+                    >
+                  </td>
+                  <td>
+                    Create a repository's own
+                    <code>verify-&lt;app&gt;</code> skill.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a
+                      href="https://github.com/Schramm2/spyglass/blob/main/skills/maintain-verification-skill/SKILL.md"
+                      ><code>maintain-verification-skill</code></a
+                    >
+                  </td>
+                  <td>Keep that skill current as the app changes.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Copy a skill folder into the skills directory of your agent harness,
+            for example <code>.claude/skills/</code> or
+            <code>.agents/skills/</code>.
+          </p>
+          <p>
+            The <code>create-verification-skill</code> and
+            <code>maintain-verification-skill</code> skills are adapted from
+            <a href="https://github.com/cursor/plugins"
+              ><code>cursor/plugins</code></a
+            >
+            (<code>pstack/skills</code>, commit <code>1dcc2ba</code>) by Lauren
+            Tan, under the MIT license. Each skill keeps its original
+            <code>LICENSE</code> file.
+          </p>
+        </section>
+
+        <section
+          class="doc"
+          id="limitations"
+          aria-labelledby="limitations-title"
+        >
+          <h2 id="limitations-title">Limitations</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#limitations"
+              >README.md</a
+            >,
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/browser-benchmark.md"
+              >docs/browser-benchmark.md</a
+            >
+          </p>
+          <ul>
+            <li>
+              Version 1 supports the surfaces in the
+              <a href="#surfaces">Surfaces table</a>. It has no native desktop,
+              mobile or TUI driver. For those, use the repository's own checks
+              and import their evidence.
+            </li>
+            <li>The browser accepts only the configured origins.</li>
+            <li>
+              Read-only database mode is not a sandbox for privileged functions.
+              Use a restricted database role.
+            </li>
+            <li>
+              An HTTP <code>202</code> response does not prove that background
+              work finished. Wait for completion, then do an independent read.
+            </li>
+            <li>
+              A run's browser stops after
+              <code>browser.idleTimeoutMs</code> with no <code>ui</code> command
+              (default: 1 hour). The next <code>ui</code> command reports
+              <code>BROWSER_EXPIRED</code>, and a seat must sign in again. Run
+              <code>down</code> when your checks are complete.
+            </li>
+          </ul>
+          <p>
+            See <a href="#failure-cases">failure cases</a> for the failures that
+            the CLI must detect. See
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/browser-benchmark.md"
+              >browser overhead</a
+            >
+            for the measured cost of browser commands. The budget is 150 ms
+            added at the median. Measured on 2026-10-22, the median added time
+            was 91.7 ms.
+          </p>
+        </section>
+
+        <section
+          class="doc"
+          id="development"
+          aria-labelledby="development-title"
+        >
+          <h2 id="development-title">Development</h2>
+          <p class="doc-source">
+            Source:
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/README.md#development"
+              >README.md</a
+            >
+          </p>
+          <div class="call">
+            <pre><code>npm ci
+npm run build
+npm test                          # end-to-end tests of the built CLI
+SPYGLASS_TEST_SURFACES=1 npm test # also real Chromium and PostgreSQL in Docker
+npm run format:check</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            The end-to-end tests run the built CLI in temporary Git
+            repositories. They need <code>agent-browser</code> on your
+            <code>PATH</code>. The surface tests also need its Chromium and
+            Docker.
+          </p>
+          <p>
+            Contributions are welcome. Read
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/CONTRIBUTING.md"
+              >CONTRIBUTING.md</a
+            >
+            before you open a pull request. To report a security vulnerability,
+            follow
+            <a href="https://github.com/Schramm2/spyglass/blob/main/SECURITY.md"
+              >SECURITY.md</a
+            >. Do not open a public issue.
+          </p>
+        </section>
+
+        <p class="no-match" id="no-match" hidden>
+          Nothing in the manual matches. Try a command name such as
+          <code>check</code> or a code such as <code>STALE_SOURCE</code>.
+        </p>
+      </main>
+    </div>
+
+    <footer class="docs-foot">
+      <span>Spyglass 1.1.0 · © 2026 Matthew Schramm · MIT</span>
+      <span
+        >Found a gap?
+        <a href="https://github.com/Schramm2/spyglass/issues"
+          >Open an issue</a
+        ></span
+      >
+    </footer>
+
+    <script src="../copy.js"></script>
+    <script src="docs.js"></script>
+  </body>
+</html>

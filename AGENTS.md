@@ -30,8 +30,11 @@ and `zod` only.
   Edit them here. Keep each adapted skill's `LICENSE` file.
 - `docs/`: user docs and the failure cases the CLI must detect.
 - `examples/`: the example profile and plan that the README links.
-- `landing/`: the static landing page. Its CLI output and report states are
-  real output of the quickstart demo. Replace them only with new real output.
+- `landing/`: the static landing page and, in `landing/docs/`, the docs
+  page. Their CLI output and report states are real output of the
+  quickstart demo. Replace them only with new real output. The docs page
+  copies the README, `src/help.ts`, `GLOSSARY.md` and
+  `docs/failure-cases.md`; change it with them.
 
 ## Commands
 
