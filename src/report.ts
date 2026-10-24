@@ -419,14 +419,24 @@ function validateGates(
         code: "STEP_SOURCE_MISMATCH",
         message: `Gate ${gate.name} cites run ${gate.run} on a different source identity than run ${run.id}.`,
       });
-    if (citedRun)
-      for (const step of proof)
-        if (step)
-          for (const name of differentBindings(citedRun, run, step))
-            findings.push({
-              code: "STEP_SOURCE_MISMATCH",
-              message: `Gate ${gate.name} cites run ${citedRun.id} whose step ${step.id} used binding ${name} with a different value than run ${run.id}.`,
-            });
+    if (citedRun) {
+      const differs = differentOverrides(citedRun, run);
+      // The run keeps its profile after templates; the names are in the file.
+      const raw = profileAsHashed(citedRun);
+      if (!raw && differs.length)
+        findings.push({
+          code: "STEP_SOURCE_MISMATCH",
+          message: `Gate ${gate.name} cites run ${citedRun.id}, whose profile file is no longer the one it hashed, so every changed binding counts: ${differs.join(", ")}.`,
+        });
+      else if (raw)
+        for (const step of proof)
+          if (step)
+            for (const name of readBindings(raw, citedRun, run, step, differs))
+              findings.push({
+                code: "STEP_SOURCE_MISMATCH",
+                message: `Gate ${gate.name} cites run ${citedRun.id} whose step ${step.id} used binding ${name} with a different value than run ${run.id}.`,
+              });
+    }
   }
   for (const gate of plan.gates) {
     if (
@@ -478,27 +488,34 @@ function citedGateRun(
 }
 
 /**
- * The CLI binding overrides that differ between a cited run and this run, of
- * those the cited step read. Overrides are compared as given, before
- * templates: a per-run value such as app_${run} differs in every run without
- * changing what the gate checked. Every step reads the bindings of a launch
- * that Spyglass owns, because they configure the app the step could reach.
- * An `exec` command runs as given and reads no other binding. A named check
- * also reads the bindings its definition names, directly or through other
- * bindings, `web`, `api` or `evidence`. Any other step reads every binding.
+ * The CLI binding overrides that differ between two runs. Overrides are
+ * compared as given, before templates: a per-run value such as app_${run}
+ * differs in every run without changing what the gate checked.
  */
-function differentBindings(cited: Run, run: Run, step: Step): string[] {
+function differentOverrides(cited: Run, run: Run): string[] {
   const given = (item: Run, name: string) => item.bindingOverrides?.[name];
   const names = new Set([
     ...Object.keys(cited.bindingOverrides ?? {}),
     ...Object.keys(run.bindingOverrides ?? {}),
   ]);
-  const differs = [...names].filter(
-    (name) => given(cited, name) !== given(run, name),
-  );
-  // The run keeps its profile after templates; the names are in the file.
-  const raw = profileAsHashed(cited);
-  if (!raw) return differs;
+  return [...names].filter((name) => given(cited, name) !== given(run, name));
+}
+
+/**
+ * Of the changed overrides, those that the cited step read. Every step reads
+ * the bindings of a launch that Spyglass owns, because they configure the app
+ * the step could reach. An `exec` command runs as given and reads no other
+ * binding. A named check also reads the bindings its definition names,
+ * directly or through other bindings, override values, `web`, `api` or
+ * `evidence`. Any other step reads every binding.
+ */
+function readBindings(
+  raw: Profile,
+  cited: Run,
+  run: Run,
+  step: Step,
+  differs: string[],
+): string[] {
   const derived: Record<string, unknown> = {
     ...raw.bindings,
     web: raw.web,
@@ -512,7 +529,11 @@ function differentBindings(cited: Run, run: Run, step: Step): string[] {
     ))
       if (name && !read.has(name)) {
         read.add(name);
-        visit(derived[name]);
+        visit([
+          derived[name],
+          cited.bindingOverrides?.[name],
+          run.bindingOverrides?.[name],
+        ]);
       }
   };
   if (raw.launch.mode === "owned")

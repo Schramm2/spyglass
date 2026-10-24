@@ -2989,6 +2989,34 @@ test("a gate from another run counts only on the same source, profile and used b
       JSON.stringify(mismatch),
       /Gate verify cites run .* whose step .* used binding target with a different value/,
     );
+    // An override value can name another binding: dsn reads host here.
+    const hostA = await startWith("dsn=db://${host}", "host=a");
+    const hostGate = assertEnvelope(
+      await runCli(dir, ["--json", "check", "--run", hostA, "verify-target"]),
+      { ok: true, code: 0 },
+    );
+    const hostB = await startWith("dsn=db://${host}", "host=b");
+    const otherHost = assertEnvelope(
+      await record(hostB, hostA, hostGate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(otherHost),
+      /whose step .* used binding host with a different value/,
+    );
+    // Without the profile as hashed, every changed binding counts.
+    await writeJson(
+      join(dir, "spyglass.json"),
+      baseProfile({ launch: { mode: "none" } }),
+    );
+    const unread = assertEnvelope(
+      await record(otherTarget, gateRun, gate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(unread),
+      /whose profile file is no longer the one it hashed, so every changed binding counts: target/,
+    );
   } finally {
     for (const run of runsCreated)
       await runCli(dir, ["--json", "down", "--run", run]);
