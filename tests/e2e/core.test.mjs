@@ -533,6 +533,7 @@ test("up shows the result rules that this plan's claims, controls and gates need
         expectation: "A broken save is refused.",
         assertion: "health-ready",
       },
+      { id: "loose", claim: "works", expectation: "Nothing is declared." },
     ],
     gates: ["verify"],
     limits: [],
@@ -553,7 +554,11 @@ test("up shows the result rules that this plan's claims, controls and gates need
     run = up.run;
     const rules = up.data.resultRules.join("\n");
     for (const [rule, text] of [
-      ["named check", /Claim works: cite a successful step of check health/],
+      [
+        "named check",
+        /Claims saved, looks, works: cite a successful step of check health\./,
+      ],
+      ["undeclared control", /Control loose: claim works, cannot pass/],
       ["side-effect", /saved.*action step and a later read.*independentRead/],
       ["visual", /looks.*inspections.*viewport.*screenshot/],
       ["behavior", /works.*behavior check.*non-image evidence/],
@@ -582,39 +587,55 @@ test("up shows the result rules that this plan's claims, controls and gates need
   }
 });
 
-test("text output of a long plan keeps the whole next command", async () => {
-  const claims = Array.from({ length: 12 }, (_, index) => ({
-    ...plan.claims[0],
-    id: `checkout-journey-claim-${index}`,
-    kind: ["behavior", "visual", "side-effect"][index % 3],
-  }));
-  const long = {
-    claims,
-    controls: [0, 1, 2, 3, 4, 5].map((index) => ({
-      id: `checkout-journey-control-${index}`,
-      claim: `checkout-journey-claim-${index}`,
+test("text output keeps the whole next command and the result rules of a plan", async () => {
+  const planOf = (claimCount, controlCount, prefix) => ({
+    claims: Array.from({ length: claimCount }, (_, index) => ({
+      ...plan.claims[0],
+      id: `${prefix}claim-${index}`,
+      kind: ["behavior", "visual", "side-effect"][index % 3],
+    })),
+    controls: Array.from({ length: controlCount }, (_, index) => ({
+      id: `${prefix}control-${index}`,
+      claim: `${prefix}claim-${index}`,
       expectation: "A deliberate fault is detected.",
       assertion: "health-ready",
     })),
     gates: ["lint", "unit", "e2e"],
     limits: [],
+  });
+  const textUp = async (shape) => {
+    const dir = await makeRepo({
+      profile: baseProfile({
+        checks: { health: { command: [process.execPath, "-e", "0"] } },
+      }),
+      plan: shape,
+    });
+    let run;
+    try {
+      const up = await runCli(dir, ["up", "--plan", "plan.json"]);
+      assert.equal(up.code, 0, up.stderr);
+      run = up.stdout.match(/^id: (\S+)$/m)?.[1];
+      assert.ok(run, up.stdout);
+      assert.match(
+        up.stdout,
+        new RegExp(`^next: spyglass result --file \\S+ --run ${run}$`, "m"),
+        up.stdout,
+      );
+      assert.ok(up.stdout.length < 4000, "text output must stay bounded");
+      return up.stdout;
+    } finally {
+      if (run) await runCli(dir, ["--json", "down", "--run", run]);
+      await removeRepo(dir);
+    }
   };
-  const dir = await makeRepo({ profile: baseProfile(), plan: long });
-  let run;
-  try {
-    const up = await runCli(dir, ["up", "--plan", "plan.json"]);
-    assert.equal(up.code, 0, up.stderr);
-    run = up.stdout.match(/^id: (\S+)$/m)?.[1];
-    assert.ok(run, up.stdout);
-    assert.match(
-      up.stdout,
-      new RegExp(`^next: spyglass result --file \\S+ --run ${run}$`, "m"),
-      up.stdout,
-    );
-  } finally {
-    if (run) await runCli(dir, ["--json", "down", "--run", run]);
-    await removeRepo(dir);
-  }
+  // A plan of usual size shows every rule.
+  const usual = await textUp(planOf(6, 2, ""));
+  assert.match(usual, /- Control control-1: claim claim-1/, usual);
+  assert.match(usual, /- Gates lint, unit, e2e: list successful steps/, usual);
+  assert.doesNotMatch(usual, /Full rules:/, usual);
+  // A long plan cuts the rules and says where the full list is.
+  const long = await textUp(planOf(12, 6, "checkout-journey-"));
+  assert.match(long, /… Full rules: \S+log\.jsonl/, long);
 });
 
 test("an incomplete claim matrix produces a readable report and stays incomplete", async () => {
