@@ -111,6 +111,9 @@ spyglass --run <run-id> ui --help
 Use `ui proof` after the user action and after the visible result. Use
 `ui focused --expect LABEL` when a claim depends on focus, for example the
 password field after a refused sign-in; it never reads the field's value.
+Record the before state first: run `ui focused` before the action, with focus
+on a different element, so the later `--expect` step shows that the app moved
+focus and the test input did not.
 Open and inspect the actual screenshot with the current harness's image viewer, at the
 required viewport. Record the expected state and what the image shows. If no
 available operator can inspect the image, mark the visual claim blocked. A
@@ -158,13 +161,12 @@ through `result` leaves the report incomplete with `RESULT_MISSING`.
 Copy each returned artifact `path` exactly into the result. It is relative to
 the run's evidence folder under `spyglass/`; do not add the repository path.
 Use `completedChecks.spyglassExitCode` and the recorded status to judge a check;
-`childExitCode` describes only the child process. Control templates include
+`childExitCode` describes only the child process, and a zero child exit code
+can still accompany failed assertions. Control templates include
 `failedRun`; replace it with the earlier run ID for a retained failing baseline.
 Run the repository gates once for a source. Another run on the same source can
 cite those steps with `run` in its gate entry; a gate from changed source,
 profile or bindings fails.
-Use the recorded command status to judge a check. A child exit code of zero
-can still accompany failed assertions.
 
 Use the repository owner's cleanup command for its resources. Record owner
 cleanup through the profile's cleanup check so the report can verify it. Then stop the
