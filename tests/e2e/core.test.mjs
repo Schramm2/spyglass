@@ -2834,13 +2834,29 @@ test("a control links a failed run from a fault worktree to the candidate in the
   }
 });
 
-test("a gate from another run counts only on the same source, profile and bindings", async () => {
+test("a gate from another run counts only on the same source, profile and used bindings", async () => {
   const matrix = { claims: [], gates: ["verify"], limits: [] };
   const dir = await makeRepo({
     profile: baseProfile({
       launch: { mode: "none" },
       // A per-run binding must not make every other run's gate a mismatch.
-      bindings: { database: "app_${run}" },
+      bindings: {
+        database: "app_${run}",
+        target: "one",
+        dsn: "db://${target}",
+        apiPort: "4100",
+      },
+      api: "http://127.0.0.1:${apiPort}/api",
+      checks: {
+        "verify-target": {
+          command: [process.execPath, "-e", "console.log(process.env.DSN)"],
+          env: { DSN: "${dsn}" },
+        },
+        "verify-api": {
+          command: [process.execPath, "-e", "console.log(process.env.API)"],
+          env: { API: "${api}" },
+        },
+      },
     }),
     plan: matrix,
   });
@@ -2918,25 +2934,201 @@ test("a gate from another run counts only on the same source, profile and bindin
       { ok: false, code: 1 },
     );
     assert.match(JSON.stringify(unknown), /Gate verify cites run no-such-run/);
-    const otherBinding = assertEnvelope(
+    const checkGate = assertEnvelope(
+      await runCli(dir, ["--json", "check", "--run", gateRun, "verify-target"]),
+      { ok: true, code: 0 },
+    );
+    const apiGate = assertEnvelope(
+      await runCli(dir, ["--json", "check", "--run", gateRun, "verify-api"]),
+      { ok: true, code: 0 },
+    );
+    const startWith = async (...bindings) => {
+      const run = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "up",
+          "--plan",
+          "plan.json",
+          ...bindings.flatMap((binding) => ["--binding", binding]),
+        ]),
+        { ok: true, code: 0 },
+      ).run;
+      runsCreated.push(run);
+      return run;
+    };
+    // An installation's own port is a binding that no gate command uses.
+    const ownPort = await startWith("apiPort=4101");
+    assertEnvelope(await record(ownPort, gateRun, gate.step), {
+      ok: true,
+      code: 0,
+    });
+    assertEnvelope(await record(ownPort, gateRun, checkGate.step), {
+      ok: true,
+      code: 0,
+    });
+    // A check that reads ${api} reads apiPort through the profile's api.
+    const otherApi = assertEnvelope(
+      await record(ownPort, gateRun, apiGate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(otherApi),
+      /whose step .* used binding apiPort with a different value/,
+    );
+    // The named check reads target through dsn, so another target refuses it.
+    const otherTarget = await startWith("target=two");
+    assertEnvelope(await record(otherTarget, gateRun, gate.step), {
+      ok: true,
+      code: 0,
+    });
+    const mismatch = assertEnvelope(
+      await record(otherTarget, gateRun, checkGate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(mismatch),
+      /Gate verify cites run .* whose step .* used binding target with a different value/,
+    );
+    // An override value can name another binding: dsn reads host here.
+    const hostA = await startWith("dsn=db://${host}", "host=a");
+    const hostGate = assertEnvelope(
+      await runCli(dir, ["--json", "check", "--run", hostA, "verify-target"]),
+      { ok: true, code: 0 },
+    );
+    const hostB = await startWith("dsn=db://${host}", "host=b");
+    const otherHost = assertEnvelope(
+      await record(hostB, hostA, hostGate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(otherHost),
+      /whose step .* used binding host with a different value/,
+    );
+    // Without the profile as hashed, every changed binding counts.
+    await writeJson(
+      join(dir, "spyglass.json"),
+      baseProfile({ launch: { mode: "none" } }),
+    );
+    const unread = assertEnvelope(
+      await record(otherTarget, gateRun, gate.step),
+      { ok: false, code: 1 },
+    );
+    assert.match(
+      JSON.stringify(unread),
+      /whose profile file is no longer the one it hashed, so every changed binding counts: target/,
+    );
+  } finally {
+    for (const run of runsCreated)
+      await runCli(dir, ["--json", "down", "--run", run]);
+    await removeRepo(dir);
+  }
+});
+
+test("a binding of a launch that Spyglass owns blocks every cited gate step", async () => {
+  const dir = await makeRepo({
+    profile: baseProfile({
+      bindings: { mode: "live" },
+      launch: {
+        ...baseProfile().launch,
+        env: { PORT: "${port}", MODE: "${mode}" },
+      },
+    }),
+    plan: { claims: [], gates: ["verify"], limits: [] },
+  });
+  const runsCreated = [];
+  const start = async (...bindings) => {
+    const run = assertEnvelope(
       await runCli(dir, [
         "--json",
         "up",
         "--plan",
         "plan.json",
-        "--binding",
-        "mode=stub",
+        ...bindings.flatMap((binding) => ["--binding", binding]),
       ]),
       { ok: true, code: 0 },
     ).run;
-    runsCreated.push(otherBinding);
-    const mismatch = assertEnvelope(
-      await record(otherBinding, gateRun, gate.step),
+    runsCreated.push(run);
+    return run;
+  };
+  try {
+    const gateRun = await start();
+    const gate = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "exec",
+        "--run",
+        gateRun,
+        "--",
+        process.execPath,
+        "-e",
+        "console.log('gate ok')",
+      ]),
+      { ok: true, code: 0 },
+    );
+    const read = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "--run",
+        gateRun,
+        "api",
+        "GET",
+        "/health",
+        "--expect",
+        "401",
+      ]),
+      { ok: true, code: 0 },
+    );
+    // An API step can read any binding; an exec step reads only the launch's.
+    const extra = await start("extra=1");
+    const cite = (run, step) =>
+      writeJson(join(dir, "result.json"), {
+        operator: "agent",
+        claims: [],
+        gates: [
+          { name: "verify", outcome: "passed", run: gateRun, steps: [step] },
+        ],
+        limits: [],
+      }).then(() =>
+        runCli(dir, [
+          "--json",
+          "result",
+          "--run",
+          run,
+          "--file",
+          "result.json",
+        ]),
+      );
+    assertEnvelope(await cite(extra, gate.step), { ok: true, code: 0 });
+    assert.match(
+      JSON.stringify(
+        assertEnvelope(await cite(extra, read.step), { ok: false, code: 1 }),
+      ),
+      /whose step .* used binding extra with a different value/,
+    );
+    // The app that this exec gate could reach ran in another mode.
+    const stub = await start("mode=stub");
+    await writeJson(join(dir, "result.json"), {
+      operator: "agent",
+      claims: [],
+      gates: [
+        { name: "verify", outcome: "passed", run: gateRun, steps: [gate.step] },
+      ],
+      limits: [],
+    });
+    const refused = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "result",
+        "--run",
+        stub,
+        "--file",
+        "result.json",
+      ]),
       { ok: false, code: 1 },
     );
     assert.match(
-      JSON.stringify(mismatch),
-      /Gate verify cites run .* with a different profile or bindings/,
+      JSON.stringify(refused),
+      /whose step .* used binding mode with a different value/,
     );
   } finally {
     for (const run of runsCreated)
