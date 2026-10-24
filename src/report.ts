@@ -2,8 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import { Fault } from "./errors.js";
 import { hash, readJson, regular, safePath } from "./files.js";
+import { loadProfile } from "./profile.js";
 import { resultSchema, validate } from "./schema.js";
-import type { Plan, Result } from "./schema.js";
+import type { Plan, Profile, Result } from "./schema.js";
 import type { Artifact, Context, Run, Step } from "./state.js";
 import { loadRun, source, steps } from "./state.js";
 
@@ -382,10 +383,11 @@ function validateGates(
       });
     seenGates.add(gate.name);
     let gateSteps = ownSteps;
+    let citedRun: Run | undefined;
     if (gate.run && gate.run !== run.id) {
       const cited = citedGateRun(run, gate.name, gate.run, findings);
       if (!cited) continue;
-      gateSteps = cited;
+      [citedRun, gateSteps] = cited;
     }
     for (const id of gate.steps)
       if (!gateSteps.has(id))
@@ -417,6 +419,24 @@ function validateGates(
         code: "STEP_SOURCE_MISMATCH",
         message: `Gate ${gate.name} cites run ${gate.run} on a different source identity than run ${run.id}.`,
       });
+    if (citedRun) {
+      const differs = differentOverrides(citedRun, run);
+      // The run keeps its profile after templates; the names are in the file.
+      const raw = profileAsHashed(citedRun);
+      if (!raw && differs.length)
+        findings.push({
+          code: "STEP_SOURCE_MISMATCH",
+          message: `Gate ${gate.name} cites run ${citedRun.id}, whose profile file is no longer the one it hashed, so every changed binding counts: ${differs.join(", ")}.`,
+        });
+      else if (raw)
+        for (const step of proof)
+          if (step)
+            for (const name of readBindings(raw, citedRun, run, step, differs))
+              findings.push({
+                code: "STEP_SOURCE_MISMATCH",
+                message: `Gate ${gate.name} cites run ${citedRun.id} whose step ${step.id} used binding ${name} with a different value than run ${run.id}.`,
+              });
+    }
   }
   for (const gate of plan.gates) {
     if (
@@ -436,20 +456,13 @@ function citedGateRun(
   gate: string,
   id: string,
   findings: Finding[],
-): Map<string, Step> | undefined {
+): [Run, Map<string, Step>] | undefined {
   try {
     const cited = loadRun(run.repo, id);
-    // Compare bindings before templates: a per-run value such as app_${run}
-    // differs in every run without changing what the gate checked.
-    const overrides = (item: Run) =>
-      JSON.stringify(Object.entries(item.bindingOverrides ?? {}).sort());
-    if (
-      cited.profileHash !== run.profileHash ||
-      overrides(cited) !== overrides(run)
-    )
+    if (cited.profileHash !== run.profileHash)
       findings.push({
         code: "STEP_SOURCE_MISMATCH",
-        message: `Gate ${gate} cites run ${id} with a different profile or bindings than run ${run.id}.`,
+        message: `Gate ${gate} cites run ${id} with a different profile than run ${run.id}.`,
       });
     if (!existsSync(cited.evidence))
       findings.push({
@@ -464,12 +477,81 @@ function citedGateRun(
         code: "GATE_PROOF_MISSING",
         message: `Gate ${gate} cites run ${id}, whose evidence is missing or changed.`,
       });
-    return new Map(citedEntries.map((entry) => [entry.id, entry]));
+    return [cited, new Map(citedEntries.map((entry) => [entry.id, entry]))];
   } catch (error) {
     findings.push({
       code: "GATE_PROOF_MISSING",
       message: `Gate ${gate} cites run ${id}, which cannot be read: ${String(error)}`,
     });
+    return undefined;
+  }
+}
+
+/**
+ * The CLI binding overrides that differ between two runs. Overrides are
+ * compared as given, before templates: a per-run value such as app_${run}
+ * differs in every run without changing what the gate checked.
+ */
+function differentOverrides(cited: Run, run: Run): string[] {
+  const given = (item: Run, name: string) => item.bindingOverrides?.[name];
+  const names = new Set([
+    ...Object.keys(cited.bindingOverrides ?? {}),
+    ...Object.keys(run.bindingOverrides ?? {}),
+  ]);
+  return [...names].filter((name) => given(cited, name) !== given(run, name));
+}
+
+/**
+ * Of the changed overrides, those that the cited step read. Every step reads
+ * the bindings of a launch that Spyglass owns, because they configure the app
+ * the step could reach. An `exec` command runs as given and reads no other
+ * binding. A named check also reads the bindings its definition names,
+ * directly or through other bindings, override values, `web`, `api` or
+ * `evidence`. Any other step reads every binding.
+ */
+function readBindings(
+  raw: Profile,
+  cited: Run,
+  run: Run,
+  step: Step,
+  differs: string[],
+): string[] {
+  const derived: Record<string, unknown> = {
+    ...raw.bindings,
+    web: raw.web,
+    api: raw.api,
+    evidence: raw.evidence,
+  };
+  const read = new Set<string>();
+  const visit = (value: unknown) => {
+    for (const [, name] of JSON.stringify(value ?? "").matchAll(
+      /\$\{([A-Za-z_][\w]*)\}/g,
+    ))
+      if (name && !read.has(name)) {
+        read.add(name);
+        visit([
+          derived[name],
+          cited.bindingOverrides?.[name],
+          run.bindingOverrides?.[name],
+        ]);
+      }
+  };
+  if (raw.launch.mode === "owned")
+    visit({ command: raw.launch.command, env: raw.launch.env });
+  if (step.command === "check") {
+    const check = raw.checks[step.args[0] ?? ""];
+    if (!check) return differs;
+    visit(check);
+  } else if (step.command !== "exec") return differs;
+  return differs.filter((name) => read.has(name));
+}
+
+/** The run's profile file before templates, if it is still the one it hashed. */
+function profileAsHashed(run: Run): Profile | undefined {
+  try {
+    const raw = loadProfile(run.profilePath);
+    return hash(JSON.stringify(raw)) === run.profileHash ? raw : undefined;
+  } catch {
     return undefined;
   }
 }
