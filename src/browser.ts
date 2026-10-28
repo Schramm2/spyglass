@@ -815,22 +815,8 @@ function imageArtifact(
   rmSync(file, { force: true });
   return artifact as unknown as Record<string, unknown>;
 }
-async function run(
-  ctx: Context,
-  id: Identity,
-  domains: string,
-  commands: Command[],
-  timeout = 60000,
-): Promise<{ reply: Reply; data: unknown[] }> {
-  const after = ctx.run.browserProxy?.sequence ?? 0;
-  const reply = await invoke(
-    ctx,
-    id,
-    domains,
-    ["batch", "--bail", "--json"],
-    JSON.stringify(commands),
-    timeout,
-  );
+/** Fail when the proxy refused a page navigation since sequence `after`. */
+async function checkProxy(ctx: Context, after: number): Promise<void> {
   const proxyState = await browserProxyEvents(ctx.run, after);
   if (ctx.run.browserProxy && proxyState.sequence !== after) {
     ctx.run.browserProxy.sequence = proxyState.sequence;
@@ -847,6 +833,24 @@ async function run(
       1,
       { blockedOrigin: blockedNavigation.origin },
     );
+}
+async function run(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+  commands: Command[],
+  timeout = 60000,
+): Promise<{ reply: Reply; data: unknown[] }> {
+  const after = ctx.run.browserProxy?.sequence ?? 0;
+  const reply = await invoke(
+    ctx,
+    id,
+    domains,
+    ["batch", "--bail", "--json"],
+    JSON.stringify(commands),
+    timeout,
+  );
+  await checkProxy(ctx, after);
   const data = reply.items.map((item) => clean(ctx, item));
   const failed = reply.items.some((item) =>
     Boolean(
@@ -874,7 +878,8 @@ async function run(
   return { reply, data };
 }
 function currentUrl(data: unknown[]): string | undefined {
-  for (const item of data) {
+  // The last URL is the page that the batch ended on.
+  for (const item of [...data].reverse()) {
     if (!item || typeof item !== "object") continue;
     const row = item as Record<string, unknown>;
     for (const val of [row.result, row.data, row]) {
@@ -911,9 +916,10 @@ export function browserHelp(): Record<string, unknown> {
       "read [PATH|URL]",
       "snapshot [-i|-c|--delta|--full]",
       "proof LABEL",
+      "expect [--url PATTERN] [--text TEXT] [--title TEXT] [--selector SEL] [--visible SEL] [--hidden SEL] [--enabled SEL] [--checked SEL] [--count SEL=N] [--focused LABEL] [--attr SEL:NAME=VALUE] [--no-errors] [--timeout-ms MS]",
       "focused [--expect LABEL]",
       "login SEAT",
-      "click|dblclick|type|fill|press|keyboard|hover|focus|check|uncheck|select|drag|scroll|scrollintoview",
+      "click|dblclick|type|fill|press|keyboard|hover|focus|check|uncheck|select|drag|scroll|scrollintoview (add --settle to one click, dblclick, press, fill, select, type or find ... click command)",
       "wait|back|forward|reload",
       "get text|html|title|url|attr|count|box|styles",
       "is visible|enabled|checked",
@@ -943,6 +949,8 @@ export function browserHelp(): Record<string, unknown> {
       "No custom Authorization headers.",
       "wait accepts a selector, --text, --url or --load. --fn runs page JavaScript, --download saves outside evidence, and agent-browser reads wait --state as a saved-state file; all three are refused.",
       "A run-owned loopback proxy enforces exact scheme, host and port on browser traffic; agent-browser also checks allowed hosts.",
+      "expect polls every 100 ms until all expectations hold or --timeout-ms (default 5000, maximum 120000) ends. It saves expect.json and exits 1 with the last observation when an expectation never holds. It never reads an input value: --attr value is refused.",
+      "A click, fill or similar command that matches no element fails with data.nearest: up to 10 interactive roles and names from the page, nearest to the request first.",
     ],
   };
 }
@@ -1330,6 +1338,659 @@ async function focused(
     );
   return { ...observed, artifacts: [evidence] };
 }
+/**
+ * Expectations. One poll sends every condition to agent-browser in a single
+ * batch, so a call that waits costs one process per poll, not one per
+ * condition. A condition never reads an input value.
+ */
+type ConditionKind =
+  | "url"
+  | "text"
+  | "title"
+  | "selector"
+  | "visible"
+  | "hidden"
+  | "enabled"
+  | "checked"
+  | "count"
+  | "focused"
+  | "attr"
+  | "no-errors";
+interface Condition {
+  id: string;
+  kind: ConditionKind;
+  value?: string;
+  selector?: string;
+  attr?: string;
+  count?: number;
+}
+interface Judged {
+  id: string;
+  ok: boolean;
+  observed: string;
+}
+interface Observation {
+  url?: string;
+  title?: string;
+}
+interface PollResult {
+  passed: boolean;
+  polls: number;
+  elapsedMs: number;
+  conditions: Judged[];
+  observation: Observation;
+}
+const conditionFlags: Record<string, ConditionKind> = {
+  "--url": "url",
+  "--text": "text",
+  "--title": "title",
+  "--selector": "selector",
+  "--visible": "visible",
+  "--hidden": "hidden",
+  "--enabled": "enabled",
+  "--checked": "checked",
+  "--count": "count",
+  "--focused": "focused",
+  "--attr": "attr",
+  "--no-errors": "no-errors",
+};
+const DEFAULT_EXPECT_TIMEOUT_MS = 5000;
+const MAX_EXPECT_TIMEOUT_MS = 120_000;
+const POLL_INTERVAL_MS = 100;
+function expectUsage(message: string): Fault {
+  return new Fault(
+    "BROWSER_USAGE",
+    message,
+    'Use spyglass ui expect --url /dashboard --text "Welcome" --visible "#form" --timeout-ms 5000.',
+  );
+}
+function makeCondition(kind: string, value?: string): Condition {
+  if (!Object.values(conditionFlags).includes(kind as ConditionKind))
+    throw expectUsage(
+      `Unknown expectation ${kind}. Use ${Object.values(conditionFlags).join(", ")}.`,
+    );
+  if (kind === "no-errors") return { id: "no-errors", kind };
+  if (value === undefined || value === "")
+    throw expectUsage(`The expectation ${kind} needs a value.`);
+  const id = `${kind}=${value}`;
+  if (kind === "count") {
+    const at = value.lastIndexOf("=");
+    const number = value.slice(at + 1);
+    if (at < 1 || !/^\d+$/.test(number))
+      throw expectUsage("count needs SELECTOR=NUMBER, for example li=3.");
+    return {
+      id,
+      kind,
+      selector: value.slice(0, at),
+      count: Number(number),
+    };
+  }
+  if (kind === "attr") {
+    const found = /^([\s\S]*):([A-Za-z_][\w-]*)=([\s\S]*)$/.exec(value);
+    if (!found || !found[1])
+      throw expectUsage(
+        "attr needs SELECTOR:NAME=VALUE, for example a:href=/x.",
+      );
+    if (found[2]!.toLowerCase() === "value")
+      throw new Fault(
+        "BROWSER_POLICY",
+        "Reading input values can expose credentials and tokens.",
+        "Check visible text or an accessibility snapshot instead.",
+      );
+    return {
+      id,
+      kind,
+      selector: found[1],
+      attr: found[2],
+      value: found[3],
+    };
+  }
+  return ["selector", "visible", "hidden", "enabled", "checked"].includes(kind)
+    ? { id, kind: kind as ConditionKind, selector: value }
+    : { id, kind: kind as ConditionKind, value };
+}
+function parseExpectArgs(args: string[]): {
+  conditions: Condition[];
+  timeoutMs: number;
+} {
+  const conditions: Condition[] = [];
+  let timeoutMs = DEFAULT_EXPECT_TIMEOUT_MS;
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i]!;
+    if (flag === "--timeout-ms") {
+      const raw = args[++i];
+      timeoutMs = Number(raw);
+      if (
+        !raw ||
+        !/^\d+$/.test(raw) ||
+        timeoutMs < 1 ||
+        timeoutMs > MAX_EXPECT_TIMEOUT_MS
+      )
+        throw expectUsage(
+          `--timeout-ms must be an integer from 1 to ${MAX_EXPECT_TIMEOUT_MS}.`,
+        );
+    } else if (flag in conditionFlags) {
+      const kind = conditionFlags[flag]!;
+      conditions.push(
+        makeCondition(kind, kind === "no-errors" ? undefined : args[++i]),
+      );
+    } else throw expectUsage(`ui expect does not accept ${flag}.`);
+  }
+  if (!conditions.length)
+    throw expectUsage("ui expect needs at least one expectation.");
+  return { conditions, timeoutMs };
+}
+/** `--expect KIND=VALUE` of ui verify and ui proof. */
+function parseExpectSpec(spec: string): Condition {
+  const at = spec.indexOf("=");
+  return spec === "no-errors"
+    ? makeCondition("no-errors")
+    : at < 1
+      ? makeCondition("?", spec)
+      : makeCondition(spec.slice(0, at), spec.slice(at + 1));
+}
+function urlMatches(pattern: string, url: string): boolean {
+  if (!pattern.includes("*")) return url.includes(pattern);
+  const expression = new RegExp(
+    "^" +
+      pattern
+        .split("*")
+        .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+        .join(".*") +
+      "$",
+  );
+  let target = url;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(pattern))
+    try {
+      const parsed = new URL(url);
+      target = parsed.pathname + parsed.search + parsed.hash;
+    } catch {
+      /* Match the whole text. */
+    }
+  return expression.test(target);
+}
+type Item = {
+  success?: boolean;
+  error?: unknown;
+  result?: Record<string, unknown>;
+};
+const resultOf = (item: Item | undefined): Record<string, unknown> =>
+  item?.success === false || !item?.result ? {} : item.result;
+function probeCommands(condition: Condition): Command[] {
+  switch (condition.kind) {
+    case "text":
+      return [
+        [
+          "eval",
+          `Boolean(document.body && document.body.innerText.includes(${JSON.stringify(condition.value)}))`,
+        ],
+      ];
+    case "selector":
+    case "count":
+      return [["get", "count", condition.selector!]];
+    case "visible":
+    case "hidden":
+      return [["is", "visible", condition.selector!]];
+    case "enabled":
+      return [["is", "enabled", condition.selector!]];
+    case "checked":
+      return [["is", "checked", condition.selector!]];
+    case "attr":
+      return [["get", "attr", condition.selector!, condition.attr!]];
+    case "focused":
+      return [["eval", focusedElementScript]];
+    case "no-errors":
+      return [["errors"], ["console"]];
+    default:
+      return [];
+  }
+}
+function judge(
+  condition: Condition,
+  items: Item[],
+  seen: Observation,
+): { ok: boolean; observed: string } {
+  const first = resultOf(items[0]);
+  const missing = (items[0]?.success === false) as boolean;
+  switch (condition.kind) {
+    case "url":
+      return {
+        ok: urlMatches(condition.value!, seen.url ?? ""),
+        observed: seen.url ?? "no url",
+      };
+    case "title":
+      return {
+        ok: seen.title === condition.value,
+        observed: seen.title ?? "no title",
+      };
+    case "text":
+      return {
+        ok: first.result === true,
+        observed: first.result === true ? "found" : "not found",
+      };
+    case "selector": {
+      const count = Number(first.count ?? 0);
+      return { ok: count > 0, observed: `${count} match` };
+    }
+    case "count": {
+      const count = Number(first.count ?? 0);
+      return { ok: count === condition.count, observed: `${count} match` };
+    }
+    case "visible":
+      return {
+        ok: first.visible === true,
+        observed: missing ? "no element" : String(first.visible),
+      };
+    case "hidden":
+      return {
+        ok: missing || first.visible === false,
+        observed: missing ? "no element" : `visible ${first.visible}`,
+      };
+    case "enabled":
+      return {
+        ok: first.enabled === true,
+        observed: missing ? "no element" : String(first.enabled),
+      };
+    case "checked":
+      return {
+        ok: first.checked === true,
+        observed: missing ? "no element" : String(first.checked),
+      };
+    case "attr": {
+      const value = first.value ?? first.attr ?? first.result;
+      return {
+        ok: typeof value === "string" && value === condition.value,
+        observed: missing
+          ? "no element"
+          : typeof value === "string"
+            ? value
+            : "no attribute",
+      };
+    }
+    case "focused": {
+      const element = first.result as { label?: string } | null | undefined;
+      return {
+        ok: element?.label === condition.value,
+        observed: element ? `"${element.label ?? ""}"` : "page body",
+      };
+    }
+    case "no-errors": {
+      const errors = (resultOf(items[0]).errors as unknown[] | undefined) ?? [];
+      const messages =
+        (resultOf(items[1]).messages as Array<{ type?: string }> | undefined) ??
+        [];
+      const bad =
+        errors.length + messages.filter((m) => m.type === "error").length;
+      return { ok: bad === 0, observed: `${bad} error` };
+    }
+  }
+}
+/** A selector that cannot parse never matches: stop polling and say so. */
+function selectorSyntax(items: Item[]): string | undefined {
+  for (const item of items)
+    if (
+      item?.success === false &&
+      /syntax|not a valid selector|invalid selector|unexpected token/i.test(
+        String(item.error ?? ""),
+      )
+    )
+      return String(item.error);
+  return undefined;
+}
+async function pollConditions(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+  conditions: Condition[],
+  timeoutMs: number,
+): Promise<PollResult> {
+  const started = Date.now();
+  const deadline = started + timeoutMs;
+  const plan = conditions.map((condition) => ({
+    condition,
+    commands: probeCommands(condition),
+  }));
+  const commands: Command[] = [
+    ["get", "url"],
+    ["get", "title"],
+    ...plan.flatMap((entry) => entry.commands),
+  ];
+  let polls = 0;
+  let judged: Judged[] = [];
+  let observation: Observation = {};
+  for (;;) {
+    polls++;
+    const reply = await invoke(
+      ctx,
+      id,
+      domains,
+      ["batch", "--json"],
+      JSON.stringify(commands),
+      30_000,
+    );
+    // A batch with one failed item, such as an element that is not there yet,
+    // exits non-zero but still lists every result.
+    if (reply.timedOut || !reply.items.length)
+      throw new Fault(
+        "BROWSER_COMMAND_FAILED",
+        "Browser command failed: " +
+          redactText(ctx, reply.stderr || reply.stdout || "no output"),
+        "Inspect the browser page and retry; failed steps stay in the run log.",
+        1,
+        { exitCode: reply.exitCode },
+      );
+    const rows = reply.items as Item[];
+    const syntax = selectorSyntax(rows);
+    if (syntax)
+      throw new Fault(
+        "BROWSER_SELECTOR_INVALID",
+        "A selector in the expectations is not valid: " +
+          redactText(ctx, syntax),
+        "Correct the selector. Use CSS selectors or refs from spyglass ui snapshot.",
+        2,
+      );
+    observation = {
+      url: redactText(ctx, String(resultOf(rows[0]).url ?? "")) || undefined,
+      title:
+        redactText(ctx, String(resultOf(rows[1]).title ?? "")) || undefined,
+    };
+    let offset = 2;
+    judged = plan.map(({ condition, commands: own }) => {
+      const verdict = judge(
+        condition,
+        rows.slice(offset, offset + own.length),
+        observation,
+      );
+      offset += own.length;
+      return { id: condition.id, ...verdict };
+    });
+    if (judged.every((item) => item.ok) || Date.now() >= deadline) break;
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(POLL_INTERVAL_MS, deadline - Date.now())),
+    );
+  }
+  return {
+    passed: judged.every((item) => item.ok),
+    polls,
+    elapsedMs: Date.now() - started,
+    conditions: judged.map((item) => ({
+      ...item,
+      observed: redactText(ctx, item.observed),
+    })),
+    observation,
+  };
+}
+/** Structured assertions, in the shape that `check` records. */
+function assertions(conditions: Judged[]): Record<string, unknown>[] {
+  return conditions.map((item) => ({
+    id: item.id,
+    ok: item.ok,
+    detail: item.observed,
+  }));
+}
+function summaryLine(passed: boolean, conditions: Judged[]): string {
+  return `${passed ? "PASS" : "FAIL"} ${conditions
+    .map((item) =>
+      /\s/.test(item.id) ? item.id.replace("=", '="') + '"' : item.id,
+    )
+    .join(" ")}`;
+}
+async function expectCommand(
+  ctx: Context,
+  seat: string,
+  id: Identity,
+  domains: string,
+  args: string[],
+): Promise<Record<string, unknown>> {
+  const { conditions, timeoutMs } = parseExpectArgs(args);
+  const after = ctx.run.browserProxy?.sequence ?? 0;
+  const poll = await pollConditions(ctx, id, domains, conditions, timeoutMs);
+  await checkProxy(ctx, after);
+  const record = {
+    seat,
+    pageContent: true,
+    timeoutMs,
+    elapsedMs: poll.elapsedMs,
+    polls: poll.polls,
+    passed: poll.passed,
+    conditions: poll.conditions,
+    lastObservation: poll.observation,
+  };
+  const evidence = ctx.artifact("expect.json", record, "page-content");
+  const data = {
+    summary: summaryLine(poll.passed, poll.conditions),
+    seat,
+    pageContent: true,
+    passed: poll.passed,
+    elapsedMs: poll.elapsedMs,
+    polls: poll.polls,
+    timeoutMs,
+    conditions: poll.conditions,
+    claims: assertions(poll.conditions),
+    lastObservation: poll.observation,
+    artifacts: [evidence],
+  };
+  if (!poll.passed) {
+    const failed = poll.conditions.filter((item) => !item.ok);
+    throw new Fault(
+      "BROWSER_EXPECTATION_FAILED",
+      `${failed.length} of ${poll.conditions.length} expectations did not hold after ${poll.elapsedMs} ms: ${failed
+        .map((item) => `${item.id} (${item.observed})`)
+        .join("; ")}.`,
+      "Inspect the page with spyglass ui snapshot; failed steps stay in the run log.",
+      1,
+      data,
+    );
+  }
+  return data;
+}
+
+/**
+ * Settle: wait for the page to stop changing after an interactive action,
+ * without waiting for network idle, which an event stream never reaches. The
+ * wait ends when the document is loaded and no DOM change has happened for a
+ * short quiet window, or at a hard limit.
+ */
+const SETTLE_QUIET_MS = 150;
+const SETTLE_LIMIT_MS = 3000;
+const settleScript = `new Promise((resolve) => {
+  const started = Date.now();
+  let last = started;
+  const observer = new MutationObserver(() => { last = Date.now(); });
+  observer.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+  const tick = () => {
+    const now = Date.now();
+    const quiet = now - last >= ${SETTLE_QUIET_MS} && document.readyState === "complete";
+    if (quiet || now - started >= ${SETTLE_LIMIT_MS}) {
+      observer.disconnect();
+      resolve({ waitedMs: now - started, quiet, readyState: document.readyState });
+    } else setTimeout(tick, 25);
+  };
+  tick();
+})`;
+/**
+ * A click can return before its navigation commits, and the page that the
+ * script runs on can then end. That ends the script with a navigation error:
+ * run it again on the new page until it ends or the limit passes.
+ */
+async function settle(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<Record<string, unknown>> {
+  const started = Date.now();
+  const end = started + SETTLE_LIMIT_MS;
+  for (let attempts = 1; ; attempts++) {
+    const reply = await invoke(
+      ctx,
+      id,
+      domains,
+      ["batch", "--json"],
+      JSON.stringify([["eval", settleScript]]),
+      30_000,
+    );
+    const item = reply.items[0] as Item | undefined;
+    if (item?.success) {
+      const found = item.result?.result as Record<string, unknown> | undefined;
+      return { ...(found ?? {}), attempts };
+    }
+    const message = String(item?.error ?? reply.stderr ?? "");
+    if (/navigat|closed|destroyed|detached/i.test(message) && Date.now() < end)
+      continue;
+    return {
+      quiet: false,
+      attempts,
+      waitedMs: Date.now() - started,
+      note: redactText(ctx, message),
+    };
+  }
+}
+const interactiveHeads = new Set([
+  "click",
+  "dblclick",
+  "press",
+  "fill",
+  "select",
+  "type",
+]);
+const findActions = new Set(["click", "dblclick", "fill", "type", "select"]);
+function isInteractive(command: Command): boolean {
+  if (interactiveHeads.has(command[0] ?? "")) return true;
+  return (
+    command[0] === "find" &&
+    command.slice(3).some((word) => findActions.has(word))
+  );
+}
+/**
+ * When a selector action fails, the operator needs the page as it is: the
+ * interactive elements nearest to what was asked for. Map drift and a product
+ * defect then differ at a glance.
+ */
+const selectorHeads = new Set([
+  "click",
+  "dblclick",
+  "fill",
+  "type",
+  "hover",
+  "focus",
+  "check",
+  "uncheck",
+  "select",
+  "scrollintoview",
+  "find",
+  "is",
+  "get",
+]);
+function editDistance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let previous = row[0]!;
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const held = row[j]!;
+      row[j] = Math.min(
+        row[j]! + 1,
+        row[j - 1]! + 1,
+        previous + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+      previous = held;
+    }
+  }
+  return row[b.length]!;
+}
+function requestedName(command: Command): string {
+  const named = command.indexOf("--name");
+  if (named > 0 && command[named + 1]) return command[named + 1]!;
+  if (command[0] === "find") return command[2] ?? "";
+  return command[1] ?? "";
+}
+const interactiveRoles = new Set([
+  "button",
+  "link",
+  "textbox",
+  "searchbox",
+  "combobox",
+  "checkbox",
+  "radio",
+  "switch",
+  "slider",
+  "spinbutton",
+  "tab",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "option",
+  "listbox",
+  "treeitem",
+]);
+function nearestInteractive(
+  snapshot: Item | undefined,
+  needle: string,
+): { role: string; name: string }[] {
+  const rows: { role: string; name: string }[] = [];
+  const refs = snapshot?.result?.refs;
+  if (refs && typeof refs === "object")
+    for (const entry of Object.values(refs as Record<string, unknown>)) {
+      const { role, name } = (entry ?? {}) as { role?: string; name?: string };
+      if (role && interactiveRoles.has(role))
+        rows.push({ role, name: (name ?? "").trim() });
+    }
+  const target = needle.trim().toLowerCase();
+  const rank = (name: string) =>
+    target
+      ? editDistance(name.toLowerCase(), target) -
+        (name.toLowerCase().includes(target) ? target.length : 0)
+      : 0;
+  return rows
+    .map((row, index) => ({ row, index, rank: rank(row.name) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .slice(0, 10)
+    .map((entry) => entry.row);
+}
+async function diagnoseSelector(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+  cause: Fault,
+): Promise<void> {
+  const results = cause.data.results;
+  if (cause.code !== "BROWSER_COMMAND_FAILED" || !Array.isArray(results))
+    return;
+  const failed = (results as Item[]).find((item) => item?.success === false) as
+    { command?: Command; error?: unknown } | undefined;
+  const command = failed?.command;
+  if (!command || !selectorHeads.has(command[0] ?? "")) return;
+  try {
+    const snap = await run(ctx, id, domains, [["snapshot", "-i", "-c"]], 30000);
+    const item = snap.data[0] as Item | undefined;
+    const nearest = nearestInteractive(item, requestedName(command));
+    const snapshotArtifact = ctx.artifact(
+      "selector-failure-snapshot.json",
+      item ?? snap.data,
+      "page-snapshot",
+    );
+    const report = ctx.artifact(
+      "selector-failure.json",
+      {
+        pageContent: true,
+        failedCommand: clean(ctx, command),
+        error: clean(ctx, failed?.error),
+        requested: redactText(ctx, requestedName(command)),
+        nearest: clean(ctx, nearest),
+      },
+      "page-content",
+    );
+    cause.data = {
+      ...cause.data,
+      nearest: clean(ctx, nearest),
+      pageContent: true,
+      artifacts: [snapshotArtifact, report],
+    };
+    cause.message += ` The nearest interactive elements are in data.nearest.`;
+  } catch {
+    /* The original failure stands without the page picture. */
+  }
+}
 export async function browser(
   ctx: Context,
   args: string[],
@@ -1398,7 +2059,26 @@ export async function browser(
       }
       return focused(ctx, seat, id, policy.domains, action.slice(1));
     }
+    if (action[0] === "expect") {
+      const fresh = await ensure(ctx, id, policy.domains);
+      if (fresh) {
+        ctx.run.sessions[seat] = id.session;
+        saveRun(ctx.run);
+      }
+      const reply = await expectCommand(
+        ctx,
+        seat,
+        id,
+        policy.domains,
+        action.slice(1),
+      );
+      ctx.run.activeSeat = seat;
+      saveRun(ctx.run);
+      return reply;
+    }
     let input = [...action];
+    const wantSettle = input.length > 1 && input.at(-1) === "--settle";
+    if (wantSettle) input.pop();
     if (input[0] === "open") {
       if (!input[1])
         throw new Fault(
@@ -1438,6 +2118,12 @@ export async function browser(
         commands[0]!.slice(1),
       );
     }
+    if (wantSettle && (commands.length !== 1 || !isInteractive(commands[0]!)))
+      throw new Fault(
+        "BROWSER_USAGE",
+        "--settle follows one click, dblclick, press, fill, select, type or find ... click command.",
+        "Use spyglass ui find role button click --name Save --settle.",
+      );
     const mayNavigate = new Set([
       "open",
       "click",
@@ -1452,6 +2138,7 @@ export async function browser(
       "pushstate",
     ]);
     if (
+      !wantSettle &&
       commands.some((command) => mayNavigate.has(command[0] ?? "")) &&
       commands.at(-1)?.[0] !== "get"
     )
@@ -1461,7 +2148,21 @@ export async function browser(
       ctx.run.sessions[seat] = id.session;
       saveRun(ctx.run);
     }
-    const result = await run(ctx, id, policy.domains, commands);
+    let result: { reply: Reply; data: unknown[] };
+    let settled: Record<string, unknown> | undefined;
+    try {
+      result = await run(ctx, id, policy.domains, commands);
+      if (wantSettle) {
+        settled = await settle(ctx, id, policy.domains);
+        // The page that the action led to, after it settled.
+        const tail = await run(ctx, id, policy.domains, [["get", "url"]]);
+        result = { reply: tail.reply, data: [...result.data, ...tail.data] };
+      }
+    } catch (error) {
+      if (error instanceof Fault)
+        await diagnoseSelector(ctx, id, policy.domains, error);
+      throw error;
+    }
     const url = currentUrl(result.data);
     if (url) checkUrl(ctx, url);
     ctx.run.activeSeat = seat;
@@ -1470,6 +2171,7 @@ export async function browser(
       seat,
       pageContent: true,
       currentUrl: url ? redactText(ctx, url) : undefined,
+      ...(settled ? { settled } : {}),
       results: clean(ctx, result.data),
       session: {
         namespace: id.namespace,

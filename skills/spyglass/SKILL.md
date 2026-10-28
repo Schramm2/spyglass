@@ -108,6 +108,14 @@ with a separate Chrome or Chromium session. Read its help before driving:
 spyglass --run <run-id> ui --help
 ```
 
+Wait for the page with `ui expect` instead of a fixed `wait` time: it polls in
+one call, for example `ui expect --url /dashboard --text "Welcome" --visible
+"#form" --timeout-ms 5000`. A condition that never holds fails the step and
+keeps `expect.json` with the last observation. Add `--settle` to one `click`,
+`fill`, `press`, `select` or `find ... click` command to wait for the
+navigation or DOM change that it starts. When a selector matches no element,
+read `data.nearest`: the interactive roles and names that the page has. A
+changed name there is a stale selector; a missing element is a product defect.
 Use `ui proof` after the user action and after the visible result. Use
 `ui focused --expect LABEL` when a claim depends on focus, for example the
 password field after a refused sign-in; it never reads the field's value.

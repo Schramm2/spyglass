@@ -24,6 +24,21 @@ This file records the notable changes to Spyglass. The format follows
 - `result set` edits the pending result with flags: claim outcome and
   observation, inspections, steps, gates, controls, operator and limits.
 
+- `ui expect` polls one or more conditions inside one call (`--url`, `--text`,
+  `--title`, `--selector`, `--visible`, `--hidden`, `--enabled`, `--checked`,
+  `--count`, `--focused`, `--attr`, `--no-errors`) until `--timeout-ms`
+  (default 5000). It writes `expect.json`, records each condition as an
+  assertion and exits 1 with the last observation when one never holds.
+- `--settle` on one `click`, `dblclick`, `press`, `fill`, `select`, `type` or
+  `find ... click` waits for the navigation and DOM changes that the action
+  starts, without waiting for network idle.
+- A selector action that matches no element returns `data.nearest`, up to 10
+  interactive roles and names from the page, and keeps the page snapshot.
+
+### Changed
+
+- `ui` reports the last URL of a command batch as `currentUrl`, not the first.
+
 ### Fixed
 
 - A browser command no longer fails with `BROWSER_PROXY_UNAVAILABLE` when one

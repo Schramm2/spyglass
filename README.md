@@ -115,7 +115,7 @@ and start a new run.
 | --- | --- | --- |
 | Existing tests and journeys | `check NAME` | Exit status, assertions, declared artifacts |
 | Other commands | `exec -- COMMAND ARGS` | Bounded stdout and stderr, real exit status |
-| Web browser | `ui open /`, `ui snapshot`, `ui proof LABEL`, `ui focused` | Isolated session, screenshot, DOM, errors and requests |
+| Web browser | `ui open /`, `ui snapshot`, `ui expect`, `ui proof LABEL`, `ui focused` | Isolated session, screenshot, DOM, errors and requests |
 | HTTP | `api GET /path --expect 200` | Masked request and response; redirects are not followed |
 | PostgreSQL | `db 'SELECT ...' --expect-rows 1` | One statement in a read-only transaction, with rows and role limits |
 | Docker Compose | `ps`, `mark LABEL`, `logs SERVICE --since LABEL` | Project-scoped status and timestamped logs |
@@ -123,6 +123,41 @@ and start a new run.
 
 Run `spyglass --help` for all commands, and `spyglass COMMAND --help` for the
 arguments of one command.
+
+### Browser expectations
+
+`ui expect` waits for the page inside one call. It polls every 100 ms until
+each condition holds or `--timeout-ms` ends (default 5000, maximum 120000), and
+it writes `expect.json`. It exits 1 and keeps the last observation when a
+condition never holds. It never reads an input value: `--attr value` is refused.
+
+| Flag | The condition holds when |
+| --- | --- |
+| `--url PATTERN` | The URL contains `PATTERN`. With `*`, the pattern matches the whole URL, or the path and query when it has no scheme. |
+| `--text TEXT` | The page text contains `TEXT`. |
+| `--title TEXT` | The page title is `TEXT`. |
+| `--selector SEL` | At least one element matches `SEL`. |
+| `--visible SEL` / `--hidden SEL` | An element matches and is visible, or none matches or it is not visible. |
+| `--enabled SEL` / `--checked SEL` | The element is enabled, or checked. |
+| `--count SEL=N` | Exactly `N` elements match `SEL`. |
+| `--focused LABEL` | The focused element has the label `LABEL`. |
+| `--attr SEL:NAME=VALUE` | The attribute `NAME` of the element is `VALUE`. |
+| `--no-errors` | The page has no page error and no console error. |
+
+```sh
+spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID
+```
+
+Add `--settle` to one `click`, `dblclick`, `press`, `fill`, `select`, `type` or
+`find ... click` command. Spyglass then waits until the page is loaded and no
+DOM change has happened for 150 ms, for at most 3 seconds, and records it in
+`data.settled`. It does not wait for network idle, which an event stream never
+reaches.
+
+When a selector action matches no element, the error has `data.nearest`: up to
+10 interactive roles and names from the page, nearest to your request first.
+The page snapshot stays in the evidence folder. Use it to tell a stale
+selector from a product defect.
 
 ### Link steps to claims
 

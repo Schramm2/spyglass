@@ -1124,6 +1124,15 @@ spyglass report --run my-change --json          # write the offline report</code
               <li><code>snapshot [-i|-c|--delta|--full]</code></li>
               <li><code>proof LABEL</code></li>
               <li>
+                <code
+                  >expect [--url PATTERN] [--text TEXT] [--title TEXT]
+                  [--selector SEL] [--visible SEL] [--hidden SEL] [--enabled
+                  SEL] [--checked SEL] [--count SEL=N] [--focused LABEL] [--attr
+                  SEL:NAME=VALUE] [--no-errors] [--timeout-ms MS]</code
+                >: polls until every condition holds or the timeout ends, and
+                saves <code>expect.json</code>.
+              </li>
+              <li>
                 <code>focused [--expect LABEL]</code>: records the focused
                 element's role, label, type and ID without its value.
                 <code>--expect</code> fails when the label differs.
@@ -1185,7 +1194,8 @@ spyglass report --run my-change --json          # write the offline report</code
                   <td>Web browser</td>
                   <td>
                     <code>ui open /</code>, <code>ui snapshot</code>,
-                    <code>ui proof LABEL</code>, <code>ui focused</code>
+                    <code>ui expect</code>, <code>ui proof LABEL</code>,
+                    <code>ui focused</code>
                   </td>
                   <td>
                     Isolated session, screenshot, DOM, errors and requests
@@ -1239,6 +1249,103 @@ spyglass report --run my-change --json          # write the offline report</code
             Run <code>spyglass --help</code> for all commands, and
             <code>spyglass COMMAND --help</code> for the arguments of one
             command.
+          </p>
+          <h3>Browser expectations</h3>
+          <p>
+            <code>ui expect</code> waits for the page inside one call. It polls
+            every 100 ms until each condition holds or
+            <code>--timeout-ms</code> ends (default 5000, maximum 120000), and
+            it writes <code>expect.json</code>. It exits 1 and keeps the last
+            observation when a condition never holds. It never reads an input
+            value: <code>--attr value</code> is refused.
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Flag</th>
+                  <th scope="col">The condition holds when</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>--url PATTERN</code></td>
+                  <td>
+                    The URL contains <code>PATTERN</code>. With <code>*</code>,
+                    the pattern matches the whole URL, or the path and query
+                    when it has no scheme.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--text TEXT</code></td>
+                  <td>The page text contains <code>TEXT</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>--title TEXT</code></td>
+                  <td>The page title is <code>TEXT</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>--selector SEL</code></td>
+                  <td>At least one element matches <code>SEL</code>.</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>--visible SEL</code> / <code>--hidden SEL</code>
+                  </td>
+                  <td>
+                    An element matches and is visible, or none matches or it is
+                    not visible.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>--enabled SEL</code> / <code>--checked SEL</code>
+                  </td>
+                  <td>The element is enabled, or checked.</td>
+                </tr>
+                <tr>
+                  <td><code>--count SEL=N</code></td>
+                  <td>
+                    Exactly <code>N</code> elements match <code>SEL</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--focused LABEL</code></td>
+                  <td>The focused element has the label <code>LABEL</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>--attr SEL:NAME=VALUE</code></td>
+                  <td>
+                    The attribute <code>NAME</code> of the element is
+                    <code>VALUE</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--no-errors</code></td>
+                  <td>The page has no page error and no console error.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="call">
+            <pre><code>spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            Add <code>--settle</code> to one <code>click</code>,
+            <code>dblclick</code>, <code>press</code>, <code>fill</code>,
+            <code>select</code>, <code>type</code> or
+            <code>find ... click</code> command. Spyglass then waits until the
+            page is loaded and no DOM change has happened for 150 ms, for at
+            most 3 seconds, and records it in <code>data.settled</code>. It does
+            not wait for network idle, which an event stream never reaches.
+          </p>
+          <p>
+            When a selector action matches no element, the error has
+            <code>data.nearest</code>: up to 10 interactive roles and names from
+            the page, nearest to your request first. The page snapshot stays in
+            the evidence folder. Use it to tell a stale selector from a product
+            defect.
           </p>
         </section>
 
@@ -1761,6 +1868,30 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                     step did not use, such as an external installation's own
                     port beside an <code>exec</code> gate, does not block the
                     gate.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A <code>ui expect</code> expectation never holds, or holds
+                    only after its deadline.
+                  </td>
+                  <td>
+                    The call polls until <code>--timeout-ms</code>, then fails
+                    with exit status 1. It records the last observation, the
+                    elapsed time and the polls in <code>expect.json</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A <code>ui find</code> selector or a selector action matches
+                    no element.
+                  </td>
+                  <td>
+                    The command fails with exit status 1. It includes the
+                    nearest interactive roles and labels from the current page
+                    in its error data and keeps the page snapshot.
                   </td>
                 </tr>
                 <tr>

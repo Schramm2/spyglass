@@ -12,6 +12,7 @@ import {
   baseProfile,
   git,
   makeRepo,
+  readRunFile,
   removeRepo,
   runCli,
   spawnCapture,
@@ -1478,6 +1479,226 @@ surfaceTest(
       await rm(removedTree, { recursive: true, force: true });
       await removeRepo(dir);
       await page.close();
+    }
+  },
+);
+
+// Slice 2 of docs/verification-speed.md: ui expect, settle and diagnostics.
+async function upBrowserRun(name, { plan, profile } = {}) {
+  const dir = await makeRepo({
+    profile: profile ?? baseProfile(),
+    ...(plan ? { plan } : {}),
+  });
+  const up = assertEnvelope(
+    await runCli(dir, [
+      "--json",
+      "up",
+      "--run",
+      name,
+      ...(plan ? ["--plan", "plan.json"] : []),
+    ]),
+    { ok: true, code: 0 },
+  );
+  return { dir, run: up.run ?? up.data.id };
+}
+const ui = (dir, run, args, expected = { ok: true, code: 0 }) =>
+  runCli(dir, ["--json", "--run", run, "ui", ...args], {
+    timeoutMs: 60000,
+  }).then((result) => assertEnvelope(result, expected));
+const evidenceJson = async (dir, run, artifact) =>
+  JSON.parse(
+    await readFile(
+      join(dir, ".spyglass/runs", run, "spyglass", artifact.path),
+      "utf8",
+    ),
+  );
+
+surfaceTest(
+  "ui expect polls inside one call and retains the last observation when a condition never holds",
+  async () => {
+    const { dir, run } = await upBrowserRun("expect-poll");
+    try {
+      await ui(dir, run, ["open", "/login?delayed=1"]);
+      const passed = await ui(dir, run, [
+        "expect",
+        "--visible",
+        "input[name=email]",
+        "--title",
+        "Spyglass demo",
+        "--url",
+        "/login*",
+        "--count",
+        "input=2",
+        "--timeout-ms",
+        "5000",
+      ]);
+      assert.match(passed.data.summary, /^PASS /);
+      assert.ok(
+        passed.data.polls >= 2,
+        "the delayed form needs more than one poll",
+      );
+      const record = await evidenceJson(
+        dir,
+        run,
+        passed.artifacts.find((a) => a.path.endsWith("expect.json")),
+      );
+      assert.equal(record.passed, true);
+      assert.ok(
+        record.conditions.length >= 4 && record.conditions.every((c) => c.ok),
+      );
+      assert.ok(passed.data.claims.every((claim) => claim.ok === true));
+
+      const started = Date.now();
+      const never = await ui(
+        dir,
+        run,
+        ["expect", "--text", "This text never appears", "--timeout-ms", "700"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(never.error.code, "BROWSER_EXPECTATION_FAILED");
+      assert.ok(Date.now() - started >= 600, "it polled until the deadline");
+      assert.ok(never.data.elapsedMs >= 650);
+      assert.equal(never.data.claims[0].ok, false);
+      const failed = await evidenceJson(
+        dir,
+        run,
+        never.data.artifacts.find((a) => a.path.endsWith("expect.json")),
+      );
+      assert.equal(failed.passed, false);
+      assert.match(failed.lastObservation.url, /\/login/);
+      assert.equal(failed.lastObservation.title, "Spyglass demo");
+
+      // A condition that holds only after its deadline is a failure.
+      await ui(dir, run, ["open", "/login?delayed=1"]);
+      await ui(
+        dir,
+        run,
+        ["expect", "--visible", "input[name=email]", "--timeout-ms", "100"],
+        { ok: false, code: 1 },
+      );
+
+      await ui(dir, run, ["open", "/error"]);
+      const errors = await ui(
+        dir,
+        run,
+        ["expect", "--no-errors", "--timeout-ms", "800"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(errors.error.code, "BROWSER_EXPECTATION_FAILED");
+
+      const value = await ui(
+        dir,
+        run,
+        ["expect", "--attr", "input:value=secret"],
+        { ok: false, code: 2 },
+      );
+      assert.equal(
+        value.error.code,
+        "BROWSER_POLICY",
+        "input values stay unread",
+      );
+      const log = await readRunFile(dir, run, "spyglass/log.jsonl");
+      assert.ok(
+        log.includes(never.step),
+        "the failed expectation stays in the log",
+      );
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "a selector that matches nothing returns the nearest interactive roles and labels",
+  async () => {
+    const { dir, run } = await upBrowserRun("selector-diagnostics");
+    try {
+      await ui(dir, run, ["open", "/login"]);
+      const miss = await ui(
+        dir,
+        run,
+        ["find", "role", "button", "click", "--name", "Sing in"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(miss.error.code, "BROWSER_COMMAND_FAILED");
+      const nearest = miss.data.nearest;
+      assert.ok(
+        Array.isArray(nearest) && nearest.length > 0 && nearest.length <= 10,
+      );
+      assert.deepEqual(
+        nearest[0],
+        { role: "button", name: "Sign in" },
+        "the closest name comes first",
+      );
+      assert.ok(
+        nearest.some((row) => row.role === "textbox" && /Email/.test(row.name)),
+      );
+      const snapshot = miss.data.artifacts.find(
+        (a) => a.kind === "page-snapshot",
+      );
+      assert.ok(snapshot, "the page snapshot is retained");
+      assert.match(
+        JSON.stringify(await evidenceJson(dir, run, snapshot)),
+        /Sign in/,
+      );
+
+      const label = await ui(
+        dir,
+        run,
+        ["find", "label", "Emial", "fill", "x"],
+        {
+          ok: false,
+          code: 1,
+        },
+      );
+      assert.ok(label.data.nearest.some((row) => /Email/.test(row.name)));
+      assert.ok(
+        (await readRunFile(dir, run, "spyglass/log.jsonl")).includes(miss.step),
+      );
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui --settle waits for the navigation that a click starts",
+  async () => {
+    const { dir, run } = await upBrowserRun("settle");
+    try {
+      await ui(dir, run, ["open", "/login"]);
+      await ui(dir, run, [
+        "find",
+        "label",
+        "Email",
+        "fill",
+        "agent@example.test",
+      ]);
+      await ui(dir, run, [
+        "find",
+        "label",
+        "Password",
+        "fill",
+        "demo-password-for-local-tests",
+      ]);
+      const click = await ui(dir, run, [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Sign in",
+        "--settle",
+      ]);
+      assert.ok(click.data.settled, "the step records its settle wait");
+      assert.match(click.data.currentUrl, /\/dashboard$/);
+      const url = await ui(dir, run, ["get", "url"]);
+      assert.match(JSON.stringify(url.data.results), /\/dashboard/);
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
     }
   },
 );
