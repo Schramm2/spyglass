@@ -448,16 +448,166 @@ async function runBaseline(repo, metrics) {
   return collect(repo, run);
 }
 
-/** The proposed workflow; filled in as each slice lands. */
+/** The composite workflow: one batch per page, links on every step, one finish. */
 async function runComposite(repo, metrics) {
   const probe = await timed(
     process.execPath,
-    [CLI, "--json", "ui", "verify", "--help"],
+    [CLI, "--json", "ui", "--help"],
     { cwd: repo },
   );
-  if (!/"verify"/.test(probe.stdout))
+  if (!/verify \[--open/.test(probe.stdout))
     return { skipped: "ui verify is not in this build" };
-  return { skipped: "composite path is not written yet" };
+  const spy = spyglassDriver(repo, metrics);
+  const run = "journey";
+  await spy(["up", "--run", run, "--plan", "plan.json"]);
+  const r = ["--run", run];
+  const link = (...ids) => ids.flatMap((id) => ["--claim", id]);
+
+  await spy([
+    "ui",
+    "verify",
+    "--open",
+    "/login",
+    "--do",
+    'find label Email fill "agent@example.test"',
+    "--do",
+    'find label Password fill "wrong-password-value"',
+    "--do",
+    'find role button click --name "Sign in"',
+    "--expect",
+    "text=Sign in failed",
+    "--proof",
+    "signin-refused",
+    ...link("signin-refused"),
+    ...r,
+  ]);
+  await spy([
+    "ui",
+    "verify",
+    "--open",
+    "/login",
+    "--do",
+    "find label Email click",
+    "--expect-focus-moved",
+    "Email",
+    ...link("focus-email"),
+    ...r,
+  ]);
+  await spy(["ui", "login", "agent", ...r]);
+  await spy([
+    "ui",
+    "verify",
+    "--expect",
+    "text=Ask a question",
+    "--expect",
+    "visible=#question",
+    "--expect",
+    "enabled=button",
+    "--proof",
+    "dashboard",
+    "--viewport",
+    "1280x800",
+    "--viewport",
+    "390x844",
+    ...link(
+      "login-success",
+      "dashboard-heading",
+      "dashboard-form",
+      "visual-desktop",
+      "visual-mobile",
+    ),
+    ...r,
+  ]);
+
+  const post = await spy([
+    "api",
+    "POST",
+    "/questions",
+    "--seat",
+    "agent",
+    "--data",
+    JSON.stringify({ question: QUESTION }),
+    "--expect",
+    "202",
+    "--expect-json",
+    "status=pending",
+    ...link("question-accepted", "question-completed", "question-listed"),
+    ...r,
+  ]);
+  await spy([
+    "api",
+    "GET",
+    `/questions/${post.data.body.id}`,
+    "--seat",
+    "agent",
+    "--wait-until",
+    "status=complete",
+    "--independent-read",
+    ...link("question-completed"),
+    ...r,
+  ]);
+  await spy([
+    "api",
+    "GET",
+    "/questions",
+    "--seat",
+    "agent",
+    "--expect",
+    "200",
+    "--expect-body-contains",
+    QUESTION,
+    "--independent-read",
+    ...link("question-listed"),
+    ...r,
+  ]);
+  await spy([
+    "ui",
+    "verify",
+    "--open",
+    "/error",
+    "--proof",
+    "error-page",
+    ...link("error-page-reported"),
+    ...r,
+  ]);
+  await spy(
+    ["check", "fail", "--control", "demo-failure-control:failed", ...r],
+    {
+      allowFail: true,
+    },
+  );
+  await spy([
+    "check",
+    "pass",
+    "--control",
+    "demo-failure-control:restored",
+    ...link("control-detects-failure"),
+    ...r,
+  ]);
+
+  // The operator writes what was observed into the pending result.
+  const file = join(repo, ".spyglass/runs", run, "spyglass/result.json");
+  const result = JSON.parse(await readFile(file, "utf8"));
+  for (const row of result.claims) {
+    row.outcome = "passed";
+    row.observed = `The ${row.id} behavior was observed.`;
+    for (const inspection of row.inspections ?? []) {
+      inspection.expected = "The form is readable.";
+      inspection.observed = "The form was readable.";
+    }
+  }
+  for (const control of result.controls) {
+    control.observedFailure = "The demo assertion failed.";
+    control.observedPass = "The same assertion passed.";
+  }
+  result.operator = "agent";
+  result.limits = PLAN.limits;
+  await writeFile(file, JSON.stringify(result, null, 2));
+  metrics.operatorSteps += 1;
+  const finished = await spy(["finish", ...r]);
+  if (finished.data.report?.status !== "passed")
+    throw new Error(`finish: ${JSON.stringify(finished.data)}`);
+  return collect(repo, run);
 }
 
 // ---------------------------------------------------------------------------
