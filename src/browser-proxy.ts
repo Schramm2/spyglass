@@ -11,19 +11,22 @@ import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { connect as netConnect } from "node:net";
-import {
-  createServer,
-  request as httpRequest,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from "node:http";
-import { request as httpsRequest } from "node:https";
+import { createRequire } from "node:module";
+import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Fault } from "./errors.js";
 import { processIdentity } from "./process.js";
 import { BROWSER_IDLE_TIMEOUT_MS, runHome, saveRun } from "./state.js";
 import type { Run } from "./state.js";
+
+// An import of node:http reads every export of it, and one export loads undici,
+// which costs about 25 ms in each ui command. require gives the same functions
+// without that read.
+const require = createRequire(import.meta.url);
+const { createServer, request: httpRequest } =
+  require("node:http") as typeof import("node:http");
+const { request: httpsRequest } =
+  require("node:https") as typeof import("node:https");
 
 const HEADER_LIMIT = 16 * 1024;
 const BODY_LIMIT = 10 * 1024 * 1024;
@@ -431,14 +434,14 @@ function serve(configFile: string): void {
       client.pipe(upstream);
       upstream.pipe(client);
     });
-    upstream.once("error", () => {
+    upstream.on("error", () => {
       clearTimeout(timer);
       if (!client.destroyed)
         client.end(
           "HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
         );
     });
-    client.once("error", () => upstream.destroy());
+    client.on("error", () => upstream.destroy());
     client.once("close", () => upstream.destroy());
   });
 
@@ -525,7 +528,7 @@ function serve(configFile: string): void {
           "HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
         );
     });
-    client.once("error", () => forward.destroy());
+    client.on("error", () => forward.destroy());
     client.once("close", () => forward.destroy());
     forward.end();
   });
@@ -579,6 +582,9 @@ function serve(configFile: string): void {
   );
   server.on("connection", (socket) => {
     idle.refresh();
+    // A browser can reset a connection at any time. An error with no handler
+    // would end the proxy process and fail every later browser command.
+    socket.on("error", () => socket.destroy());
     sockets.add(socket);
     socket.once("close", () => sockets.delete(socket));
   });
@@ -952,7 +958,9 @@ export async function browserProxyEvents(
   ) {
     throw proxyFault(
       "BROWSER_PROXY_UNAVAILABLE",
-      "The browser proxy health check failed.",
+      !state
+        ? `The browser proxy on port ${saved.port} did not answer its health check.`
+        : `The browser proxy on port ${saved.port} answered as another process or instance, not as this run's proxy.`,
       "Run spyglass down and create a new run.",
       3,
     );

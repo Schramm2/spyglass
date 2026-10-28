@@ -3,8 +3,8 @@ import { join, resolve } from "node:path";
 import { Fault, fault } from "./errors.js";
 import { regular, safePath } from "./files.js";
 import { template } from "./profile.js";
-import type { Artifact, Context } from "./state.js";
-import { assertSource, sourceChanges, steps } from "./state.js";
+import type { Artifact, Run, StepLinks } from "./state.js";
+import { Context, assertSource, sourceChanges, steps } from "./state.js";
 
 interface Assertion {
   id: string;
@@ -419,4 +419,145 @@ export async function checks(
     `Unsupported check command ${args.join(" ")}.`,
     "Use check NAME, exec -- COMMAND, or evidence add --step ID --file PATH.",
   );
+}
+
+export const MAX_CONCURRENCY = 8;
+export interface ParallelRequest {
+  /** Check names; or every planned gate that has a profile check. */
+  names?: string[];
+  gates?: boolean;
+  concurrency: number;
+  links?: StepLinks;
+}
+/**
+ * Run independent checks at the same time. This process holds the run lock
+ * and records each finished step in the log, one write at a time, so the log
+ * and run.json stay whole. The checks must not change the source: a change
+ * stops every check that finishes after it.
+ */
+export async function parallelChecks(
+  run: Run,
+  request: ParallelRequest,
+  track: (ctx: Context) => void,
+): Promise<{ data: Record<string, unknown>; fault?: Fault }> {
+  const planned = run.plan.gates;
+  const names = request.gates
+    ? planned.filter((gate) => run.profile.checks[gate])
+    : (request.names ?? []);
+  const skippedGates = request.gates
+    ? planned.filter((gate) => !run.profile.checks[gate])
+    : [];
+  if (!names.length)
+    throw new Fault(
+      "INVALID_USAGE",
+      request.gates
+        ? "No planned gate has a profile check of the same name."
+        : "check needs at least one name.",
+      request.gates
+        ? "Name the gate checks in the profile as the plan names its gates, or run each gate with exec --gate."
+        : "Run spyglass check NAME or spyglass check a,b.",
+    );
+  const unknown = names.find((name) => !run.profile.checks[name]);
+  if (unknown !== undefined)
+    throw new Fault(
+      "UNKNOWN_CHECK",
+      `Unknown check ${unknown}. Available checks: ${Object.keys(run.profile.checks).join(", ") || "none"}.`,
+      "Choose checks from the profile.",
+    );
+  if (
+    run.state !== "ready" &&
+    !names.every((name) => run.profile.checks[name]?.cleanup)
+  )
+    throw new Fault(
+      "RUN_NOT_READY",
+      `Run ${run.id} is ${run.state}.`,
+      "Create a ready run before driving the target.",
+      1,
+    );
+  const records: {
+    name: string;
+    step?: string;
+    status?: "passed" | "failed";
+    code?: string;
+    message?: string;
+    durationMs?: number;
+  }[] = names.map((name) => ({ name }));
+  const runOne = async (index: number): Promise<void> => {
+    const name = names[index]!;
+    const ctx = new Context(run, "check", [name]);
+    ctx.links = request.gates
+      ? { claims: [], independentRead: false, controls: [], gates: [name] }
+      : request.links;
+    try {
+      const data = await namedCheck(ctx, name);
+      ctx.finish(0, data, 0);
+      records[index] = {
+        name,
+        step: ctx.step.id,
+        status: "passed",
+        durationMs: ctx.step.durationMs,
+      };
+    } catch (error) {
+      const failure = fault(error);
+      try {
+        ctx.finish(
+          typeof failure.data.exitCode === "number"
+            ? failure.data.exitCode
+            : failure.exit,
+          {
+            ...failure.data,
+            passed: false,
+            error: {
+              code: failure.code,
+              message: ctx.vault.text(failure.message),
+            },
+          },
+          failure.exit,
+        );
+      } catch (logError) {
+        failure.message += `; cannot retain step: ${String(logError)}`;
+      }
+      records[index] = {
+        name,
+        step: ctx.step.id,
+        status: "failed",
+        code: failure.code,
+        message: ctx.vault.text(failure.message),
+        durationMs: ctx.step.durationMs,
+      };
+    }
+    track(ctx);
+  };
+  let next = 0;
+  const worker = async () => {
+    for (;;) {
+      const index = next++;
+      if (index >= names.length) return;
+      await runOne(index);
+    }
+  };
+  await Promise.all(
+    Array.from(
+      { length: Math.min(Math.max(1, request.concurrency), names.length) },
+      worker,
+    ),
+  );
+  const failed = records.filter((item) => item.status === "failed");
+  const data = {
+    checks: records,
+    passed: !failed.length,
+    concurrency: Math.min(request.concurrency, names.length),
+    ...(skippedGates.length ? { skippedGates } : {}),
+  };
+  return failed.length
+    ? {
+        data,
+        fault: new Fault(
+          "CHECK_FAILED",
+          `Checks failed: ${failed.map((item) => item.name).join(", ")}.`,
+          "Inspect the retained attempts in data.checks, correct the cause, then run the failed checks again.",
+          1,
+        ),
+      }
+    : { data };
 }

@@ -86,19 +86,31 @@ In your own repository, the workflow is:
 ```sh
 spyglass init                                   # write spyglass.json; review it
 spyglass up --run my-change --plan verification-plan.json --json
-spyglass check verify --run my-change --json    # run a named check
-spyglass result --run my-change --file PATH     # record claim results
-spyglass doctor --run my-change --json
-spyglass down --run my-change --json            # clean up owned resources
-spyglass report --run my-change --json          # write the offline report
+spyglass check verify --run my-change --claim CLAIM_ID --json   # run a check; link it to a claim
+spyglass result set --run my-change --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass status --work --run my-change          # what each claim still needs
+spyglass result --check --run my-change         # validate; record nothing
+spyglass finish --run my-change --json          # result, doctor, down and report
 ```
+
+`finish` runs `result`, `doctor`, `down` and `report` in order. You can run each
+command alone instead. Each stage is its own step in the log. The first failed
+stage stops `finish`, writes no report and exits with that stage's status; the
+error says how to repair it and to run `finish` again. Add `--cleanup CHECK` to
+run the owner's cleanup check (a profile check with `cleanup: true`) before
+`down`. A stopped run skips `doctor` and `down`.
 
 Add `.spyglass/` to your `.gitignore`. It holds the evidence folder.
 
-`up --plan` writes a pending result file and prints its path. Put the step IDs,
-artifact paths and observations from your checks into that file. Then record it
-with `spyglass result`. If a check fails, keep the original expectation. Repair
-the source and start a new run.
+`up --plan` writes a pending result file and prints its path. Run each step
+with `--claim ID`: when the step passes, Spyglass adds its step ID and its
+artifact paths to that claim in the pending file. You write only what a person
+must judge: what you observed and the outcome of each claim, with
+`spyglass result set`. Check the file with `spyglass result --check`. It lists
+every finding at once in `data.findings`, and each finding has a `repair`. Then
+record it with `spyglass result`, which reads the pending file when you give no
+`--file`. If a check fails, keep the original expectation. Repair the source
+and start a new run.
 
 ## Usage
 
@@ -108,14 +120,179 @@ the source and start a new run.
 | --- | --- | --- |
 | Existing tests and journeys | `check NAME` | Exit status, assertions, declared artifacts |
 | Other commands | `exec -- COMMAND ARGS` | Bounded stdout and stderr, real exit status |
-| Web browser | `ui open /`, `ui snapshot`, `ui proof LABEL`, `ui focused` | Isolated session, screenshot, DOM, errors and requests |
-| HTTP | `api GET /path --expect 200` | Masked request and response; redirects are not followed |
-| PostgreSQL | `db 'SELECT ...' --expect-rows 1` | One statement in a read-only transaction, with rows and role limits |
-| Docker Compose | `ps`, `mark LABEL`, `logs SERVICE --since LABEL` | Project-scoped status and timestamped logs |
+| Web browser | `ui open /`, `ui snapshot`, `ui expect`, `ui proof LABEL`, `ui focused` | Isolated session, screenshot, DOM, errors and requests |
+| HTTP | `api GET /path --expect 200 --expect-json status=ok --wait-until status=complete` | Masked request and response, assertions and poll record; redirects are not followed |
+| PostgreSQL | `db 'SELECT ...' --expect-rows 1 --expect-col name=alpha` | One statement in a read-only transaction, with rows, assertions and role limits |
+| Docker Compose | `ps --wait`, `mark LABEL`, `logs SERVICE --since-step ID --grep PATTERN` | Project-scoped status and timestamped logs |
 | Other evidence | `evidence add --step ID --file PATH` | Checked copy from a declared import root |
 
 Run `spyglass --help` for all commands, and `spyglass COMMAND --help` for the
 arguments of one command.
+
+### Browser expectations
+
+`ui expect` waits for the page inside one call. It polls every 100 ms until
+each condition holds or `--timeout-ms` ends (default 5000, maximum 120000), and
+it writes `expect.json`. It exits 1 and keeps the last observation when a
+condition never holds. It never reads an input value: `--attr value` is refused.
+
+| Flag | The condition holds when |
+| --- | --- |
+| `--url PATTERN` | The URL contains `PATTERN`. With `*`, the pattern matches the whole URL, or the path and query when it has no scheme. |
+| `--text TEXT` | The page text contains `TEXT`. |
+| `--title TEXT` | The page title is `TEXT`. |
+| `--selector SEL` | At least one element matches `SEL`. |
+| `--visible SEL` / `--hidden SEL` | An element matches and is visible, or none matches or it is not visible. |
+| `--enabled SEL` / `--checked SEL` | The element is enabled, or checked. |
+| `--count SEL=N` | Exactly `N` elements match `SEL`. |
+| `--focused LABEL` | The focused element has the label `LABEL`. |
+| `--attr SEL:NAME=VALUE` | The attribute `NAME` of the element is `VALUE`. |
+| `--no-errors` | The page has no page error and no console error. |
+
+```sh
+spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID
+```
+
+### Check data and wait for jobs in one call
+
+| Command | Option | Meaning |
+| --- | --- | --- |
+| `api` | `--expect-json PATH=VALUE` or `PATH!=VALUE` | Check a field of the JSON body. A dotted `PATH` reaches objects, array indexes and `length`, for example `items.length=3`. A path that is not in the body fails both forms. |
+| `api` | `--expect-body-contains TEXT` | The raw body contains `TEXT`. |
+| `api GET` | `--wait-until PATH=VALUE` | Poll until the field has the value. Add `--fail-on PATH=VALUE` to stop at a failed state, `--timeout-ms` (default 15000) and `--interval-ms` (default 250). |
+| `db` | `--expect-col COLUMN=VALUE` | The first row has the value. A dotted name reaches into a JSON column. Repeat the flag for more columns. |
+| `db` | `--expect-empty` | The query returns no row (`--expect-rows 0`). |
+| `ps` | `--wait`, `--timeout-ms MS` | Poll every 500 ms until each required service is running and, with a health check, healthy. |
+| `logs` | `--since-step ID`, `--since-last` | Start at a step's start time, or the previous step, with no `mark`. |
+| `logs` | `--grep PATTERN`, `--expect-text TEXT`, `--forbid-text TEXT` | Keep matching lines, then require or refuse text. |
+
+Each check is an assertion of the step in `data.claims`. A failed check exits 1
+and keeps the response, the bounded query result or the log. A poll keeps its
+poll count and elapsed time in `api-response.json`. A poll that times out or
+reaches a `--fail-on` state fails the step, so it cannot be an independent read;
+a poll that reaches its value can be. `db` reads the privileges of its role once
+per run, at `doctor` or on the first query, and reuses them for the same
+connection; `doctor` reads them again. Every query still runs in a read-only
+transaction.
+
+### Verify one claim in one call
+
+`ui verify` runs the actions, the expectations and the proof of one claim as one
+step with ordered sub-steps:
+
+```sh
+spyglass ui verify --open /dashboard \
+  --do 'find label Question fill "Does it work?"' \
+  --do "find role button click --name 'Submit question'" \
+  --expect text="Ask a question" --expect visible="#question" \
+  --proof dashboard --viewport 1280x800 --viewport 390x844 \
+  --claim form-works --claim form-looks-right --run ID
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--open PATH` | Open a page first. |
+| `--do COMMAND` | One browser command. Repeat the flag for more. A `click`, `fill`, `press` or `select` settles before the next sub-step. A screenshot is not an action: use `--proof`. |
+| `--expect KIND=VALUE` | An expectation of `ui expect`: `url`, `text`, `title`, `selector`, `visible`, `hidden`, `enabled`, `checked`, `count=SEL=N`, `focused`, `attr=SEL:NAME=VALUE` or `no-errors`. Spyglass checks them in order. |
+| `--expect-focus-moved LABEL` | Record the focus before the actions and after them in `focused.json`. It fails when focus was already on `LABEL`, or is not on it afterward. |
+| `--proof LABEL` | Save `proof-LABEL.png`, its snapshot and its details. |
+| `--viewport WxH` | With `--proof`, repeat per viewport: resize, settle, check every `--expect` again and save `proof-LABEL-WxH.png`. |
+| `--timeout-ms MS` | The limit for each expectation (default 5000). |
+
+When sub-step K fails, the sub-steps before it stay `passed`, K keeps its
+failure with a failure screenshot and a delta snapshot, and the later ones are
+`not run`. The step exits 1 and stays in the log. Each expectation is an
+assertion in `data.claims`. A claim cannot cite a batch step that has a failed
+or skipped sub-step: `result` reports `EXPECTATION_FAILED`,
+`EXPECTATION_NOT_RUN`, `ACTION_FAILED` or `ACTION_NOT_RUN` and names it. With
+`--claim ID` on a visual claim, Spyglass adds an inspection per viewport with
+the viewport and the screenshot. You write the `expected` and `observed` text
+after you look at the image.
+
+`ui proof LABEL --viewport 1280x800 --viewport 390x844 --expect visible="#form"`
+does the same for the current page: it resizes, settles, checks the
+expectations and saves one screenshot per viewport.
+
+Add `--settle` to one `click`, `dblclick`, `press`, `fill`, `select`, `type` or
+`find ... click` command. Spyglass then waits until the page is loaded and no
+DOM change has happened for 150 ms, for at most 3 seconds, and records it in
+`data.settled`. It does not wait for network idle, which an event stream never
+reaches.
+
+When a selector action matches no element, the error has `data.nearest`: up to
+10 interactive roles and names from the page, nearest to your request first.
+The page snapshot stays in the evidence folder. Use it to tell a stale
+selector from a product defect.
+
+When `ui snapshot`, `ui proof` or `ui verify` ends, `data.observation` holds a
+short block: the URL and title, the focused element, the counts of console
+errors, failed requests and interactive elements, the changed lines and the
+artifacts. It is at most 40 lines. A long snapshot stays whole in the artifact
+`snapshot.json`; the output keeps the first lines and the path.
+
+Every failed command prints a `next` action that names the run, the seat and
+the flags, so you can copy it and run it as written.
+
+### Shorter runs
+
+| Command | What it saves |
+| --- | --- |
+| `up --warm [--seat SEAT]` | Starts the exact-origin proxy and the headless browser of a seat while the app starts. With `--seat`, it signs the seat in once the app is ready, if the seat has a login. `data.warm` shows it. If `up` fails, the warm browser and proxy close. |
+| `check a,b`, `check --gates [--concurrency N]` | Runs checks at the same time (default 4, up to 8). Each check is its own step and keeps its artifacts; the run lock and the log stay whole. The checks must not change the source. `--gates` runs the profile checks named like the planned gates and links each to its gate. |
+| `ui ... --relogin` | When the seat's browser expired and the seat has a login, signs the seat in again, then runs the command. The step keeps the expiry in `data.relogin`. |
+| `finish` | Runs `result`, `doctor`, `down` and `report`. |
+| `replay --from RUN [--failed-only] [--execute]` | Lists, or runs again, the `check`, `exec`, `api`, `db` and `ui` steps that the claims of an earlier run cite. Each replayed step is a step of the new run, linked to the same claim. It skips a step with a masked secret, stops at the first failed step and sets `failedRun` and `failedStep` on a control that the earlier run failed. It writes no observed text and no outcome. |
+
+`check`, `exec`, `api` and `db` read again only the source files whose size,
+modification time, change time, inode or mode changed since the last full check,
+and every new file. `data.sourceCheck` counts the files that they read again.
+`doctor` and `report` hash every file. `doctor` also runs its independent probes
+at the same time. `bench/overhead.mjs` measures the time that Spyglass adds to a
+browser command; see [browser-benchmark.md](docs/browser-benchmark.md).
+
+### Link steps to claims
+
+A driving command (`ui`, `api`, `db`, `check`, `exec`, `evidence add`) can link
+its step to the pending result while it runs:
+
+| Flag | When the step passes |
+| --- | --- |
+| `--claim ID` | Adds the step ID and the artifacts of the step to claim `ID`. Repeat it for more claims. |
+| `--independent-read` | With `--claim`, sets `independentRead` of the claim to this step. Use it on the read that follows a side effect. |
+| `--control ID:failed` | Sets `failedStep` of control `ID`. The step fails on purpose, so Spyglass links it when it fails. |
+| `--control ID:restored` | Sets `restoredStep` of control `ID` and cites it in the claim of the control. |
+| `--gate NAME` | Adds the step to gate `NAME` and sets its outcome to `passed`. A failed step sets `failed`. |
+
+A failed step is not cited by a claim; it stays in the step log. Spyglass never
+writes `observed`, the `observed` text of an inspection or the `outcome` of a
+claim. You write them with `result set`:
+
+```sh
+spyglass result set --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass result set --claim CLAIM_ID --inspect 1280x800:ARTIFACT.png \
+  --expected "WHAT SHOULD SHOW" --observed "WHAT THE IMAGE SHOWS"
+spyglass result set --control CONTROL_ID --observed-failure "..." --observed-pass "..."
+spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID
+```
+
+An `--observed` after `--inspect` belongs to that inspection. `result set`
+refuses an unknown claim, gate, control or step before it changes the file.
+
+### See what is missing, and reuse a gate
+
+`spyglass status --work --run ID` lists, for each claim, control and gate,
+what is still missing. It uses the rules of `result --check`. A claim lists, for
+example, `a passing step`, `independentRead: a later read after step 8a1f...`,
+`visual inspection for screenshot 8a1f...-1-proof.png` and `observed text`.
+`work.complete` is true when nothing is missing.
+
+When an earlier run of the repository passed a planned gate on the same source
+and profile, with its evidence kept and the same binding values, `up` writes
+the gate into the pending result with its `run` and `steps`, and lists it in
+`citedGates`. `up --cite-gates-from RUN` cites only that run and fails with
+`GATE_CITATION_REJECTED` when it cannot cite a gate. `result set --gate-run RUN`
+cites the planned gates of `RUN` in a run that already exists. `result` still
+checks the citation.
 
 ### Output and exit codes
 

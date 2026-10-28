@@ -1,16 +1,25 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import { Fault } from "./errors.js";
-import { hash, readJson, regular, safePath } from "./files.js";
+import { hash, readJson, regular, safePath, writeJson } from "./files.js";
 import { loadProfile } from "./profile.js";
 import { resultSchema, validate } from "./schema.js";
 import type { Plan, Profile, Result } from "./schema.js";
 import type { Artifact, Context, Run, Step } from "./state.js";
-import { loadRun, source, steps } from "./state.js";
+import { blankClaim, loadRun, source, steps } from "./state.js";
 
 interface Finding {
   code: string;
   message: string;
+  claim?: string;
+  gate?: string;
+  control?: string;
+  step?: string;
+  path?: string;
+  /** The concrete next action that clears the finding. */
+  repair?: string;
+  /** Whether `result` refuses the file because of this finding. */
+  blocking?: boolean;
 }
 interface VerifiedArtifact {
   artifact: Artifact;
@@ -20,18 +29,6 @@ interface VerifiedArtifact {
   mime?: string;
   imageData?: string;
   textData?: string;
-}
-
-function requiredValue(args: string[], flag: string): string {
-  const index = args.indexOf(flag);
-  const value = index < 0 ? undefined : args[index + 1];
-  if (!value || value.startsWith("--"))
-    throw new Fault(
-      "MISSING_INPUT",
-      `${flag} requires a value.`,
-      `Supply ${flag} PATH.`,
-    );
-  return value;
 }
 
 function readResultFile(file: string): unknown {
@@ -140,208 +137,242 @@ function validateClaimProof(
   );
   const artifacts = indexArtifacts(inventory);
   for (const claim of result.claims) {
-    if (!planClaims.has(claim.id)) {
-      findings.push({
-        code: "UNKNOWN_CLAIM",
-        message: `Result names claim ${claim.id}, which is not in this run's plan.`,
-      });
-      continue;
-    }
-    if (rows.has(claim.id))
-      findings.push({
-        code: "DUPLICATE_CLAIM",
-        message: `Result lists claim ${claim.id} more than once.`,
-      });
-    rows.set(claim.id, claim);
-    const cited = new Set(claim.steps);
-    const refs = claim.steps.map((id) => stepMap.get(id));
-    if (refs.some((ref) => !ref))
-      findings.push({
-        code: "MISSING_STEP",
-        message: `Claim ${claim.id} names a step that is not in this run log.`,
-      });
-    const resolved = refs.filter((ref): ref is NonNullable<typeof ref> =>
-      Boolean(ref),
-    );
-    for (const { entry } of resolved) {
-      if (!entry.source?.hash || !entry.source?.commit)
+    const mark = findings.length;
+    try {
+      if (!planClaims.has(claim.id)) {
         findings.push({
-          code: "STEP_SOURCE_MISSING",
-          message: `Step ${entry.id} has no source identity.`,
+          code: "UNKNOWN_CLAIM",
+          message: `Result names claim ${claim.id}, which is not in this run's plan.`,
         });
-      else if (
-        entry.source.hash !== run.source.hash ||
-        entry.source.commit !== run.source.commit
-      )
-        findings.push({
-          code: "STEP_SOURCE_MISMATCH",
-          message: `Claim ${claim.id} cites step ${entry.id} from a different source identity.`,
-        });
-    }
-    for (const path of claim.artifacts) {
-      if (!artifacts.has(path))
-        findings.push({
-          code: "MISSING_EVIDENCE",
-          message: `Claim ${claim.id} names unrecorded evidence ${path}.`,
-        });
-      else if (!artifacts.get(path)!.some((item) => item.valid))
-        findings.push({
-          code: "INVALID_EVIDENCE",
-          message: `Claim ${claim.id} names missing or changed evidence ${path}.`,
-        });
-      else if (
-        !artifacts.get(path)!.some((item) => item.valid && cited.has(item.step))
-      )
-        findings.push({
-          code: "ARTIFACT_PRODUCER_MISMATCH",
-          message: `Claim ${claim.id} cites evidence ${path} from a step that the claim does not cite.`,
-        });
-    }
-    if (claim.outcome !== "passed") continue;
-    if (!claim.observed.trim())
-      findings.push({
-        code: "OBSERVATION_MISSING",
-        message: `Passed claim ${claim.id} needs the operator's observed result.`,
-      });
-    if (!claim.steps.length || !resolved.length) {
-      findings.push({
-        code: "MISSING_STEP",
-        message: `Claim ${claim.id} cannot pass without a completed step.`,
-      });
-      continue;
-    }
-    const passingStep = resolved.some(({ entry }) => stepPassed(entry));
-    if (!passingStep)
-      findings.push({
-        code: "FAILED_STEP",
-        message: `Claim ${claim.id} has no successful cited step.`,
-      });
-    const badAssertion = resolved.some(
-      ({ entry }) => hasFailedAssertion(entry) || hasSkip(entry),
-    );
-    if (badAssertion)
-      findings.push({
-        code: "FAILED_ASSERTION",
-        message: `Claim ${claim.id} cites a failed assertion or skipped check.`,
-      });
-    const attached = resolved.some(({ entry }) =>
-      entry.artifacts?.some(
-        (item) =>
-          item.step === entry.id &&
-          artifacts.get(item.path)?.some((candidate) => candidate.valid),
-      ),
-    );
-    const explicit = claim.artifacts.some((path) =>
-      artifacts.get(path)?.some((candidate) => candidate.valid),
-    );
-    if (!attached && !explicit)
-      findings.push({
-        code: "MISSING_EVIDENCE",
-        message: `Claim ${claim.id} cannot pass without existing evidence attached to its steps.`,
-      });
-    const planned = planClaims.get(claim.id)!;
-    for (const requiredCheck of planned.checks.filter((name) =>
-      Boolean(run.profile.checks[name]),
-    )) {
-      const attempts = resolved.filter(
-        ({ entry }) => entry.data?.check === requiredCheck,
-      );
-      if (!attempts.length)
-        findings.push({
-          code: "NAMED_CHECK_MISSING",
-          message: `Claim ${claim.id} has no recorded attempt for required check ${requiredCheck}.`,
-        });
-      else if (!attempts.some(({ entry }) => stepPassed(entry)))
-        findings.push({
-          code: "NAMED_CHECK_FAILED",
-          message: `Claim ${claim.id} has no successful attempt for required check ${requiredCheck}.`,
-        });
-    }
-    if (planned.kind === "behavior") {
-      const behaviorSteps = resolved.filter(
-        ({ entry }) => stepPassed(entry) && !administrativeStep(run, entry),
-      );
-      if (!behaviorSteps.length)
-        findings.push({
-          code: "BEHAVIOR_PROOF_MISSING",
-          message: `Behavior claim ${claim.id} cites no successful behavior check; cleanup and administrative steps cannot prove application behavior.`,
-        });
-      const evidenceItems = [
-        ...resolved.flatMap(({ entry }) =>
-          (entry.artifacts ?? [])
-            .filter((item) => item.step === entry.id)
-            .flatMap((item) => artifacts.get(item.path) ?? []),
-        ),
-        ...claim.artifacts.flatMap((path) => artifacts.get(path) ?? []),
-      ];
-      if (
-        !evidenceItems.some(
-          (item) => item.valid && !isImageArtifact(item.artifact),
-        )
-      ) {
-        findings.push({
-          code: "BEHAVIOR_EVIDENCE_MISSING",
-          message: `Behavior claim ${claim.id} needs retained non-image evidence; a screenshot alone cannot prove behavior.`,
-        });
+        continue;
       }
-    }
-    if (planned.kind === "visual") {
-      if (!claim.inspection && !claim.inspections?.length)
+      if (rows.has(claim.id))
         findings.push({
-          code: "VISUAL_INSPECTION_MISSING",
-          message: `Visual claim ${claim.id} needs the operator's viewport, expected state and observed differences.`,
+          code: "DUPLICATE_CLAIM",
+          message: `Result lists claim ${claim.id} more than once.`,
         });
-      for (const inspection of claim.inspections ?? []) {
-        if (
-          !/\.(png|jpe?g)$/i.test(inspection.artifact) ||
-          !artifacts
-            .get(inspection.artifact)
-            ?.some((item) => item.valid && cited.has(item.artifact.step))
+      rows.set(claim.id, claim);
+      const cited = new Set(claim.steps);
+      const refs = claim.steps.map((id) => stepMap.get(id));
+      if (refs.some((ref) => !ref))
+        findings.push({
+          code: "MISSING_STEP",
+          message: `Claim ${claim.id} names a step that is not in this run log.`,
+        });
+      const resolved = refs.filter((ref): ref is NonNullable<typeof ref> =>
+        Boolean(ref),
+      );
+      for (const { entry } of resolved) {
+        if (!entry.source?.hash || !entry.source?.commit)
+          findings.push({
+            code: "STEP_SOURCE_MISSING",
+            step: entry.id,
+            message: `Step ${entry.id} has no source identity.`,
+          });
+        else if (
+          entry.source.hash !== run.source.hash ||
+          entry.source.commit !== run.source.commit
         )
           findings.push({
-            code: "VISUAL_IMAGE_MISSING",
-            message: `Visual claim ${claim.id} inspection at ${inspection.viewport} needs a valid screenshot from a cited step: ${inspection.artifact}.`,
+            code: "STEP_SOURCE_MISMATCH",
+            step: entry.id,
+            message: `Claim ${claim.id} cites step ${entry.id} from a different source identity.`,
           });
       }
-      const image = [
-        ...claim.artifacts,
-        ...resolved.flatMap(({ entry }) =>
-          (entry.artifacts ?? [])
-            .filter((item) => cited.has(item.step))
-            .map((item) => item.path),
-        ),
-      ].some(
-        (path) =>
-          /\.(png|jpe?g)$/i.test(path) &&
-          artifacts.get(path)?.some((item) => item.valid),
-      );
-      if (!image)
-        findings.push({
-          code: "VISUAL_IMAGE_MISSING",
-          message: `Visual claim ${claim.id} needs an existing screenshot artifact for inspection.`,
-        });
-    }
-    if (planned.kind === "side-effect") {
-      const independent = claim.independentRead
-        ? stepMap.get(claim.independentRead)
-        : undefined;
-      const earlierAction = resolved.some(
-        ({ index }) =>
-          index < (independent?.index ?? -1) &&
-          entries[index]?.id !== claim.independentRead,
-      );
-      if (
-        !independent ||
-        !cited.has(claim.independentRead!) ||
-        !earlierAction ||
-        !stepPassed(independent.entry) ||
-        !independentReadComplete(run, independent.entry)
-      ) {
-        findings.push({
-          code: "INDEPENDENT_READ_MISSING",
-          message: `Side-effect claim ${claim.id} needs a later successful read that observes completed state; a write request or HTTP 202 acceptance is not an independent read.`,
-        });
+      for (const path of claim.artifacts) {
+        if (!artifacts.has(path))
+          findings.push({
+            code: "MISSING_EVIDENCE",
+            path,
+            message: `Claim ${claim.id} names unrecorded evidence ${path}.`,
+          });
+        else if (!artifacts.get(path)!.some((item) => item.valid))
+          findings.push({
+            code: "INVALID_EVIDENCE",
+            path,
+            message: `Claim ${claim.id} names missing or changed evidence ${path}.`,
+          });
+        else if (
+          !artifacts
+            .get(path)!
+            .some((item) => item.valid && cited.has(item.step))
+        )
+          findings.push({
+            code: "ARTIFACT_PRODUCER_MISMATCH",
+            path,
+            message: `Claim ${claim.id} cites evidence ${path} from a step that the claim does not cite.`,
+          });
       }
+      if (claim.outcome !== "passed") continue;
+      if (!claim.observed.trim())
+        findings.push({
+          code: "OBSERVATION_MISSING",
+          message: `Passed claim ${claim.id} needs the operator's observed result.`,
+        });
+      if (!claim.steps.length || !resolved.length) {
+        findings.push({
+          code: "MISSING_STEP",
+          message: `Claim ${claim.id} cannot pass without a completed step.`,
+        });
+        continue;
+      }
+      const passingStep = resolved.some(({ entry }) => stepPassed(entry));
+      if (!passingStep)
+        findings.push({
+          code: "FAILED_STEP",
+          message: `Claim ${claim.id} has no successful cited step.`,
+        });
+      const badAssertion = resolved.some(
+        ({ entry }) => hasFailedAssertion(entry) || hasSkip(entry),
+      );
+      if (badAssertion)
+        findings.push({
+          code: "FAILED_ASSERTION",
+          message: `Claim ${claim.id} cites a failed assertion or skipped check.`,
+        });
+      // A batch step such as ui verify lists its sub-steps. A claim cannot rest
+      // on one whose expectation or action failed or did not run.
+      for (const { entry } of resolved) {
+        const parts = entry.data?.subSteps;
+        if (!Array.isArray(parts)) continue;
+        for (const part of parts as Array<Record<string, unknown>>) {
+          if (part.status === "passed") continue;
+          const id = String(part.id ?? "");
+          const label = String(part.label ?? id);
+          const action = /^(open|do-)/.test(id);
+          const failed = part.status === "failed";
+          findings.push({
+            code: `${action ? "ACTION" : "EXPECTATION"}_${failed ? "FAILED" : "NOT_RUN"}`,
+            step: entry.id,
+            path: label,
+            message: `Claim ${claim.id} cites step ${entry.id}, whose ${action ? "action" : "expectation"} ${label} ${failed ? "did not pass" : "did not run"}.`,
+          });
+        }
+      }
+      const attached = resolved.some(({ entry }) =>
+        entry.artifacts?.some(
+          (item) =>
+            item.step === entry.id &&
+            artifacts.get(item.path)?.some((candidate) => candidate.valid),
+        ),
+      );
+      const explicit = claim.artifacts.some((path) =>
+        artifacts.get(path)?.some((candidate) => candidate.valid),
+      );
+      if (!attached && !explicit)
+        findings.push({
+          code: "MISSING_EVIDENCE",
+          message: `Claim ${claim.id} cannot pass without existing evidence attached to its steps.`,
+        });
+      const planned = planClaims.get(claim.id)!;
+      for (const requiredCheck of planned.checks.filter((name) =>
+        Boolean(run.profile.checks[name]),
+      )) {
+        const attempts = resolved.filter(
+          ({ entry }) => entry.data?.check === requiredCheck,
+        );
+        if (!attempts.length)
+          findings.push({
+            code: "NAMED_CHECK_MISSING",
+            path: requiredCheck,
+            message: `Claim ${claim.id} has no recorded attempt for required check ${requiredCheck}.`,
+          });
+        else if (!attempts.some(({ entry }) => stepPassed(entry)))
+          findings.push({
+            code: "NAMED_CHECK_FAILED",
+            path: requiredCheck,
+            message: `Claim ${claim.id} has no successful attempt for required check ${requiredCheck}.`,
+          });
+      }
+      if (planned.kind === "behavior") {
+        const behaviorSteps = resolved.filter(
+          ({ entry }) => stepPassed(entry) && !administrativeStep(run, entry),
+        );
+        if (!behaviorSteps.length)
+          findings.push({
+            code: "BEHAVIOR_PROOF_MISSING",
+            message: `Behavior claim ${claim.id} cites no successful behavior check; cleanup and administrative steps cannot prove application behavior.`,
+          });
+        const evidenceItems = [
+          ...resolved.flatMap(({ entry }) =>
+            (entry.artifacts ?? [])
+              .filter((item) => item.step === entry.id)
+              .flatMap((item) => artifacts.get(item.path) ?? []),
+          ),
+          ...claim.artifacts.flatMap((path) => artifacts.get(path) ?? []),
+        ];
+        if (
+          !evidenceItems.some(
+            (item) => item.valid && !isImageArtifact(item.artifact),
+          )
+        ) {
+          findings.push({
+            code: "BEHAVIOR_EVIDENCE_MISSING",
+            message: `Behavior claim ${claim.id} needs retained non-image evidence; a screenshot alone cannot prove behavior.`,
+          });
+        }
+      }
+      if (planned.kind === "visual") {
+        if (!claim.inspection && !claim.inspections?.length)
+          findings.push({
+            code: "VISUAL_INSPECTION_MISSING",
+            message: `Visual claim ${claim.id} needs the operator's viewport, expected state and observed differences.`,
+          });
+        for (const inspection of claim.inspections ?? []) {
+          if (
+            !/\.(png|jpe?g)$/i.test(inspection.artifact) ||
+            !artifacts
+              .get(inspection.artifact)
+              ?.some((item) => item.valid && cited.has(item.artifact.step))
+          )
+            findings.push({
+              code: "VISUAL_IMAGE_MISSING",
+              path: inspection.artifact,
+              message: `Visual claim ${claim.id} inspection at ${inspection.viewport} needs a valid screenshot from a cited step: ${inspection.artifact}.`,
+            });
+        }
+        const image = [
+          ...claim.artifacts,
+          ...resolved.flatMap(({ entry }) =>
+            (entry.artifacts ?? [])
+              .filter((item) => cited.has(item.step))
+              .map((item) => item.path),
+          ),
+        ].some(
+          (path) =>
+            /\.(png|jpe?g)$/i.test(path) &&
+            artifacts.get(path)?.some((item) => item.valid),
+        );
+        if (!image)
+          findings.push({
+            code: "VISUAL_IMAGE_MISSING",
+            message: `Visual claim ${claim.id} needs an existing screenshot artifact for inspection.`,
+          });
+      }
+      if (planned.kind === "side-effect") {
+        const independent = claim.independentRead
+          ? stepMap.get(claim.independentRead)
+          : undefined;
+        const earlierAction = resolved.some(
+          ({ index }) =>
+            index < (independent?.index ?? -1) &&
+            entries[index]?.id !== claim.independentRead,
+        );
+        if (
+          !independent ||
+          !cited.has(claim.independentRead!) ||
+          !earlierAction ||
+          !stepPassed(independent.entry) ||
+          !independentReadComplete(run, independent.entry)
+        ) {
+          findings.push({
+            code: "INDEPENDENT_READ_MISSING",
+            message: `Side-effect claim ${claim.id} needs a later successful read that observes completed state; a write request or HTTP 202 acceptance is not an independent read.`,
+          });
+        }
+      }
+    } finally {
+      for (const item of findings.slice(mark)) item.claim ??= claim.id;
     }
   }
   for (const claim of plan.claims) {
@@ -349,6 +380,7 @@ function validateClaimProof(
       const outcome = rows.get(claim.id)?.outcome ?? "missing";
       findings.push({
         code: "CLAIM_INCOMPLETE",
+        claim: claim.id,
         message: `Required claim ${claim.id} is ${outcome}.`,
       });
     }
@@ -371,74 +403,85 @@ function validateGates(
   const plannedGates = new Set(plan.gates);
   const seenGates = new Set<string>();
   for (const gate of result.gates) {
-    if (!plannedGates.has(gate.name))
-      findings.push({
-        code: "UNKNOWN_GATE",
-        message: `Result names unplanned gate ${gate.name}.`,
-      });
-    if (seenGates.has(gate.name))
-      findings.push({
-        code: "DUPLICATE_GATE",
-        message: `Result lists gate ${gate.name} more than once.`,
-      });
-    seenGates.add(gate.name);
-    let gateSteps = ownSteps;
-    let citedRun: Run | undefined;
-    if (gate.run && gate.run !== run.id) {
-      const cited = citedGateRun(run, gate.name, gate.run, findings);
-      if (!cited) continue;
-      [citedRun, gateSteps] = cited;
-    }
-    for (const id of gate.steps)
-      if (!gateSteps.has(id))
+    const mark = findings.length;
+    try {
+      if (!plannedGates.has(gate.name))
         findings.push({
-          code: "MISSING_STEP",
-          message: `Gate ${gate.name} names missing step ${id}.`,
+          code: "UNKNOWN_GATE",
+          message: `Result names unplanned gate ${gate.name}.`,
         });
-    const proof = gate.steps.map((id) => gateSteps.get(id));
-    if (
-      gate.outcome === "passed" &&
-      (!proof.length || proof.some((step) => !step || !stepPassed(step)))
-    ) {
-      findings.push({
-        code: "GATE_PROOF_MISSING",
-        message: `Passed gate ${gate.name} needs successful recorded steps.`,
-      });
-    }
-    if (
-      gate.run &&
-      gate.run !== run.id &&
-      proof.some(
-        (step) =>
-          step &&
-          (step.source?.hash !== run.source.hash ||
-            step.source?.commit !== run.source.commit),
+      if (seenGates.has(gate.name))
+        findings.push({
+          code: "DUPLICATE_GATE",
+          message: `Result lists gate ${gate.name} more than once.`,
+        });
+      seenGates.add(gate.name);
+      let gateSteps = ownSteps;
+      let citedRun: Run | undefined;
+      if (gate.run && gate.run !== run.id) {
+        const cited = citedGateRun(run, gate.name, gate.run, findings);
+        if (!cited) continue;
+        [citedRun, gateSteps] = cited;
+      }
+      for (const id of gate.steps)
+        if (!gateSteps.has(id))
+          findings.push({
+            code: "MISSING_STEP",
+            message: `Gate ${gate.name} names missing step ${id}.`,
+          });
+      const proof = gate.steps.map((id) => gateSteps.get(id));
+      if (
+        gate.outcome === "passed" &&
+        (!proof.length || proof.some((step) => !step || !stepPassed(step)))
+      ) {
+        findings.push({
+          code: "GATE_PROOF_MISSING",
+          message: `Passed gate ${gate.name} needs successful recorded steps.`,
+        });
+      }
+      if (
+        gate.run &&
+        gate.run !== run.id &&
+        proof.some(
+          (step) =>
+            step &&
+            (step.source?.hash !== run.source.hash ||
+              step.source?.commit !== run.source.commit),
+        )
       )
-    )
-      findings.push({
-        code: "STEP_SOURCE_MISMATCH",
-        message: `Gate ${gate.name} cites run ${gate.run} on a different source identity than run ${run.id}.`,
-      });
-    if (citedRun) {
-      const differs = differentOverrides(citedRun, run);
-      const stored = citedRun.rawProfile;
-      const raw =
-        stored && hash(JSON.stringify(stored)) === citedRun.profileHash
-          ? stored
-          : profileAsHashed(citedRun);
-      if (!raw && differs.length)
         findings.push({
           code: "STEP_SOURCE_MISMATCH",
-          message: `Gate ${gate.name} cites run ${citedRun.id}, whose profile file is no longer the one it hashed, so every changed binding counts: ${differs.join(", ")}.`,
+          message: `Gate ${gate.name} cites run ${gate.run} on a different source identity than run ${run.id}.`,
         });
-      else if (raw)
-        for (const step of proof)
-          if (step)
-            for (const name of readBindings(raw, citedRun, run, step, differs))
-              findings.push({
-                code: "STEP_SOURCE_MISMATCH",
-                message: `Gate ${gate.name} cites run ${citedRun.id} whose step ${step.id} used binding ${name} with a different value than run ${run.id}.`,
-              });
+      if (citedRun) {
+        const differs = differentOverrides(citedRun, run);
+        const stored = citedRun.rawProfile;
+        const raw =
+          stored && hash(JSON.stringify(stored)) === citedRun.profileHash
+            ? stored
+            : profileAsHashed(citedRun);
+        if (!raw && differs.length)
+          findings.push({
+            code: "STEP_SOURCE_MISMATCH",
+            message: `Gate ${gate.name} cites run ${citedRun.id}, whose profile file is no longer the one it hashed, so every changed binding counts: ${differs.join(", ")}.`,
+          });
+        else if (raw)
+          for (const step of proof)
+            if (step)
+              for (const name of readBindings(
+                raw,
+                citedRun,
+                run,
+                step,
+                differs,
+              ))
+                findings.push({
+                  code: "STEP_SOURCE_MISMATCH",
+                  message: `Gate ${gate.name} cites run ${citedRun.id} whose step ${step.id} used binding ${name} with a different value than run ${run.id}.`,
+                });
+      }
+    } finally {
+      for (const item of findings.slice(mark)) item.gate ??= gate.name;
     }
   }
   for (const gate of plan.gates) {
@@ -449,6 +492,7 @@ function validateGates(
     )
       findings.push({
         code: "GATE_INCOMPLETE",
+        gate,
         message: `Required repository gate ${gate} is not passed.`,
       });
   }
@@ -703,164 +747,173 @@ function validateControls(
   const rows: Array<Record<string, unknown>> = [];
 
   for (const control of submitted) {
-    const spec = planned.find((item) => item.id === control.id);
-    if (!spec) {
-      findings.push({
-        code: "UNKNOWN_CONTROL",
-        message: `Result names undeclared negative control ${control.id}.`,
-      });
-      rows.push({ ...control, outcome: "invalid" });
-      continue;
-    }
-    if (seen.has(control.id))
-      findings.push({
-        code: "DUPLICATE_CONTROL",
-        message: `Result lists negative control ${control.id} more than once.`,
-      });
-    seen.add(control.id);
-    let baseline = run;
-    let baselineEntries = entries;
-    const problems: string[] = [];
-    if (!control.observedFailure.trim() || !control.observedPass.trim())
-      problems.push(
-        "record observations for both the failed and restored attempts",
-      );
-    if (control.failedRun && control.failedRun !== run.id) {
-      try {
-        baseline = loadRun(run.repo, control.failedRun);
-        if (!existsSync(baseline.evidence))
-          problems.push(
-            `the failed run's evidence folder ${baseline.evidence} no longer exists; keep its worktree until this report`,
-          );
-        baselineEntries = steps(baseline);
-        const oldSpec = baseline.plan.controls.find(
-          (item) => item.id === spec.id,
+    const mark = findings.length;
+    try {
+      const spec = planned.find((item) => item.id === control.id);
+      if (!spec) {
+        findings.push({
+          code: "UNKNOWN_CONTROL",
+          message: `Result names undeclared negative control ${control.id}.`,
+        });
+        rows.push({ ...control, outcome: "invalid" });
+        continue;
+      }
+      if (seen.has(control.id))
+        findings.push({
+          code: "DUPLICATE_CONTROL",
+          message: `Result lists negative control ${control.id} more than once.`,
+        });
+      seen.add(control.id);
+      let baseline = run;
+      let baselineEntries = entries;
+      const problems: string[] = [];
+      if (!control.observedFailure.trim() || !control.observedPass.trim())
+        problems.push(
+          "record observations for both the failed and restored attempts",
         );
-        if (JSON.stringify(oldSpec) !== JSON.stringify(spec))
-          problems.push(
-            "baseline and candidate must declare the same control expectation",
+      if (control.failedRun && control.failedRun !== run.id) {
+        try {
+          baseline = loadRun(run.repo, control.failedRun);
+          if (!existsSync(baseline.evidence))
+            problems.push(
+              `the failed run's evidence folder ${baseline.evidence} no longer exists; keep its worktree until this report`,
+            );
+          baselineEntries = steps(baseline);
+          const oldSpec = baseline.plan.controls.find(
+            (item) => item.id === spec.id,
           );
-        if (
-          baseline.plan.claims.find((item) => item.id === spec.claim)
-            ?.expected !==
-          run.plan.claims.find((item) => item.id === spec.claim)?.expected
-        )
-          problems.push("baseline and candidate claim expectations differ");
-        if (!baseline.cleanup || !baseline.ownerCleaned)
-          problems.push("baseline cleanup is incomplete");
-        const baselineFindings: Finding[] = [];
-        artifactInventory(baseline, baselineEntries, baselineFindings);
-        if (baselineFindings.length)
-          problems.push("baseline evidence is missing or changed");
-      } catch (error) {
-        problems.push(`cannot read baseline: ${String(error)}`);
+          if (JSON.stringify(oldSpec) !== JSON.stringify(spec))
+            problems.push(
+              "baseline and candidate must declare the same control expectation",
+            );
+          if (
+            baseline.plan.claims.find((item) => item.id === spec.claim)
+              ?.expected !==
+            run.plan.claims.find((item) => item.id === spec.claim)?.expected
+          )
+            problems.push("baseline and candidate claim expectations differ");
+          if (!baseline.cleanup || !baseline.ownerCleaned)
+            problems.push("baseline cleanup is incomplete");
+          const baselineFindings: Finding[] = [];
+          artifactInventory(baseline, baselineEntries, baselineFindings);
+          if (baselineFindings.length)
+            problems.push("baseline evidence is missing or changed");
+        } catch (error) {
+          problems.push(`cannot read baseline: ${String(error)}`);
+        }
       }
-    }
-    const failedIndex = baselineEntries.findIndex(
-      (item) => item.id === control.failedStep,
-    );
-    const failed =
-      failedIndex < 0
-        ? undefined
-        : { entry: baselineEntries[failedIndex]!, index: failedIndex };
-    const restored = stepMap.get(control.restoredStep);
-    const claim = resultClaims.get(spec.claim);
-    if (control.failedStep === control.restoredStep)
-      problems.push("the failed and restored steps must be different");
-    if (!failed) problems.push(`failed step ${control.failedStep} is missing`);
-    if (!restored)
-      problems.push(`restored step ${control.restoredStep} is missing`);
-    if (failed && restored) {
-      if (
-        baseline.id === run.id
-          ? failed.index >= restored.index
-          : Date.parse(failed.entry.startedAt) >=
-            Date.parse(restored.entry.startedAt)
-      )
-        problems.push("the restored pass must follow the failed attempt");
-      for (const [label, step] of [
-        ["failed", failed.entry],
-        ["restored", restored.entry],
-      ] as const) {
-        const expectedSource =
-          label === "failed" ? baseline.source : run.source;
+      const failedIndex = baselineEntries.findIndex(
+        (item) => item.id === control.failedStep,
+      );
+      const failed =
+        failedIndex < 0
+          ? undefined
+          : { entry: baselineEntries[failedIndex]!, index: failedIndex };
+      const restored = stepMap.get(control.restoredStep);
+      const claim = resultClaims.get(spec.claim);
+      if (control.failedStep === control.restoredStep)
+        problems.push("the failed and restored steps must be different");
+      if (!failed)
+        problems.push(`failed step ${control.failedStep} is missing`);
+      if (!restored)
+        problems.push(`restored step ${control.restoredStep} is missing`);
+      if (failed && restored) {
         if (
-          !step.source?.hash ||
-          step.source.hash !== expectedSource.hash ||
-          step.source.commit !== expectedSource.commit
+          baseline.id === run.id
+            ? failed.index >= restored.index
+            : Date.parse(failed.entry.startedAt) >=
+              Date.parse(restored.entry.startedAt)
         )
-          problems.push(`${label} step uses a different source identity`);
-      }
-      if (spec.command && spec.failure && !spec.assertion) {
+          problems.push("the restored pass must follow the failed attempt");
         for (const [label, step] of [
           ["failed", failed.entry],
           ["restored", restored.entry],
         ] as const) {
+          const expectedSource =
+            label === "failed" ? baseline.source : run.source;
           if (
-            JSON.stringify([step.command, ...step.args]) !==
-            JSON.stringify(spec.command)
+            !step.source?.hash ||
+            step.source.hash !== expectedSource.hash ||
+            step.source.commit !== expectedSource.commit
           )
-            problems.push(`${label} step does not run the declared command`);
+            problems.push(`${label} step uses a different source identity`);
         }
-        const error = failed.entry.data.error as { code?: string } | undefined;
-        if (
-          stepPassed(failed.entry) ||
-          error?.code !== spec.failure.code ||
-          !JSON.stringify(failed.entry.data).includes(spec.failure.contains)
-        )
-          problems.push("failed command does not show the declared failure");
-        if (!stepPassed(restored.entry))
-          problems.push("restored command did not pass");
-      } else if (spec.assertion && !spec.command && !spec.failure) {
-        if (assertion(failed.entry, spec.assertion) !== false)
+        if (spec.command && spec.failure && !spec.assertion) {
+          for (const [label, step] of [
+            ["failed", failed.entry],
+            ["restored", restored.entry],
+          ] as const) {
+            if (
+              JSON.stringify([step.command, ...step.args]) !==
+              JSON.stringify(spec.command)
+            )
+              problems.push(`${label} step does not run the declared command`);
+          }
+          const error = failed.entry.data.error as
+            { code?: string } | undefined;
+          if (
+            stepPassed(failed.entry) ||
+            error?.code !== spec.failure.code ||
+            !JSON.stringify(failed.entry.data).includes(spec.failure.contains)
+          )
+            problems.push("failed command does not show the declared failure");
+          if (!stepPassed(restored.entry))
+            problems.push("restored command did not pass");
+        } else if (spec.assertion && !spec.command && !spec.failure) {
+          if (assertion(failed.entry, spec.assertion) !== false)
+            problems.push(
+              `failed step does not show declared assertion ${spec.assertion} failing`,
+            );
+          if (
+            assertion(restored.entry, spec.assertion) !== true ||
+            !stepPassed(restored.entry)
+          )
+            problems.push(
+              `restored step does not show declared assertion ${spec.assertion} passing`,
+            );
+        } else
           problems.push(
-            `failed step does not show declared assertion ${spec.assertion} failing`,
+            "declare either an assertion or a command with an expected failure",
           );
-        if (
-          assertion(restored.entry, spec.assertion) !== true ||
-          !stepPassed(restored.entry)
-        )
-          problems.push(
-            `restored step does not show declared assertion ${spec.assertion} passing`,
-          );
-      } else
+      }
+      if (
+        !claim ||
+        claim.outcome !== "passed" ||
+        !claim.steps.includes(control.restoredStep)
+      )
         problems.push(
-          "declare either an assertion or a command with an expected failure",
+          `claim ${spec.claim} does not cite the restored passing step`,
         );
-    }
-    if (
-      !claim ||
-      claim.outcome !== "passed" ||
-      !claim.steps.includes(control.restoredStep)
-    )
-      problems.push(
-        `claim ${spec.claim} does not cite the restored passing step`,
-      );
-    if (problems.length)
-      findings.push({
-        code: "CONTROL_INVALID",
-        message: `Negative control ${control.id} is invalid: ${problems.join("; ")}.`,
+      if (problems.length)
+        findings.push({
+          code: "CONTROL_INVALID",
+          message: `Negative control ${control.id} is invalid: ${problems.join("; ")}.`,
+        });
+      rows.push({
+        ...control,
+        ...spec,
+        baseline: {
+          run: baseline.id,
+          source: baseline.source.hash,
+          evidence: baseline.evidence,
+        },
+        outcome: problems.length ? "failed" : "passed",
       });
-    rows.push({
-      ...control,
-      ...spec,
-      baseline: {
-        run: baseline.id,
-        source: baseline.source.hash,
-        evidence: baseline.evidence,
-      },
-      outcome: problems.length ? "failed" : "passed",
-    });
+    } finally {
+      for (const item of findings.slice(mark)) item.control ??= control.id;
+    }
   }
   for (const control of planned) {
     if (!run.plan.claims.some((claim) => claim.id === control.claim))
       findings.push({
         code: "CONTROL_UNKNOWN_CLAIM",
+        control: control.id,
         message: `Negative control ${control.id} refers to unknown claim ${control.claim}.`,
       });
     if (!seen.has(control.id)) {
       findings.push({
         code: "CONTROL_INCOMPLETE",
+        control: control.id,
         message: `Required negative control ${control.id} has no failed-then-restored result.`,
       });
       rows.push({ ...control, outcome: "not run" });
@@ -1213,6 +1266,766 @@ function parseRunResult(run: Run, findings: Finding[]): Result | undefined {
   }
 }
 
+const MATRIX_CODES = [
+  "UNKNOWN_CLAIM",
+  "DUPLICATE_CLAIM",
+  "UNKNOWN_GATE",
+  "DUPLICATE_GATE",
+];
+const PROOF_CODES = [
+  "MISSING_STEP",
+  "FAILED_STEP",
+  "FAILED_ASSERTION",
+  "MISSING_EVIDENCE",
+  "INVALID_EVIDENCE",
+  "ARTIFACT_PRODUCER_MISMATCH",
+  "OBSERVATION_MISSING",
+  "NAMED_CHECK_MISSING",
+  "NAMED_CHECK_FAILED",
+  "BEHAVIOR_PROOF_MISSING",
+  "BEHAVIOR_EVIDENCE_MISSING",
+  "VISUAL_INSPECTION_MISSING",
+  "VISUAL_IMAGE_MISSING",
+  "INDEPENDENT_READ_MISSING",
+  "EXPECTATION_FAILED",
+  "EXPECTATION_NOT_RUN",
+  "ACTION_FAILED",
+  "ACTION_NOT_RUN",
+  "GATE_PROOF_MISSING",
+  "STEP_SOURCE_MISSING",
+  "STEP_SOURCE_MISMATCH",
+  "CONTROL_INVALID",
+  "CONTROL_UNKNOWN_CLAIM",
+];
+
+const clip = (text: string, length = 60) =>
+  text.length > length ? text.slice(0, length - 1) + "…" : text;
+const list = (names: string[], limit = 6) =>
+  names.length > limit
+    ? `${names.slice(0, limit).join(", ")} and ${names.length - limit} more`
+    : names.join(", ") || "none";
+const describeStep = (step: Step) =>
+  `${step.id} (${[step.command, ...step.args.slice(0, 2)].map((a) => clip(String(a), 30)).join(" ")})`;
+
+/**
+ * Give each finding the concrete next action that clears it. The text names
+ * steps and artifacts from this run's log, so the operator copies nothing.
+ */
+function addRepairs(
+  run: Run,
+  entries: Step[],
+  inventory: VerifiedArtifact[],
+  result: Result,
+  findings: Finding[],
+): void {
+  const where = `--run ${run.id}`;
+  const rows = new Map(result.claims.map((claim) => [claim.id, claim]));
+  const stepMap = new Map(entries.map((entry) => [entry.id, entry]));
+  const behaviorSteps = entries.filter(
+    (entry) => stepPassed(entry) && !administrativeStep(run, entry),
+  );
+  const recent = list(behaviorSteps.slice(-6).map(describeStep));
+  const citedArtifacts = (claimId?: string) =>
+    (rows.get(claimId ?? "")?.steps ?? []).flatMap(
+      (id) => stepMap.get(id)?.artifacts.map((a) => a.path) ?? [],
+    );
+  const images = (claimId?: string) =>
+    citedArtifacts(claimId).filter((path) => /\.(png|jpe?g)$/i.test(path));
+  const reads = (claimId?: string) => {
+    const cited = rows.get(claimId ?? "")?.steps ?? [];
+    const first = Math.min(
+      ...cited
+        .map((id) => entries.findIndex((entry) => entry.id === id))
+        .filter((index) => index >= 0),
+    );
+    return entries
+      .filter(
+        (entry, index) =>
+          index > (Number.isFinite(first) ? first : -1) &&
+          ["api", "db"].includes(entry.command) &&
+          stepPassed(entry) &&
+          independentReadComplete(run, entry),
+      )
+      .slice(-5)
+      .map(describeStep);
+  };
+  const gateCommand = (name: string) =>
+    run.profile.checks[name]
+      ? `spyglass check ${name} ${where} --gate ${name}`
+      : `spyglass exec ${where} --gate ${name} -- COMMAND`;
+  const advice = (f: Finding): string => {
+    const c = f.claim ?? "CLAIM";
+    switch (f.code) {
+      case "UNKNOWN_CLAIM":
+        return `Remove the row or use a claim ID from the plan: ${list(run.plan.claims.map((x) => x.id))}.`;
+      case "DUPLICATE_CLAIM":
+        return `Keep one row for claim ${c}.`;
+      case "UNKNOWN_GATE":
+        return `Remove the row or use a gate from the plan: ${list(run.plan.gates)}.`;
+      case "DUPLICATE_GATE":
+        return `Keep one row for gate ${f.gate}.`;
+      case "MISSING_STEP":
+        if (f.gate)
+          return `Cite step IDs that exist in the run that the gate cites.`;
+        return /names a step that is not/.test(f.message)
+          ? `Cite step IDs from this run's log. Recent steps: ${recent}.`
+          : `Run a step that proves claim ${c} with --claim ${c}, for example spyglass check NAME ${where} --claim ${c}. Or cite a step that exists: spyglass result set --claim ${c} --step ID ${where}. Recent steps: ${recent}.`;
+      case "STEP_SOURCE_MISSING":
+      case "STEP_SOURCE_MISMATCH":
+        return f.gate
+          ? `Run the gate again in this run (${gateCommand(f.gate)}), or cite a run with the same source and profile and the same binding values.`
+          : `Run the step again on the current source with --claim ${c}. A step from other source cannot prove this run.`;
+      case "MISSING_EVIDENCE":
+        return f.path
+          ? `Use an artifact path that a cited step returned. Artifacts of the cited steps: ${list(citedArtifacts(f.claim))}.`
+          : `Cite a step that kept evidence. Run it again with --claim ${c} and Spyglass links its artifacts.`;
+      case "INVALID_EVIDENCE":
+        return `Run the step that made ${f.path} again. A missing or changed artifact cannot prove the claim.`;
+      case "ARTIFACT_PRODUCER_MISMATCH": {
+        const producer = inventory.find(
+          (item) => item.artifact.path === f.path,
+        )?.step;
+        return `Add step ${producer ?? "THE_PRODUCER"} to the steps of claim ${c}, or remove ${f.path} from its artifacts.`;
+      }
+      case "OBSERVATION_MISSING":
+        return `Write what you saw: spyglass result set --claim ${c} --outcome passed --observed "TEXT" ${where}. Spyglass never writes this for you.`;
+      case "FAILED_STEP":
+        return `Cite a step that passed. Fix the cause, then run the step again with --claim ${c}.`;
+      case "FAILED_ASSERTION":
+        return `Remove the step that failed an assertion from claim ${c}, or fix the cause and run it again with --claim ${c}.`;
+      case "NAMED_CHECK_MISSING":
+        return `Run spyglass check ${f.path} ${where} --claim ${c}.`;
+      case "NAMED_CHECK_FAILED":
+        return `Fix the cause, then run spyglass check ${f.path} ${where} --claim ${c} again.`;
+      case "BEHAVIOR_PROOF_MISSING":
+        return `Cite a successful check, exec, ui, api or db step. Cleanup and administrative steps cannot prove behavior. Run it with --claim ${c}.`;
+      case "BEHAVIOR_EVIDENCE_MISSING":
+        return `Cite a step that kept non-image evidence, such as ui proof, api or check output. A screenshot alone proves no behavior.`;
+      case "VISUAL_INSPECTION_MISSING": {
+        const shots = images(f.claim);
+        return shots.length
+          ? `Look at a screenshot, then record what you saw: spyglass result set --claim ${c} --inspect VIEWPORT:ARTIFACT --expected "TEXT" --observed "TEXT" ${where}. Screenshots of the cited steps: ${list(shots)}.`
+          : `Capture a screenshot with spyglass ui proof LABEL ${where} --claim ${c}, look at it, then record it with spyglass result set --claim ${c} --inspect VIEWPORT:ARTIFACT --expected "TEXT" --observed "TEXT" ${where}.`;
+      }
+      case "VISUAL_IMAGE_MISSING": {
+        const shots = images(f.claim);
+        return shots.length
+          ? `Use a screenshot from a cited step. Screenshots of the cited steps: ${list(shots)}.`
+          : `Capture a screenshot with spyglass ui proof LABEL ${where} --claim ${c}.`;
+      }
+      case "INDEPENDENT_READ_MISSING": {
+        const candidates = reads(f.claim);
+        return candidates.length
+          ? `Cite the action step and a later read, and set independentRead to the read: spyglass result set --claim ${c} --independent-read STEP_ID --step STEP_ID ${where}. Candidate reads: ${candidates.join(", ")}.`
+          : `No read exists yet that follows the action. After the action completes, run spyglass api GET PATH ${where} --claim ${c} --independent-read; for an asynchronous job add --wait-until status=complete --fail-on status=failed. Or run spyglass db "SELECT ..." ${where} --claim ${c} --independent-read.`;
+      }
+      case "EXPECTATION_FAILED":
+      case "EXPECTATION_NOT_RUN":
+      case "ACTION_FAILED":
+      case "ACTION_NOT_RUN":
+        return `Fix the cause, then run the batch step again with every sub-step passing, for example spyglass ui verify ... ${where} --claim ${c}. A step with a failed or skipped sub-step cannot prove a claim.`;
+      case "CLAIM_INCOMPLETE":
+        return `Run its steps with --claim ${c}, then spyglass result set --claim ${c} --outcome passed --observed "TEXT" ${where}. Or record a limit if it stays out of scope.`;
+      case "GATE_PROOF_MISSING":
+        return `Run the gate and cite it: ${gateCommand(f.gate ?? "GATE")}. A cited run must keep its evidence folder.`;
+      case "GATE_INCOMPLETE":
+        return `Run the gate so its passing step links itself: ${gateCommand(f.gate ?? "GATE")}.`;
+      case "CONTROL_INVALID":
+      case "CONTROL_INCOMPLETE":
+        return `Run the failing attempt with --control ${f.control}:failed and the restored pass with --control ${f.control}:restored, then spyglass result set --control ${f.control} --observed-failure "TEXT" --observed-pass "TEXT" ${where}.`;
+      case "CONTROL_UNKNOWN_CLAIM":
+        return `Correct the plan: control ${f.control} names a claim that the plan does not have.`;
+      case "UNKNOWN_CONTROL":
+      case "DUPLICATE_CONTROL":
+        return `Use each control ID of the plan once: ${list(run.plan.controls.map((x) => x.id))}.`;
+      case "UNSAFE_ARTIFACT":
+      case "MISSING_ARTIFACT":
+      case "ARTIFACT_CHECKSUM":
+      case "ARTIFACT_INVALID":
+        return `Run the step that made the artifact again, and keep the evidence folder unchanged.`;
+      default:
+        return `Correct the result file, then run spyglass result --check ${where}.`;
+    }
+  };
+  for (const finding of findings) {
+    finding.repair ??= advice(finding);
+    finding.blocking =
+      MATRIX_CODES.includes(finding.code) || PROOF_CODES.includes(finding.code);
+  }
+}
+
+/** The result schema errors as findings, so one run lists every one. */
+function schemaFindings(raw: unknown): Finding[] | undefined {
+  const parsed = resultSchema.safeParse(raw);
+  if (parsed.success) return undefined;
+  return parsed.error.issues.map((issue) => {
+    const path = issue.path.join(".");
+    const inspection =
+      /^claims\.\d+\.inspections\.\d+\.(expected|observed)$/.exec(path);
+    return {
+      code: "RESULT_SCHEMA",
+      message: `${path || "result"}: ${issue.message}`,
+      blocking: true,
+      repair: inspection
+        ? `Look at the screenshot, then write the ${inspection[1]} text yourself: spyglass result set --claim ID --inspect VIEWPORT:ARTIFACT --expected "TEXT" --observed "TEXT".`
+        : `Correct ${path || "the file"} to match the version 1 result schema: spyglass schema result.`,
+    };
+  });
+}
+
+async function submitResult(
+  ctx: Context,
+  args: string[],
+): Promise<Record<string, unknown>> {
+  let file: string | undefined;
+  let check = false;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--check") check = true;
+    else if (args[i] === "--file") {
+      const value = args[++i];
+      if (!value || value.startsWith("--"))
+        throw new Fault(
+          "MISSING_INPUT",
+          "--file requires a value.",
+          "Supply --file PATH, or leave it out to read the pending result of the run.",
+        );
+      file = value;
+    } else
+      throw new Fault(
+        "INVALID_USAGE",
+        `result accepts only --file PATH, --check, or the set subcommand; got ${args[i]}.`,
+        `Run spyglass result --check --run ${ctx.run.id}.`,
+      );
+  }
+  const raw = readResultFile(file ?? ctx.run.resultPath);
+  const schema = schemaFindings(raw);
+  if (schema)
+    throw new Fault(
+      "INVALID_PROFILE",
+      `result: ${schema.map((item) => item.message).join("; ")}`,
+      "Read spyglass result --help and the version 1 schema example.",
+      2,
+      { findings: schema, blocking: schema.length },
+    );
+  const result = validate(resultSchema, raw, "result");
+  const entries = steps(ctx.run);
+  const found: Finding[] = [];
+  const inventory = artifactInventory(ctx.run, entries, found);
+  validateClaimProof(ctx.run, ctx.run.plan, result, entries, inventory, found);
+  const controls = validateControls(ctx.run, result, entries, found);
+  addRepairs(ctx.run, entries, inventory, result, found);
+  const blocking = found.filter((item) => item.blocking);
+  const first =
+    found.find((item) => MATRIX_CODES.includes(item.code)) ??
+    found.find((item) => item.blocking);
+  if (first) {
+    const matrix = MATRIX_CODES.includes(first.code);
+    const more = blocking.length - 1;
+    throw new Fault(
+      matrix ? "INVALID_RESULT" : "PROOF_INCOMPLETE",
+      first.message +
+        (more > 0
+          ? ` ${more} more blocking finding${more === 1 ? " is" : "s are"} in data.findings.`
+          : ""),
+      matrix
+        ? "Use claim and gate IDs from the run plan, once each. Each finding in data.findings has a repair."
+        : `Apply the repair of each finding in data.findings, then run spyglass result --check ${check ? "" : "--file PATH "}--run ${ctx.run.id}.`,
+      matrix ? 2 : 1,
+      { findings: found, blocking: blocking.length, checked: check },
+    );
+  }
+  if (!check) ctx.run.result = ctx.vault.clean(result);
+  return {
+    checked: check,
+    valid: true,
+    recorded: !check,
+    operator: result.operator,
+    claims: result.claims.length,
+    gates: result.gates.length,
+    controls: controls.length,
+    resultPath: ctx.run.resultPath,
+    ...(found.length ? { findings: found } : {}),
+    ...(check ? { next: `spyglass result --run ${ctx.run.id}` } : {}),
+  };
+}
+
+export interface GateCitation {
+  gate: string;
+  run: string;
+  steps: string[];
+}
+/** The reasons why a gate cannot be cited from a run; none means it can. */
+function gateCitationFindings(
+  run: Run,
+  name: string,
+  citedId: string,
+  citedSteps: string[],
+): Finding[] {
+  const found: Finding[] = [];
+  validateGates(
+    run,
+    { ...run.plan, gates: [name] },
+    {
+      operator: "agent",
+      claims: [],
+      controls: [],
+      gates: [{ name, outcome: "passed", run: citedId, steps: citedSteps }],
+      limits: [],
+    },
+    [],
+    found,
+  );
+  return found.filter((item) => item.code !== "GATE_INCOMPLETE");
+}
+/**
+ * The planned gates that one of the candidate runs passed and that this run
+ * can cite: the same source and profile, kept evidence and the same binding
+ * values. The first candidate that qualifies wins, so list the newest first.
+ */
+export function citeGates(
+  run: Run,
+  candidates: Run[],
+  names: string[] = run.plan.gates,
+): { cited: GateCitation[]; problems: string[] } {
+  const cited: GateCitation[] = [];
+  const problems: string[] = [];
+  for (const name of names) {
+    let reason: string | undefined = "no candidate run passed it";
+    for (const candidate of candidates) {
+      if (candidate.id === run.id) continue;
+      const row = candidate.result?.gates?.find(
+        (item) =>
+          item.name === name && item.outcome === "passed" && item.steps.length,
+      );
+      if (!row) {
+        reason = `run ${candidate.id} did not pass it`;
+        continue;
+      }
+      const findings = gateCitationFindings(run, name, candidate.id, row.steps);
+      if (!findings.length) {
+        cited.push({ gate: name, run: candidate.id, steps: row.steps });
+        reason = undefined;
+        break;
+      }
+      reason = findings.map((item) => item.message).join(" ");
+    }
+    if (reason) problems.push(`Gate ${name}: ${reason}`);
+  }
+  return { cited, problems };
+}
+
+/** What the pending result still lacks, by claim, control and gate. */
+export function workFor(run: Run): Record<string, unknown> {
+  let entries: Step[] = [];
+  try {
+    entries = steps(run);
+  } catch {
+    /* A missing log means no step yet. */
+  }
+  let raw: unknown = run.result;
+  try {
+    raw = readJson(run.resultPath);
+  } catch {
+    /* Use the recorded result. */
+  }
+  const pending = (
+    raw && typeof raw === "object" ? raw : {}
+  ) as Partial<Result>;
+  const claimRows = new Map(
+    (Array.isArray(pending.claims) ? pending.claims : []).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+  const gateRows = new Map(
+    (Array.isArray(pending.gates) ? pending.gates : []).map((row) => [
+      row.name,
+      row,
+    ]),
+  );
+  // Judge each item as if its outcome were passed, to see the proof it lacks.
+  const projected: Result = {
+    operator: "agent",
+    limits: [],
+    controls: Array.isArray(pending.controls) ? pending.controls : [],
+    claims: run.plan.claims.map((claim) => {
+      const row = claimRows.get(claim.id);
+      return {
+        id: claim.id,
+        outcome: "passed" as const,
+        steps: row?.steps ?? [],
+        observed: "pending",
+        artifacts: row?.artifacts ?? [],
+        ...(row?.inspection ? { inspection: row.inspection } : {}),
+        ...(row?.inspections ? { inspections: row.inspections } : {}),
+        ...(row?.independentRead
+          ? { independentRead: row.independentRead }
+          : {}),
+      };
+    }),
+    gates: run.plan.gates.map((name) => {
+      const row = gateRows.get(name);
+      return {
+        name,
+        outcome: "passed" as const,
+        steps: row?.steps ?? [],
+        ...(row?.run ? { run: row.run } : {}),
+      };
+    }),
+  };
+  const found: Finding[] = [];
+  const inventory = artifactInventory(run, entries, found);
+  validateClaimProof(run, run.plan, projected, entries, inventory, found);
+  validateControls(run, projected, entries, found);
+  addRepairs(run, entries, inventory, projected, found);
+
+  const stepMap = new Map(entries.map((entry) => [entry.id, entry]));
+  const imagesOf = (id: string) =>
+    (projected.claims.find((claim) => claim.id === id)?.steps ?? []).flatMap(
+      (stepId) =>
+        (stepMap.get(stepId)?.artifacts ?? [])
+          .map((artifact) => artifact.path)
+          .filter((path) => /\.(png|jpe?g)$/i.test(path)),
+    );
+  const need = (item: Finding): string => {
+    const id = item.claim ?? "ID";
+    switch (item.code) {
+      case "MISSING_STEP":
+        if (/names a step that is not/.test(item.message))
+          return "step IDs that exist in this run's log";
+        switch (run.plan.claims.find((claim) => claim.id === id)?.kind) {
+          case "side-effect":
+            return `a passing step (run it with --claim ${id}); independentRead: a later read after it (--claim ${id} --independent-read)`;
+          case "visual":
+            return `a passing step that saves a screenshot (ui proof LABEL --claim ${id}), then its visual inspection`;
+          default:
+            return `a passing step (run it with --claim ${id})`;
+        }
+      case "FAILED_STEP":
+      case "FAILED_ASSERTION":
+        return "a passing step without a failed assertion";
+      case "BEHAVIOR_PROOF_MISSING":
+        return "a behavior step (check, exec, ui, api or db)";
+      case "BEHAVIOR_EVIDENCE_MISSING":
+        return "evidence that is not an image";
+      case "NAMED_CHECK_MISSING":
+        return `an attempt of check ${item.path}`;
+      case "NAMED_CHECK_FAILED":
+        return `a passing attempt of check ${item.path}`;
+      case "VISUAL_INSPECTION_MISSING": {
+        const shots = imagesOf(id);
+        return shots.length
+          ? `visual inspection for screenshot ${shots.join(", ")} (result set --claim ${id} --inspect VIEWPORT:ARTIFACT --expected TEXT --observed TEXT)`
+          : `a screenshot (ui proof LABEL --claim ${id}), then its visual inspection`;
+      }
+      case "VISUAL_IMAGE_MISSING":
+        return item.path
+          ? `a valid screenshot from a cited step for ${item.path}`
+          : "a screenshot from a cited step";
+      case "INDEPENDENT_READ_MISSING": {
+        const cited = projected.claims.find((claim) => claim.id === id)?.steps;
+        return cited?.length
+          ? `independentRead: a later read after step ${cited.at(-1)} (--claim ${id} --independent-read)`
+          : `independentRead: an action step, then a later read (--claim ${id} --independent-read)`;
+      }
+      case "EXPECTATION_FAILED":
+      case "EXPECTATION_NOT_RUN":
+      case "ACTION_FAILED":
+      case "ACTION_NOT_RUN":
+        return `a batch step whose sub-steps all pass (${item.path} did not)`;
+      case "GATE_PROOF_MISSING":
+        return `a passing step (check or exec with --gate ${item.gate})`;
+      default:
+        return item.message;
+    }
+  };
+  const group = (key: "claim" | "gate" | "control", id: string) => [
+    ...new Set(
+      found
+        .filter((item) => item[key] === id && item.blocking)
+        .map((item) => need(item)),
+    ),
+  ];
+
+  const claims = run.plan.claims.map((claim) => {
+    const row = claimRows.get(claim.id);
+    const needs = group("claim", claim.id);
+    if (!row?.observed?.trim()) needs.push("observed text");
+    for (const inspection of row?.inspections ?? [])
+      if (!inspection.expected?.trim() || !inspection.observed?.trim())
+        needs.push(
+          `inspection text for ${inspection.viewport} screenshot ${inspection.artifact}`,
+        );
+    if (row?.outcome !== "passed")
+      needs.push(
+        `outcome: passed, failed, blocked or not run, from your judgement (currently ${row?.outcome ?? "not run"})`,
+      );
+    return { id: claim.id, outcome: row?.outcome ?? "not run", needs };
+  });
+  const controlRows = new Map(projected.controls.map((row) => [row.id, row]));
+  const controls = run.plan.controls.map((spec) => {
+    const row = controlRows.get(spec.id);
+    const needs: string[] = [];
+    if (!row?.failedStep)
+      needs.push(
+        `failedStep: run the failing attempt with --control ${spec.id}:failed`,
+      );
+    if (!row?.restoredStep)
+      needs.push(
+        `restoredStep: run the passing attempt with --control ${spec.id}:restored`,
+      );
+    if (!row?.observedFailure?.trim() || !row?.observedPass?.trim())
+      needs.push(
+        "observed text for the failed and the restored attempt (result set --control ID --observed-failure TEXT --observed-pass TEXT)",
+      );
+    if (!needs.length) needs.push(...group("control", spec.id));
+    return { id: spec.id, needs };
+  });
+  const gates = run.plan.gates.map((name) => {
+    const row = gateRows.get(name);
+    const needs = group("gate", name);
+    if (!needs.length && row?.outcome !== "passed")
+      needs.push(`outcome passed (run the gate again with --gate ${name})`);
+    return { name, outcome: row?.outcome ?? "not run", needs };
+  });
+  const remaining =
+    claims.filter((item) => item.needs.length).length +
+    controls.filter((item) => item.needs.length).length +
+    gates.filter((item) => item.needs.length).length;
+  return { complete: remaining === 0, remaining, claims, controls, gates };
+}
+
+const OUTCOMES = ["passed", "failed", "blocked", "not run"];
+
+/**
+ * Edit the pending result with flags, so an operator never hand-edits JSON.
+ * Spyglass writes only what the operator states: it never writes a text
+ * observation or an outcome that the operator did not give.
+ */
+function setResult(ctx: Context, args: string[]): Record<string, unknown> {
+  const { run } = ctx;
+  const usage = (message: string) =>
+    new Fault(
+      "INVALID_USAGE",
+      message,
+      `Run spyglass result set --claim ID --outcome passed --observed "TEXT" --run ${run.id}. Use spyglass --help for the other forms.`,
+    );
+  const flags: [string, string][] = [];
+  const valueFlags = new Set([
+    "--claim",
+    "--gate",
+    "--control",
+    "--outcome",
+    "--observed",
+    "--reason",
+    "--step",
+    "--artifact",
+    "--independent-read",
+    "--inspect",
+    "--expected",
+    "--observed-failure",
+    "--observed-pass",
+    "--failed-run",
+    "--failed-step",
+    "--restored-step",
+    "--operator",
+    "--limit",
+    "--gate-run",
+  ]);
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i]!;
+    if (!valueFlags.has(flag))
+      throw usage(`result set does not accept ${flag}.`);
+    const value = args[++i];
+    if (value === undefined) throw usage(`${flag} requires a value.`);
+    flags.push([flag, value]);
+  }
+  const subjects = flags.filter(([flag]) =>
+    ["--claim", "--gate", "--control"].includes(flag),
+  );
+  if (subjects.length > 1)
+    throw usage("Name one claim, gate or control in each result set call.");
+  if (
+    !subjects.length &&
+    !flags.some(([f]) => ["--operator", "--limit", "--gate-run"].includes(f))
+  )
+    throw usage(
+      "result set needs --claim ID, --gate NAME, --control ID or --gate-run RUN.",
+    );
+  const gateRun = flags.find(([f]) => f === "--gate-run")?.[1];
+  if (gateRun !== undefined && subjects.length)
+    throw usage("--gate-run stands alone: it fills every planned gate.");
+  const known = (kind: string, id: string, ids: string[]) => {
+    if (!ids.includes(id))
+      throw new Fault(
+        `UNKNOWN_${kind.toUpperCase()}`,
+        `The plan of run ${run.id} has no ${kind} ${id}. Known ${kind}s: ${list(ids)}.`,
+        `Use a ${kind} ID from spyglass status --run ${run.id}.`,
+      );
+  };
+  const logged = new Set(steps(run).map((entry) => entry.id));
+  const knownStep = (id: string) => {
+    if (!logged.has(id))
+      throw new Fault(
+        "UNKNOWN_STEP",
+        `Run ${run.id} has no step ${id}.`,
+        `Use a step ID from spyglass status --run ${run.id} or ${run.evidence}/spyglass/log.jsonl.`,
+      );
+  };
+  const pending = readJson(run.resultPath) as Result;
+  pending.claims ??= [];
+  pending.gates ??= [];
+  pending.controls ??= [];
+  pending.limits ??= [];
+  const addOnce = (items: string[], value: string) => {
+    if (!items.includes(value)) items.push(value);
+  };
+  let updated = "result";
+  if (gateRun !== undefined) {
+    // Cite every planned gate that the named run passed on this source.
+    const { cited, problems } = citeGates(run, [loadRun(run.repo, gateRun)]);
+    if (!cited.length)
+      throw new Fault(
+        "GATE_CITATION_REJECTED",
+        `Cannot cite gates from run ${gateRun}: ${problems.join(" ") || "the plan has no gates."}`,
+        "Cite a run on the same source and profile that passed the gates, or run the gates in this run.",
+      );
+    for (const citation of cited) {
+      let row = pending.gates.find((item) => item.name === citation.gate);
+      if (!row) {
+        row = { name: citation.gate, outcome: "not run", steps: [] };
+        pending.gates.push(row);
+      }
+      row.outcome = "passed";
+      row.run = citation.run;
+      row.steps = citation.steps;
+    }
+    updated = `gates ${cited.map((item) => item.gate).join(", ")} from run ${gateRun}`;
+  }
+  const [flag, id] = subjects[0] ?? [];
+  if (flag === "--claim") {
+    known(
+      "claim",
+      id!,
+      run.plan.claims.map((claim) => claim.id),
+    );
+    updated = `claim ${id}`;
+    let row = pending.claims.find((item) => item.id === id);
+    if (!row) {
+      row = blankClaim(run.plan.claims.find((item) => item.id === id)!);
+      pending.claims.push(row);
+    }
+    let inspection: NonNullable<typeof row.inspections>[number] | undefined;
+    for (const [name, value] of flags) {
+      if (name === "--claim") continue;
+      if (name === "--outcome") {
+        if (!OUTCOMES.includes(value))
+          throw usage(`--outcome must be one of: ${OUTCOMES.join(", ")}.`);
+        row.outcome = value as typeof row.outcome;
+      } else if (name === "--observed") {
+        if (inspection) inspection.observed = value;
+        else row.observed = value;
+      } else if (name === "--reason") row.reason = value;
+      else if (name === "--step") {
+        knownStep(value);
+        addOnce(row.steps, value);
+      } else if (name === "--artifact") {
+        row.artifacts ??= [];
+        addOnce(row.artifacts, value);
+      } else if (name === "--independent-read") {
+        knownStep(value);
+        row.independentRead = value;
+      } else if (name === "--inspect") {
+        const at = value.indexOf(":");
+        if (at < 1 || at === value.length - 1)
+          throw usage(
+            "--inspect needs VIEWPORT:ARTIFACT, for example 1280x800:PATH.png.",
+          );
+        const viewport = value.slice(0, at);
+        const artifact = value.slice(at + 1);
+        row.inspections ??= [];
+        inspection = row.inspections.find(
+          (item) => item.viewport === viewport && item.artifact === artifact,
+        );
+        if (!inspection) {
+          inspection = { viewport, expected: "", observed: "", artifact };
+          row.inspections.push(inspection);
+        }
+        row.artifacts ??= [];
+        addOnce(row.artifacts, artifact);
+      } else if (name === "--expected") {
+        if (!inspection)
+          throw usage("--expected follows the --inspect it belongs to.");
+        inspection.expected = value;
+      } else if (name !== "--operator" && name !== "--limit")
+        throw usage(`${name} does not apply to a claim.`);
+    }
+  } else if (flag === "--gate") {
+    known("gate", id!, run.plan.gates);
+    updated = `gate ${id}`;
+    let row = pending.gates.find((item) => item.name === id);
+    if (!row) {
+      row = { name: id!, outcome: "not run", steps: [] };
+      pending.gates.push(row);
+    }
+    for (const [name, value] of flags) {
+      if (name === "--gate") continue;
+      if (name === "--outcome") {
+        if (!OUTCOMES.includes(value))
+          throw usage(`--outcome must be one of: ${OUTCOMES.join(", ")}.`);
+        row.outcome = value as typeof row.outcome;
+      } else if (name === "--step") addOnce(row.steps, value);
+      else if (name !== "--operator" && name !== "--limit")
+        throw usage(`${name} does not apply to a gate.`);
+    }
+  } else if (flag === "--control") {
+    known(
+      "control",
+      id!,
+      run.plan.controls.map((control) => control.id),
+    );
+    updated = `control ${id}`;
+    let row = pending.controls.find((item) => item.id === id);
+    if (!row) {
+      row = {
+        id: id!,
+        failedRun: run.id,
+        failedStep: "",
+        restoredStep: "",
+        observedFailure: "",
+        observedPass: "",
+      };
+      pending.controls.push(row);
+    }
+    for (const [name, value] of flags) {
+      if (name === "--control") continue;
+      if (name === "--observed-failure") row.observedFailure = value;
+      else if (name === "--observed-pass") row.observedPass = value;
+      else if (name === "--failed-run") row.failedRun = value;
+      else if (name === "--failed-step") row.failedStep = value;
+      else if (name === "--restored-step") {
+        knownStep(value);
+        row.restoredStep = value;
+      } else if (name !== "--operator" && name !== "--limit")
+        throw usage(`${name} does not apply to a control.`);
+    }
+  }
+  for (const [name, value] of flags) {
+    if (name === "--operator") {
+      if (value !== "agent" && value !== "human")
+        throw usage("--operator must be agent or human.");
+      pending.operator = value;
+    } else if (name === "--limit") addOnce(pending.limits, value);
+  }
+  writeJson(run.resultPath, ctx.vault.clean(pending));
+  return {
+    updated,
+    recorded: false,
+    resultPath: run.resultPath,
+    next: `spyglass result --check --run ${run.id}`,
+  };
+}
+
 export async function report(
   ctx: Context,
   args: string[],
@@ -1220,82 +2033,8 @@ export async function report(
   const command = args[0];
   let result: Result | undefined;
   if (command === "result") {
-    const file = requiredValue(args, "--file");
-    if (args.length !== 3 || args[1] !== "--file")
-      throw new Fault(
-        "INVALID_USAGE",
-        "result accepts only --file PATH.",
-        "Run spyglass result --file PATH.",
-      );
-    result = validate(resultSchema, readResultFile(file), "result");
-    const entries = steps(ctx.run);
-    const early: Finding[] = [];
-    const inventory = artifactInventory(ctx.run, entries, early);
-    validateClaimProof(
-      ctx.run,
-      ctx.run.plan,
-      result,
-      entries,
-      inventory,
-      early,
-    );
-    const controls = validateControls(ctx.run, result, entries, early);
-    const invalidMatrix = early.find((item) =>
-      [
-        "UNKNOWN_CLAIM",
-        "DUPLICATE_CLAIM",
-        "UNKNOWN_GATE",
-        "DUPLICATE_GATE",
-      ].includes(item.code),
-    );
-    if (invalidMatrix)
-      throw new Fault(
-        "INVALID_RESULT",
-        invalidMatrix.message,
-        "Use claim and gate IDs from the run plan, once each.",
-        2,
-        { findings: early },
-      );
-    const proofFailure = early.find((item) =>
-      [
-        "MISSING_STEP",
-        "FAILED_STEP",
-        "FAILED_ASSERTION",
-        "MISSING_EVIDENCE",
-        "INVALID_EVIDENCE",
-        "ARTIFACT_PRODUCER_MISMATCH",
-        "OBSERVATION_MISSING",
-        "NAMED_CHECK_MISSING",
-        "NAMED_CHECK_FAILED",
-        "BEHAVIOR_PROOF_MISSING",
-        "BEHAVIOR_EVIDENCE_MISSING",
-        "VISUAL_INSPECTION_MISSING",
-        "VISUAL_IMAGE_MISSING",
-        "INDEPENDENT_READ_MISSING",
-        "GATE_PROOF_MISSING",
-        "STEP_SOURCE_MISSING",
-        "STEP_SOURCE_MISMATCH",
-        "CONTROL_INVALID",
-        "CONTROL_UNKNOWN_CLAIM",
-      ].includes(item.code),
-    );
-    if (proofFailure)
-      throw new Fault(
-        "PROOF_INCOMPLETE",
-        proofFailure.message,
-        "Record a successful step and its retained evidence, inspect visual evidence when required, then submit the result again.",
-        1,
-        { findings: early },
-      );
-    ctx.run.result = ctx.vault.clean(result);
-    return {
-      recorded: true,
-      operator: result.operator,
-      claims: result.claims.length,
-      gates: result.gates.length,
-      controls: controls.length,
-      resultPath: ctx.run.resultPath,
-    };
+    if (args[1] === "set") return setResult(ctx, args.slice(2));
+    return submitResult(ctx, args.slice(1));
   }
   if (command !== "report" || args.length !== 1)
     throw new Fault(

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import module from "node:module";
 import { commandHelp } from "./help.js";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -13,14 +14,18 @@ import {
   runs,
   saveRun,
 } from "./state.js";
-import type { Run } from "./state.js";
+import type { Run, StepLinks } from "./state.js";
+// Node keeps the compiled code of the modules that a command loads, so the
+// next process starts faster. Older Node versions have no such cache.
+module.enableCompileCache?.();
 const help = `Spyglass — verify a change and retain its evidence.
 
 Commands:
   schema profile|plan|result   Print the version 1 JSON schema
   init                         Discover a repository profile without starting it
   up [--plan FILE]             Create an isolated run and check readiness
-  status [--run ID]            Inspect runs and active commands
+                               (--cite-gates-from RUN cites its passed gates)
+  status [--run ID [--work]]   Inspect runs and active commands; --work lists what is missing
   doctor                       Check the owner, app and source baseline
   check NAME                   Run a named verification check
   exec -- COMMAND [ARGS]       Record a child command and its real exit code
@@ -30,10 +35,16 @@ Commands:
   ps | logs SERVICE            Inspect the profile's Compose project
   mark NAME                    Save a timestamp for later log inspection
   evidence add --step ID --file PATH
-  result --file FILE           Validate and record claim results
+  result [--file FILE] [--check]  Validate and record claim results
+  result set --claim ID ...    Edit the pending result with flags
   down                         Clean up this run's owned resources
+  finish [--cleanup CHECK]     Run result, doctor, down and report in order
+  replay --from RUN [--failed-only] [--execute]
+                               List or run the steps that RUN's claims cite
   report                       Write an offline evidence report
 
+Step flags on ui, api, db, check, exec, evidence: --claim ID --independent-read
+  --control ID:failed|restored --gate NAME link the step into the pending result.
 Global options: --json --run ID --profile PATH --binding NAME=VALUE
 SPYGLASS_RUN selects an existing run. --run takes precedence.
 Exit codes: 0 success; 1 failed verification; 2 invalid input; 3 environment failure.
@@ -45,6 +56,84 @@ Examples:
   spyglass down --run change-42
   spyglass report --run change-42
 A successful command is evidence for a step. It does not by itself prove a claim.`;
+const linkCommands = ["ui", "api", "db", "check", "exec", "evidence"];
+/**
+ * Take the step-linking flags out of a driving command's arguments, so the
+ * command module never sees them. Arguments after `--` belong to the child.
+ */
+function takeLinks(rest: string[]): StepLinks {
+  const links: StepLinks = {
+    claims: [],
+    independentRead: false,
+    controls: [],
+    gates: [],
+  };
+  let end = rest.includes("--") ? rest.indexOf("--") : rest.length;
+  for (let i = 0; i < end;) {
+    const a = rest[i]!;
+    if (a === "--independent-read") {
+      links.independentRead = true;
+      rest.splice(i, 1);
+      end--;
+    } else if (["--claim", "--control", "--gate"].includes(a)) {
+      const v = requireValue(rest[i + 1], a);
+      if (a === "--claim") links.claims.push(v);
+      else if (a === "--gate") links.gates.push(v);
+      else {
+        const at = v.lastIndexOf(":");
+        const state = v.slice(at + 1);
+        if (at < 1 || (state !== "failed" && state !== "restored"))
+          throw new Fault(
+            "INVALID_USAGE",
+            "--control needs ID:failed or ID:restored.",
+            "Use --control ready-control:failed for the failing attempt and --control ready-control:restored for the passing one.",
+          );
+        links.controls.push({ id: v.slice(0, at), state });
+      }
+      rest.splice(i, 2);
+      end -= 2;
+    } else i++;
+  }
+  return links;
+}
+function linked(links: StepLinks): boolean {
+  return Boolean(
+    links.claims.length ||
+    links.controls.length ||
+    links.gates.length ||
+    links.independentRead,
+  );
+}
+/** Refuse a link to a claim, control or gate that the plan lacks. */
+function checkLinks(run: Run, links: StepLinks): void {
+  const unknown = (kind: string, names: string[], known: string[]) => {
+    const bad = names.find((name) => !known.includes(name));
+    if (bad !== undefined)
+      throw new Fault(
+        `UNKNOWN_${kind.toUpperCase()}`,
+        `The plan of run ${run.id} has no ${kind} ${bad}. Known ${kind}s: ${known.join(", ") || "none"}.`,
+        `Use a ${kind} ID from spyglass status --run ${run.id}.`,
+      );
+  };
+  if (links.independentRead && !links.claims.length)
+    throw new Fault(
+      "INVALID_USAGE",
+      "--independent-read needs --claim ID.",
+      "Add --claim ID to the step that reads the completed state.",
+    );
+  unknown(
+    "claim",
+    links.claims,
+    run.plan.claims.map((c) => c.id),
+  );
+  unknown(
+    "control",
+    links.controls.map((c) => c.id),
+    run.plan.controls.map((c) => c.id),
+  );
+  unknown("gate", links.gates, run.plan.gates);
+}
+
 const raw = process.argv.slice(2);
 let json = false;
 let selected: string | undefined;
@@ -53,6 +142,8 @@ let plan: string | undefined;
 const bindings: Record<string, string> = {};
 let directCmd: string | undefined;
 let ready: string | undefined;
+let citeGatesFrom: string | undefined;
+let warm: { seat?: string } | undefined;
 const args: string[] = [];
 let ctx: Context | undefined;
 let run: Run | undefined;
@@ -119,6 +210,25 @@ function render(data: Record<string, unknown>): string {
       : text;
   return tail ? `${body}\n${tail}` : body;
 }
+// A next action names the run it belongs to, so a person or an agent can copy
+// it and run it as written even when several runs exist.
+const RUN_COMMANDS =
+  "ui|exec|check|evidence|artifact|result|report|api|db|ps|logs|mark|status|down|doctor|finish|replay";
+function concrete(next: string, id: string | undefined): string {
+  if (!id) return next;
+  return next
+    .replace(/--run <id>/g, `--run ${id}`)
+    .split(/(?<=\.)\s+/)
+    .map((sentence) =>
+      sentence.includes("--run ")
+        ? sentence
+        : sentence.replace(
+            new RegExp(`\\bspyglass (${RUN_COMMANDS})\\b`, "g"),
+            `spyglass $1 --run ${id}`,
+          ),
+    )
+    .join(" ");
+}
 function emit(data: Record<string, unknown>, error?: Fault): void {
   const envelope = {
     schemaVersion: 1,
@@ -126,20 +236,22 @@ function emit(data: Record<string, unknown>, error?: Fault): void {
     status: error ? "failed" : "passed",
     run: run?.id ?? null,
     step: ctx?.step.id ?? null,
-    data: ctx ? ctx.vault.clean(data) : data,
+    data: ctx
+      ? ctx.vault.clean(ctx.linked ? { ...data, linked: ctx.linked } : data)
+      : data,
     artifacts: ctx?.step.artifacts ?? [],
     error: error
       ? {
           code: error.code,
           message: ctx ? ctx.vault.text(error.message) : error.message,
-          next: error.next,
+          next: concrete(error.next, run?.id),
         }
       : null,
   };
   if (json) console.log(JSON.stringify(envelope));
   else if (error) {
     console.error(
-      `${error.code}: ${envelope.error?.message}\nNext: ${error.next}`,
+      `${error.code}: ${envelope.error?.message}\nNext: ${envelope.error?.next}`,
     );
     if (Object.keys(data).length) console.log(render(envelope.data));
   } else if ("help" in data) console.log(data.help);
@@ -178,6 +290,7 @@ try {
         "--binding",
         "--cmd",
         "--ready",
+        "--cite-gates-from",
       ].includes(a)
     ) {
       const v = requireValue(raw[++i], a);
@@ -186,6 +299,7 @@ try {
       else if (a === "--plan") plan = v;
       else if (a === "--cmd") directCmd = v;
       else if (a === "--ready") ready = v;
+      else if (a === "--cite-gates-from") citeGatesFrom = v;
       else {
         const at = v.indexOf("=");
         if (at < 1)
@@ -251,6 +365,8 @@ try {
       "ps",
       "logs",
       "mark",
+      "finish",
+      "replay",
     ];
     if (!known.includes(command))
       throw new Fault(
@@ -260,13 +376,65 @@ try {
       );
     const allowed: Record<string, string[]> = {
       init: ["--force"],
-      result: ["--file"],
+      up: ["--warm", "--seat"],
+      status: ["--work"],
+      check: ["--gates", "--concurrency"],
+      finish: ["--file", "--cleanup"],
+      replay: ["--from", "--failed-only", "--execute"],
+      result:
+        args[1] === "set"
+          ? [
+              "--claim",
+              "--gate",
+              "--control",
+              "--outcome",
+              "--observed",
+              "--reason",
+              "--step",
+              "--artifact",
+              "--independent-read",
+              "--inspect",
+              "--expected",
+              "--observed-failure",
+              "--observed-pass",
+              "--failed-run",
+              "--failed-step",
+              "--restored-step",
+              "--operator",
+              "--limit",
+              "--gate-run",
+            ]
+          : ["--file", "--check"],
       evidence: ["--step", "--file"],
       artifact: ["--step", "--file"],
-      api: ["--seat", "--data", "--expect"],
-      db: ["--expect-rows"],
-      logs: ["--since"],
+      api: [
+        "--seat",
+        "--data",
+        "--expect",
+        "--expect-json",
+        "--expect-body-contains",
+        "--wait-until",
+        "--fail-on",
+        "--timeout-ms",
+        "--interval-ms",
+      ],
+      db: ["--expect-rows", "--expect-empty", "--expect-col"],
+      ps: ["--wait", "--timeout-ms"],
+      logs: [
+        "--since",
+        "--since-step",
+        "--since-last",
+        "--grep",
+        "--expect-text",
+        "--forbid-text",
+      ],
     };
+    let links: StepLinks | undefined;
+    if (linkCommands.includes(command)) {
+      const rest = args.splice(1);
+      links = takeLinks(rest);
+      args.push(...rest);
+    }
     if (!["exec", "ui"].includes(command))
       for (const a of args.slice(1))
         if (a.startsWith("--") && !(allowed[command] ?? []).includes(a))
@@ -275,6 +443,12 @@ try {
             `Unknown option ${a} for ${command}.`,
             "Run spyglass --help.",
           );
+    if (citeGatesFrom && command !== "up")
+      throw new Fault(
+        "UNKNOWN_OPTION",
+        `Unknown option --cite-gates-from for ${command}.`,
+        "Use --cite-gates-from RUN with spyglass up, or result set --gate-run RUN.",
+      );
     const repo = repository();
     if (command !== "up") selected ??= process.env.SPYGLASS_RUN;
     if (command === "init") {
@@ -284,11 +458,35 @@ try {
       const m = await import("./lifecycle.js");
       if (selected) {
         run = loadRun(repo, selected);
-        emit(m.status(run));
-      } else emit({ runs: runs(repo).map(m.status) });
+        if (args.includes("--work")) {
+          const report = await import("./report.js");
+          emit({
+            id: run.id,
+            state: run.state,
+            work: report.workFor(run),
+            next: m.status(run).next,
+          });
+        } else emit(m.status(run));
+      } else if (args.includes("--work"))
+        throw new Fault(
+          "MISSING_INPUT",
+          "status --work needs one run.",
+          "Run spyglass status --work --run ID.",
+        );
+      else emit({ runs: runs(repo).map(m.status) });
     } else {
       if (command === "up") {
         const m = await import("./lifecycle.js");
+        const at = args.indexOf("--seat");
+        const warmSeat =
+          at < 0 ? undefined : requireValue(args[at + 1], "--seat");
+        if (warmSeat && !args.includes("--warm"))
+          throw new Fault(
+            "INVALID_USAGE",
+            "--seat needs --warm: it names the seat whose browser starts.",
+            "Run spyglass up --warm --seat demo.",
+          );
+        warm = args.includes("--warm") ? { seat: warmSeat } : undefined;
         run = await m.allocate(repo, {
           id: selected,
           profile,
@@ -296,6 +494,8 @@ try {
           bindings,
           cmd: directCmd,
           ready,
+          citeGatesFrom,
+          warm,
         });
       } else {
         run = loadRun(repo, requireValue(selected, "--run ID"));
@@ -303,85 +503,169 @@ try {
       }
       release = lock(run, command);
       run = loadRun(repo, run.id);
-      ctx = new Context(run, command, args.slice(1));
-      let data: Record<string, unknown>;
-      if (["exec", "check", "ui", "api", "db"].includes(command)) {
+      if (command === "replay") {
+        const at = args.indexOf("--from");
+        const outcome = await (
+          await import("./replay.js")
+        ).replay(
+          run,
+          {
+            from: requireValue(args[at + 1], "--from"),
+            failedOnly: args.includes("--failed-only"),
+            execute: args.includes("--execute"),
+          },
+          (stage) => {
+            ctx = stage;
+          },
+          () => {
+            release?.();
+            release = undefined;
+          },
+        );
+        emit(outcome.data, outcome.fault);
+      } else if (command === "finish") {
+        const at = (flag: string) => {
+          const index = args.indexOf(flag);
+          return index < 0 ? undefined : requireValue(args[index + 1], flag);
+        };
+        const outcome = await (
+          await import("./lifecycle.js")
+        ).finishRun(
+          run,
+          { file: at("--file"), cleanup: at("--cleanup") },
+          (stage) => {
+            ctx = stage;
+          },
+        );
+        emit(outcome.data, outcome.fault);
+      } else if (
+        command === "check" &&
+        (args.includes("--gates") || (args[1] ?? "").includes(","))
+      ) {
+        // Several checks at once: each is its own step, written one at a time.
+        const checks = await import("./checks.js");
+        const at = args.indexOf("--concurrency");
+        const raw = at < 0 ? "4" : requireValue(args[at + 1], "--concurrency");
+        const concurrency = Number(raw);
         if (
-          run.state !== "ready" &&
-          !(command === "check" && run.profile.checks[args[1] ?? ""]?.cleanup)
+          !/^\d+$/.test(raw) ||
+          concurrency < 1 ||
+          concurrency > checks.MAX_CONCURRENCY
         )
           throw new Fault(
-            "RUN_NOT_READY",
-            `Run ${run.id} is ${run.state}.`,
-            "Create a ready run before driving the target.",
-            1,
+            "INVALID_USAGE",
+            `--concurrency needs an integer from 1 to ${checks.MAX_CONCURRENCY}.`,
+            "Run spyglass check a,b --concurrency 2.",
           );
-        if (command !== "ui") assertSource(run);
-      }
-      switch (command) {
-        case "up":
-          data = await (await import("./lifecycle.js")).launch(ctx);
-          break;
-        case "doctor":
-          data = await (await import("./lifecycle.js")).doctor(ctx);
-          break;
-        case "down": {
-          if (Object.keys(run.sessions).length || run.browserProxy) {
-            const b = await import("./browser.js");
-            await b.closeBrowsers(ctx);
-          }
-          const lifecycle = await import("./lifecycle.js");
-          await lifecycle.stopOwned(ctx);
-          run.cleanup = true;
-          run.state = "stopped";
-          const log = join(run.evidence, "spyglass/launch.log");
-          if (existsSync(log))
-            ctx.artifact("launch-final.log", readFileSync(log, "utf8"));
-          const { resultRules: _rules, ...stopped } = lifecycle.status(run);
-          data = { ...stopped, ownerCleanupRequired: !run.ownerCleaned };
-          break;
-        }
-        case "check":
-        case "exec":
-        case "evidence":
-        case "artifact": {
-          const m = await import("./checks.js");
-          data = await m.checks(ctx, args);
-          break;
-        }
-        case "result":
-        case "report": {
-          const m = await import("./report.js");
-          data = await m.report(ctx, args);
-          break;
-        }
-        case "ui": {
-          const m = await import("./browser.js");
-          data = await m.browser(ctx, args.slice(1));
-          break;
-        }
-        case "api":
-        case "db":
-        case "ps":
-        case "logs":
-        case "mark": {
-          const m = await import("./surfaces.js");
-          data = await m.surfaces(ctx, args);
-          break;
-        }
-        default:
+        const gates = args.includes("--gates");
+        const list = gates ? undefined : (args[1] ?? "").split(",");
+        if (gates && args[1] && !args[1].startsWith("--"))
           throw new Fault(
-            "UNKNOWN_COMMAND",
-            `Unknown command ${command}.`,
-            "Run spyglass --help.",
+            "INVALID_USAGE",
+            "--gates takes no check name.",
+            "Run spyglass check --gates, or name the checks: spyglass check a,b.",
           );
+        if (list?.some((name) => !name))
+          throw new Fault(
+            "INVALID_USAGE",
+            "A check name is empty in the list.",
+            "Run spyglass check a,b with no empty name.",
+          );
+        if (links) {
+          checkLinks(run, links);
+          if (links.gates.length)
+            throw new Fault(
+              "INVALID_USAGE",
+              "--gate names one gate; several checks need --gates or no gate link.",
+              "Run spyglass check --gates, or link one check: spyglass check NAME --gate NAME.",
+            );
+        }
+        const outcome = await checks.parallelChecks(
+          run,
+          { names: list, gates, concurrency, links },
+          (stage) => {
+            ctx = stage;
+          },
+        );
+        emit(outcome.data, outcome.fault);
+      } else {
+        ctx = new Context(run, command, args.slice(1));
+        if (command === "up" && warm) ctx.warm = warm;
+        if (links && linked(links)) {
+          checkLinks(run, links);
+          ctx.links = links;
+          // The evidence belongs to the step it attaches to as well.
+          if (command === "evidence") {
+            const at = args.indexOf("--step");
+            if (at > 0 && args[at + 1]) links.evidenceFor = args[at + 1];
+          }
+        }
+        let data: Record<string, unknown>;
+        if (["exec", "check", "ui", "api", "db"].includes(command)) {
+          if (
+            run.state !== "ready" &&
+            !(command === "check" && run.profile.checks[args[1] ?? ""]?.cleanup)
+          )
+            throw new Fault(
+              "RUN_NOT_READY",
+              `Run ${run.id} is ${run.state}.`,
+              "Create a ready run before driving the target.",
+              1,
+            );
+          if (command !== "ui") assertSource(run);
+        }
+        switch (command) {
+          case "up":
+            data = await (await import("./lifecycle.js")).launch(ctx);
+            break;
+          case "doctor":
+            data = await (await import("./lifecycle.js")).doctor(ctx);
+            break;
+          case "down":
+            data = await (await import("./lifecycle.js")).down(ctx);
+            break;
+          case "check":
+          case "exec":
+          case "evidence":
+          case "artifact": {
+            const m = await import("./checks.js");
+            data = await m.checks(ctx, args);
+            break;
+          }
+          case "result":
+          case "report": {
+            const m = await import("./report.js");
+            data = await m.report(ctx, args);
+            break;
+          }
+          case "ui": {
+            const m = await import("./browser.js");
+            data = await m.browser(ctx, args.slice(1));
+            break;
+          }
+          case "api":
+          case "db":
+          case "ps":
+          case "logs":
+          case "mark": {
+            const m = await import("./surfaces.js");
+            data = await m.surfaces(ctx, args);
+            break;
+          }
+          default:
+            throw new Fault(
+              "UNKNOWN_COMMAND",
+              `Unknown command ${command}.`,
+              "Run spyglass --help.",
+            );
+        }
+        ctx.finish(
+          typeof data.exitCode === "number" ? data.exitCode : 0,
+          data,
+          0,
+        );
+        emit(data);
       }
-      ctx.finish(
-        typeof data.exitCode === "number" ? data.exitCode : 0,
-        data,
-        0,
-      );
-      emit(data);
     }
   }
 } catch (error) {

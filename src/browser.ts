@@ -9,7 +9,7 @@ import {
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { Fault } from "./errors.js";
+import { Fault, fault } from "./errors.js";
 import { hash, safePath } from "./files.js";
 import { BROWSER_IDLE_TIMEOUT_MS, runHome, saveRun } from "./state.js";
 import {
@@ -480,8 +480,8 @@ function expiryText(ctx: Context): string {
     ? `${Math.round(idle / 60_000)} min`
     : `${Math.round(idle / 1000)} s`;
 }
-const EXPIRED_NEXT =
-  "Run the ui command again to start a new browser for this run. Sign in again first with spyglass ui login <seat> when the seat needs it.";
+const expiredNext = (run: string, seat: string): string =>
+  `Run spyglass ui --run ${run} --seat ${seat} snapshot to start a new browser for this seat. Sign in again first with spyglass ui --run ${run} login ${seat} when the seat needs it.`;
 // agent-browser shuts an idle daemon down and discards the seat's pages and
 // sign-in state; its next command would silently start a signed-out browser.
 // Probe only the seat this command uses, and only when it may have expired,
@@ -517,7 +517,7 @@ async function expireIdleBrowsers(
     throw new Fault(
       "BROWSER_EXPIRED",
       `The run browser for seat ${seat} shut down after ${expiryText(ctx)} without a ui command. Its pages and sign-in state are gone.`,
-      EXPIRED_NEXT,
+      expiredNext(ctx.run.id, seat),
       3,
       { expiredSeats: expired },
     );
@@ -771,6 +771,15 @@ function validate(ctx: Context, command: Command): Command {
     command[1] = checkUrl(ctx, command[1]!, ctx.run.web);
   return command;
 }
+/**
+ * A screenshot of a page that has not produced a frame yet can wait for the
+ * first one for about 10 seconds in a headless browser. Two animation frames
+ * first make the page draw, so the screenshot returns at once.
+ */
+const frameCommand: Command = [
+  "eval",
+  "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+];
 function proofPath(ctx: Context, label: string): string {
   const name =
     label
@@ -815,22 +824,8 @@ function imageArtifact(
   rmSync(file, { force: true });
   return artifact as unknown as Record<string, unknown>;
 }
-async function run(
-  ctx: Context,
-  id: Identity,
-  domains: string,
-  commands: Command[],
-  timeout = 60000,
-): Promise<{ reply: Reply; data: unknown[] }> {
-  const after = ctx.run.browserProxy?.sequence ?? 0;
-  const reply = await invoke(
-    ctx,
-    id,
-    domains,
-    ["batch", "--bail", "--json"],
-    JSON.stringify(commands),
-    timeout,
-  );
+/** Fail when the proxy refused a page navigation since sequence `after`. */
+async function checkProxy(ctx: Context, after: number): Promise<void> {
   const proxyState = await browserProxyEvents(ctx.run, after);
   if (ctx.run.browserProxy && proxyState.sequence !== after) {
     ctx.run.browserProxy.sequence = proxyState.sequence;
@@ -847,6 +842,24 @@ async function run(
       1,
       { blockedOrigin: blockedNavigation.origin },
     );
+}
+async function run(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+  commands: Command[],
+  timeout = 60000,
+): Promise<{ reply: Reply; data: unknown[] }> {
+  const after = ctx.run.browserProxy?.sequence ?? 0;
+  const reply = await invoke(
+    ctx,
+    id,
+    domains,
+    ["batch", "--bail", "--json"],
+    JSON.stringify(commands),
+    timeout,
+  );
+  await checkProxy(ctx, after);
   const data = reply.items.map((item) => clean(ctx, item));
   const failed = reply.items.some((item) =>
     Boolean(
@@ -874,7 +887,8 @@ async function run(
   return { reply, data };
 }
 function currentUrl(data: unknown[]): string | undefined {
-  for (const item of data) {
+  // The last URL is the page that the batch ended on.
+  for (const item of [...data].reverse()) {
     if (!item || typeof item !== "object") continue;
     const row = item as Record<string, unknown>;
     for (const val of [row.result, row.data, row]) {
@@ -910,10 +924,12 @@ export function browserHelp(): Record<string, unknown> {
       "open PATH|URL",
       "read [PATH|URL]",
       "snapshot [-i|-c|--delta|--full]",
-      "proof LABEL",
+      "proof LABEL [--viewport WxH]... [--expect KIND=VALUE]... [--timeout-ms MS]",
+      "verify [--open PATH] [--do COMMAND]... [--expect KIND=VALUE]... [--expect-focus-moved LABEL] [--proof LABEL [--viewport WxH]...] [--timeout-ms MS]",
+      "expect [--url PATTERN] [--text TEXT] [--title TEXT] [--selector SEL] [--visible SEL] [--hidden SEL] [--enabled SEL] [--checked SEL] [--count SEL=N] [--focused LABEL] [--attr SEL:NAME=VALUE] [--no-errors] [--timeout-ms MS]",
       "focused [--expect LABEL]",
       "login SEAT",
-      "click|dblclick|type|fill|press|keyboard|hover|focus|check|uncheck|select|drag|scroll|scrollintoview",
+      "click|dblclick|type|fill|press|keyboard|hover|focus|check|uncheck|select|drag|scroll|scrollintoview (add --settle to one click, dblclick, press, fill, select, type or find ... click command)",
       "wait|back|forward|reload",
       "get text|html|title|url|attr|count|box|styles",
       "is visible|enabled|checked",
@@ -933,6 +949,7 @@ export function browserHelp(): Record<string, unknown> {
     ],
     policy: [
       "Each run and seat gets a new headless browser session.",
+      "A command can end with --relogin. When the seat's browser expired and the seat has a login, the step keeps the expiry as data.relogin, signs the seat in again and then runs the command. Without a login for the seat, the command fails with BROWSER_EXPIRED.",
       "Spyglass uses an explicit config and allowed run origins.",
       "Page output is marked as untrusted content.",
       "Use spyglass down to close run-owned sessions.",
@@ -943,6 +960,9 @@ export function browserHelp(): Record<string, unknown> {
       "No custom Authorization headers.",
       "wait accepts a selector, --text, --url or --load. --fn runs page JavaScript, --download saves outside evidence, and agent-browser reads wait --state as a saved-state file; all three are refused.",
       "A run-owned loopback proxy enforces exact scheme, host and port on browser traffic; agent-browser also checks allowed hosts.",
+      "verify runs actions, expectations and a proof as one step with ordered sub-steps. A failure keeps the sub-steps before it as passed, marks the failed one with its failure screenshot and delta snapshot, and marks the rest not run. Each --do is one command, such as find role button click --name Save; a click, fill, press or select settles before the next sub-step. An --expect is KIND=VALUE with the kinds of expect: url, text, title, selector, visible, hidden, enabled, checked, count (SEL=N), focused, attr (SEL:NAME=VALUE) and no-errors. --expect-focus-moved LABEL records the focus before the actions and after them in focused.json and fails when focus was already on LABEL or is not on it afterward. --proof LABEL saves proof-LABEL.png, its snapshot and its details; with --viewport WxH (repeat it) each viewport resizes, settles, checks every --expect again and saves proof-LABEL-WxH.png. A screenshot is never an action: its path is always inside run evidence.",
+      "expect polls every 100 ms until all expectations hold or --timeout-ms (default 5000, maximum 120000) ends. It saves expect.json and exits 1 with the last observation when an expectation never holds. It never reads an input value: --attr value is refused.",
+      "A click, fill or similar command that matches no element fails with data.nearest: up to 10 interactive roles and names from the page, nearest to the request first.",
     ],
   };
 }
@@ -966,6 +986,7 @@ async function captureFailure(
         ["get", "url"],
         ["get", "title"],
         ["snapshot", "-i", "-c", "--delta"],
+        frameCommand,
         ["screenshot", image],
         ["console", "--clear"],
         ["errors", "--clear"],
@@ -1131,7 +1152,7 @@ function selectedSeat(
       throw new Fault(
         "BROWSER_SEAT",
         "Missing seat after --seat.",
-        "Use spyglass ui --seat <seat> snapshot.",
+        "Use spyglass ui --seat SEAT snapshot, with a seat name from the profile.",
       );
     rest.splice(0, 2);
     seat = value;
@@ -1151,50 +1172,16 @@ async function proof(
   domains: string[],
   label: string,
 ): Promise<Record<string, unknown>> {
-  const name = safeLabel(label),
-    image = proofPath(ctx, "proof-" + name);
   try {
-    const result = await run(ctx, id, domains.join(","), [
-      ["snapshot", "-i", "-c", "--delta"],
-      ["get", "url"],
-      ["get", "title"],
-      ["console", "--clear"],
-      ["errors", "--clear"],
-      ["network", "requests", "--clear"],
-      ["screenshot", image],
-    ]);
-    const picture = imageArtifact(ctx, image, "proof-" + name + ".png");
-    const snapshot = result.data.find(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        (item as Record<string, unknown>).command === "snapshot",
-    );
-    const snapshotArtifact = ctx.artifact(
-      "proof-" + name + "-snapshot.json",
-      snapshot ?? result.data,
-      "page-snapshot",
-    );
-    const details = ctx.artifact(
-      "proof-" + name + "-details.json",
-      {
-        label: name,
-        seat,
-        step: ctx.step.id,
-        pageContent: true,
-        results: clean(ctx, result.data),
-      },
-      "page-content",
-    );
+    const shot = await captureProof(ctx, seat, id, domains.join(","), label);
     return {
-      label: name,
+      label: safeLabel(label),
       seat,
       pageContent: true,
-      results: clean(ctx, result.data),
-      artifacts: [picture, snapshotArtifact, details],
+      observation: shot.observation,
+      artifacts: shot.artifacts,
     };
   } catch (error) {
-    rmSync(image, { force: true });
     if (error instanceof Fault) throw error;
     throw new Fault(
       "BROWSER_PROOF_FAILED",
@@ -1227,7 +1214,10 @@ async function screenshot(
   if (indices.length) command[indices.at(-1)!.index] = target;
   else command.push(target);
   try {
-    const result = await run(ctx, id, domains.join(","), [command]);
+    const result = await run(ctx, id, domains.join(","), [
+      frameCommand,
+      command,
+    ]);
     if (!existsSync(target))
       throw new Fault(
         "BROWSER_ARTIFACT_MISSING",
@@ -1330,6 +1320,1422 @@ async function focused(
     );
   return { ...observed, artifacts: [evidence] };
 }
+/**
+ * Expectations. One poll sends every condition to agent-browser in a single
+ * batch, so a call that waits costs one process per poll, not one per
+ * condition. A condition never reads an input value.
+ */
+type ConditionKind =
+  | "url"
+  | "text"
+  | "title"
+  | "selector"
+  | "visible"
+  | "hidden"
+  | "enabled"
+  | "checked"
+  | "count"
+  | "focused"
+  | "attr"
+  | "no-errors";
+interface Condition {
+  id: string;
+  kind: ConditionKind;
+  value?: string;
+  selector?: string;
+  attr?: string;
+  count?: number;
+}
+interface Judged {
+  id: string;
+  ok: boolean;
+  observed: string;
+}
+interface Observation {
+  url?: string;
+  title?: string;
+}
+interface PollResult {
+  passed: boolean;
+  polls: number;
+  elapsedMs: number;
+  conditions: Judged[];
+  observation: Observation;
+}
+const conditionFlags: Record<string, ConditionKind> = {
+  "--url": "url",
+  "--text": "text",
+  "--title": "title",
+  "--selector": "selector",
+  "--visible": "visible",
+  "--hidden": "hidden",
+  "--enabled": "enabled",
+  "--checked": "checked",
+  "--count": "count",
+  "--focused": "focused",
+  "--attr": "attr",
+  "--no-errors": "no-errors",
+};
+const DEFAULT_EXPECT_TIMEOUT_MS = 5000;
+const MAX_EXPECT_TIMEOUT_MS = 120_000;
+const POLL_INTERVAL_MS = 100;
+function expectUsage(message: string): Fault {
+  return new Fault(
+    "BROWSER_USAGE",
+    message,
+    'Use spyglass ui expect --url /dashboard --text "Welcome" --visible "#form" --timeout-ms 5000.',
+  );
+}
+function makeCondition(kind: string, value?: string): Condition {
+  if (!Object.values(conditionFlags).includes(kind as ConditionKind))
+    throw expectUsage(
+      `Unknown expectation ${kind}. Use ${Object.values(conditionFlags).join(", ")}.`,
+    );
+  if (kind === "no-errors") return { id: "no-errors", kind };
+  if (value === undefined || value === "")
+    throw expectUsage(`The expectation ${kind} needs a value.`);
+  const id = `${kind}=${value}`;
+  if (kind === "count") {
+    const at = value.lastIndexOf("=");
+    const number = value.slice(at + 1);
+    if (at < 1 || !/^\d+$/.test(number))
+      throw expectUsage("count needs SELECTOR=NUMBER, for example li=3.");
+    return {
+      id,
+      kind,
+      selector: value.slice(0, at),
+      count: Number(number),
+    };
+  }
+  if (kind === "attr") {
+    const found = /^([\s\S]*):([A-Za-z_][\w-]*)=([\s\S]*)$/.exec(value);
+    if (!found || !found[1])
+      throw expectUsage(
+        "attr needs SELECTOR:NAME=VALUE, for example a:href=/x.",
+      );
+    if (found[2]!.toLowerCase() === "value")
+      throw new Fault(
+        "BROWSER_POLICY",
+        "Reading input values can expose credentials and tokens.",
+        "Check visible text or an accessibility snapshot instead.",
+      );
+    return {
+      id,
+      kind,
+      selector: found[1],
+      attr: found[2],
+      value: found[3],
+    };
+  }
+  return ["selector", "visible", "hidden", "enabled", "checked"].includes(kind)
+    ? { id, kind: kind as ConditionKind, selector: value }
+    : { id, kind: kind as ConditionKind, value };
+}
+function parseExpectArgs(args: string[]): {
+  conditions: Condition[];
+  timeoutMs: number;
+} {
+  const conditions: Condition[] = [];
+  let timeoutMs = DEFAULT_EXPECT_TIMEOUT_MS;
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i]!;
+    if (flag === "--timeout-ms") {
+      const raw = args[++i];
+      timeoutMs = Number(raw);
+      if (
+        !raw ||
+        !/^\d+$/.test(raw) ||
+        timeoutMs < 1 ||
+        timeoutMs > MAX_EXPECT_TIMEOUT_MS
+      )
+        throw expectUsage(
+          `--timeout-ms must be an integer from 1 to ${MAX_EXPECT_TIMEOUT_MS}.`,
+        );
+    } else if (flag in conditionFlags) {
+      const kind = conditionFlags[flag]!;
+      conditions.push(
+        makeCondition(kind, kind === "no-errors" ? undefined : args[++i]),
+      );
+    } else throw expectUsage(`ui expect does not accept ${flag}.`);
+  }
+  if (!conditions.length)
+    throw expectUsage("ui expect needs at least one expectation.");
+  return { conditions, timeoutMs };
+}
+/** `--expect KIND=VALUE` of ui verify and ui proof. */
+function parseExpectSpec(spec: string): Condition {
+  const at = spec.indexOf("=");
+  return spec === "no-errors"
+    ? makeCondition("no-errors")
+    : at < 1
+      ? makeCondition("?", spec)
+      : makeCondition(spec.slice(0, at), spec.slice(at + 1));
+}
+function urlMatches(pattern: string, url: string): boolean {
+  if (!pattern.includes("*")) return url.includes(pattern);
+  const expression = new RegExp(
+    "^" +
+      pattern
+        .split("*")
+        .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+        .join(".*") +
+      "$",
+  );
+  let target = url;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(pattern))
+    try {
+      const parsed = new URL(url);
+      target = parsed.pathname + parsed.search + parsed.hash;
+    } catch {
+      /* Match the whole text. */
+    }
+  return expression.test(target);
+}
+type Item = {
+  success?: boolean;
+  error?: unknown;
+  result?: Record<string, unknown>;
+};
+const resultOf = (item: Item | undefined): Record<string, unknown> =>
+  item?.success === false || !item?.result ? {} : item.result;
+function probeCommands(condition: Condition): Command[] {
+  switch (condition.kind) {
+    case "text":
+      return [
+        [
+          "eval",
+          `Boolean(document.body && document.body.innerText.includes(${JSON.stringify(condition.value)}))`,
+        ],
+      ];
+    case "selector":
+    case "count":
+      return [["get", "count", condition.selector!]];
+    case "visible":
+    case "hidden":
+      return [["is", "visible", condition.selector!]];
+    case "enabled":
+      return [["is", "enabled", condition.selector!]];
+    case "checked":
+      return [["is", "checked", condition.selector!]];
+    case "attr":
+      return [["get", "attr", condition.selector!, condition.attr!]];
+    case "focused":
+      return [["eval", focusedElementScript]];
+    case "no-errors":
+      return [["errors"], ["console"]];
+    default:
+      return [];
+  }
+}
+function judge(
+  condition: Condition,
+  items: Item[],
+  seen: Observation,
+): { ok: boolean; observed: string } {
+  const first = resultOf(items[0]);
+  const missing = (items[0]?.success === false) as boolean;
+  switch (condition.kind) {
+    case "url":
+      return {
+        ok: urlMatches(condition.value!, seen.url ?? ""),
+        observed: seen.url ?? "no url",
+      };
+    case "title":
+      return {
+        ok: seen.title === condition.value,
+        observed: seen.title ?? "no title",
+      };
+    case "text":
+      return {
+        ok: first.result === true,
+        observed: first.result === true ? "found" : "not found",
+      };
+    case "selector": {
+      const count = Number(first.count ?? 0);
+      return { ok: count > 0, observed: `${count} match` };
+    }
+    case "count": {
+      const count = Number(first.count ?? 0);
+      return { ok: count === condition.count, observed: `${count} match` };
+    }
+    case "visible":
+      return {
+        ok: first.visible === true,
+        observed: missing ? "no element" : String(first.visible),
+      };
+    case "hidden":
+      return {
+        ok: missing || first.visible === false,
+        observed: missing ? "no element" : `visible ${first.visible}`,
+      };
+    case "enabled":
+      return {
+        ok: first.enabled === true,
+        observed: missing ? "no element" : String(first.enabled),
+      };
+    case "checked":
+      return {
+        ok: first.checked === true,
+        observed: missing ? "no element" : String(first.checked),
+      };
+    case "attr": {
+      const value = first.value ?? first.attr ?? first.result;
+      return {
+        ok: typeof value === "string" && value === condition.value,
+        observed: missing
+          ? "no element"
+          : typeof value === "string"
+            ? value
+            : "no attribute",
+      };
+    }
+    case "focused": {
+      const element = first.result as { label?: string } | null | undefined;
+      return {
+        ok: element?.label === condition.value,
+        observed: element ? `"${element.label ?? ""}"` : "page body",
+      };
+    }
+    case "no-errors": {
+      const errors = (resultOf(items[0]).errors as unknown[] | undefined) ?? [];
+      const messages =
+        (resultOf(items[1]).messages as Array<{ type?: string }> | undefined) ??
+        [];
+      const bad =
+        errors.length + messages.filter((m) => m.type === "error").length;
+      return { ok: bad === 0, observed: `${bad} error` };
+    }
+  }
+}
+/** A selector that cannot parse never matches: stop polling and say so. */
+function selectorSyntax(items: Item[]): string | undefined {
+  for (const item of items)
+    if (
+      item?.success === false &&
+      /syntax|not a valid selector|invalid selector|unexpected token/i.test(
+        String(item.error ?? ""),
+      )
+    )
+      return String(item.error);
+  return undefined;
+}
+async function pollConditions(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+  conditions: Condition[],
+  timeoutMs: number,
+): Promise<PollResult> {
+  const started = Date.now();
+  const deadline = started + timeoutMs;
+  const plan = conditions.map((condition) => ({
+    condition,
+    commands: probeCommands(condition),
+  }));
+  const commands: Command[] = [
+    ["get", "url"],
+    ["get", "title"],
+    ...plan.flatMap((entry) => entry.commands),
+  ];
+  let polls = 0;
+  let judged: Judged[] = [];
+  let observation: Observation = {};
+  for (;;) {
+    polls++;
+    const reply = await invoke(
+      ctx,
+      id,
+      domains,
+      ["batch", "--json"],
+      JSON.stringify(commands),
+      30_000,
+    );
+    // A batch with one failed item, such as an element that is not there yet,
+    // exits non-zero but still lists every result.
+    if (reply.timedOut || !reply.items.length)
+      throw new Fault(
+        "BROWSER_COMMAND_FAILED",
+        "Browser command failed: " +
+          redactText(ctx, reply.stderr || reply.stdout || "no output"),
+        "Inspect the browser page and retry; failed steps stay in the run log.",
+        1,
+        { exitCode: reply.exitCode },
+      );
+    const rows = reply.items as Item[];
+    const syntax = selectorSyntax(rows);
+    if (syntax)
+      throw new Fault(
+        "BROWSER_SELECTOR_INVALID",
+        "A selector in the expectations is not valid: " +
+          redactText(ctx, syntax),
+        "Correct the selector. Use CSS selectors or refs from spyglass ui snapshot.",
+        2,
+      );
+    observation = {
+      url: redactText(ctx, String(resultOf(rows[0]).url ?? "")) || undefined,
+      title:
+        redactText(ctx, String(resultOf(rows[1]).title ?? "")) || undefined,
+    };
+    let offset = 2;
+    judged = plan.map(({ condition, commands: own }) => {
+      const verdict = judge(
+        condition,
+        rows.slice(offset, offset + own.length),
+        observation,
+      );
+      offset += own.length;
+      return { id: condition.id, ...verdict };
+    });
+    if (judged.every((item) => item.ok) || Date.now() >= deadline) break;
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(POLL_INTERVAL_MS, deadline - Date.now())),
+    );
+  }
+  return {
+    passed: judged.every((item) => item.ok),
+    polls,
+    elapsedMs: Date.now() - started,
+    conditions: judged.map((item) => ({
+      ...item,
+      observed: redactText(ctx, item.observed),
+    })),
+    observation,
+  };
+}
+/** Structured assertions, in the shape that `check` records. */
+function assertions(conditions: Judged[]): Record<string, unknown>[] {
+  return conditions.map((item) => ({
+    id: item.id,
+    ok: item.ok,
+    detail: item.observed,
+  }));
+}
+function summaryLine(passed: boolean, conditions: Judged[]): string {
+  return `${passed ? "PASS" : "FAIL"} ${conditions
+    .map((item) =>
+      /\s/.test(item.id) ? item.id.replace("=", '="') + '"' : item.id,
+    )
+    .join(" ")}`;
+}
+async function expectCommand(
+  ctx: Context,
+  seat: string,
+  id: Identity,
+  domains: string,
+  args: string[],
+): Promise<Record<string, unknown>> {
+  const { conditions, timeoutMs } = parseExpectArgs(args);
+  const after = ctx.run.browserProxy?.sequence ?? 0;
+  const poll = await pollConditions(ctx, id, domains, conditions, timeoutMs);
+  await checkProxy(ctx, after);
+  const record = {
+    seat,
+    pageContent: true,
+    timeoutMs,
+    elapsedMs: poll.elapsedMs,
+    polls: poll.polls,
+    passed: poll.passed,
+    conditions: poll.conditions,
+    lastObservation: poll.observation,
+  };
+  const evidence = ctx.artifact("expect.json", record, "page-content");
+  const data = {
+    summary: summaryLine(poll.passed, poll.conditions),
+    seat,
+    pageContent: true,
+    passed: poll.passed,
+    elapsedMs: poll.elapsedMs,
+    polls: poll.polls,
+    timeoutMs,
+    conditions: poll.conditions,
+    claims: assertions(poll.conditions),
+    lastObservation: poll.observation,
+    artifacts: [evidence],
+  };
+  if (!poll.passed) {
+    const failed = poll.conditions.filter((item) => !item.ok);
+    throw new Fault(
+      "BROWSER_EXPECTATION_FAILED",
+      `${failed.length} of ${poll.conditions.length} expectations did not hold after ${poll.elapsedMs} ms: ${failed
+        .map((item) => `${item.id} (${item.observed})`)
+        .join("; ")}.`,
+      "Inspect the page with spyglass ui snapshot; failed steps stay in the run log.",
+      1,
+      data,
+    );
+  }
+  return data;
+}
+
+/**
+ * Settle: wait for the page to stop changing after an interactive action,
+ * without waiting for network idle, which an event stream never reaches. The
+ * wait ends when the document is loaded and no DOM change has happened for a
+ * short quiet window, or at a hard limit.
+ */
+const SETTLE_QUIET_MS = 150;
+const SETTLE_LIMIT_MS = 3000;
+const settleScript = `new Promise((resolve) => {
+  const started = Date.now();
+  let last = started;
+  const observer = new MutationObserver(() => { last = Date.now(); });
+  observer.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+  const tick = () => {
+    const now = Date.now();
+    const quiet = now - last >= ${SETTLE_QUIET_MS} && document.readyState === "complete";
+    if (quiet || now - started >= ${SETTLE_LIMIT_MS}) {
+      observer.disconnect();
+      resolve({ waitedMs: now - started, quiet, readyState: document.readyState });
+    } else setTimeout(tick, 25);
+  };
+  tick();
+})`;
+/**
+ * A click can return before its navigation commits, and the page that the
+ * script runs on can then end. That ends the script with a navigation error:
+ * run it again on the new page until it ends or the limit passes.
+ */
+async function settle(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<Record<string, unknown>> {
+  const started = Date.now();
+  const end = started + SETTLE_LIMIT_MS;
+  for (let attempts = 1; ; attempts++) {
+    const reply = await invoke(
+      ctx,
+      id,
+      domains,
+      ["batch", "--json"],
+      JSON.stringify([["eval", settleScript]]),
+      30_000,
+    );
+    const item = reply.items[0] as Item | undefined;
+    if (item?.success) {
+      const found = item.result?.result as Record<string, unknown> | undefined;
+      return { ...(found ?? {}), attempts };
+    }
+    const message = String(item?.error ?? reply.stderr ?? "");
+    if (/navigat|closed|destroyed|detached/i.test(message) && Date.now() < end)
+      continue;
+    return {
+      quiet: false,
+      attempts,
+      waitedMs: Date.now() - started,
+      note: redactText(ctx, message),
+    };
+  }
+}
+const interactiveHeads = new Set([
+  "click",
+  "dblclick",
+  "press",
+  "fill",
+  "select",
+  "type",
+]);
+const findActions = new Set(["click", "dblclick", "fill", "type", "select"]);
+function isInteractive(command: Command): boolean {
+  if (interactiveHeads.has(command[0] ?? "")) return true;
+  return (
+    command[0] === "find" &&
+    command.slice(3).some((word) => findActions.has(word))
+  );
+}
+/**
+ * When a selector action fails, the operator needs the page as it is: the
+ * interactive elements nearest to what was asked for. Map drift and a product
+ * defect then differ at a glance.
+ */
+const selectorHeads = new Set([
+  "click",
+  "dblclick",
+  "fill",
+  "type",
+  "hover",
+  "focus",
+  "check",
+  "uncheck",
+  "select",
+  "scrollintoview",
+  "find",
+  "is",
+  "get",
+]);
+function editDistance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let previous = row[0]!;
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const held = row[j]!;
+      row[j] = Math.min(
+        row[j]! + 1,
+        row[j - 1]! + 1,
+        previous + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+      previous = held;
+    }
+  }
+  return row[b.length]!;
+}
+function requestedName(command: Command): string {
+  const named = command.indexOf("--name");
+  if (named > 0 && command[named + 1]) return command[named + 1]!;
+  if (command[0] === "find") return command[2] ?? "";
+  return command[1] ?? "";
+}
+const interactiveRoles = new Set([
+  "button",
+  "link",
+  "textbox",
+  "searchbox",
+  "combobox",
+  "checkbox",
+  "radio",
+  "switch",
+  "slider",
+  "spinbutton",
+  "tab",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "option",
+  "listbox",
+  "treeitem",
+]);
+function nearestInteractive(
+  snapshot: Item | undefined,
+  needle: string,
+): { role: string; name: string }[] {
+  const rows: { role: string; name: string }[] = [];
+  const refs = snapshot?.result?.refs;
+  if (refs && typeof refs === "object")
+    for (const entry of Object.values(refs as Record<string, unknown>)) {
+      const { role, name } = (entry ?? {}) as { role?: string; name?: string };
+      if (role && interactiveRoles.has(role))
+        rows.push({ role, name: (name ?? "").trim() });
+    }
+  const target = needle.trim().toLowerCase();
+  const rank = (name: string) =>
+    target
+      ? editDistance(name.toLowerCase(), target) -
+        (name.toLowerCase().includes(target) ? target.length : 0)
+      : 0;
+  return rows
+    .map((row, index) => ({ row, index, rank: rank(row.name) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .slice(0, 10)
+    .map((entry) => entry.row);
+}
+async function diagnoseSelector(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+  cause: Fault,
+): Promise<void> {
+  const results = cause.data.results;
+  if (cause.code !== "BROWSER_COMMAND_FAILED" || !Array.isArray(results))
+    return;
+  const failed = (results as Item[]).find((item) => item?.success === false) as
+    { command?: Command; error?: unknown } | undefined;
+  const command = failed?.command;
+  if (!command || !selectorHeads.has(command[0] ?? "")) return;
+  try {
+    const snap = await run(ctx, id, domains, [["snapshot", "-i", "-c"]], 30000);
+    const item = snap.data[0] as Item | undefined;
+    const nearest = nearestInteractive(item, requestedName(command));
+    const snapshotArtifact = ctx.artifact(
+      "selector-failure-snapshot.json",
+      item ?? snap.data,
+      "page-snapshot",
+    );
+    const report = ctx.artifact(
+      "selector-failure.json",
+      {
+        pageContent: true,
+        failedCommand: clean(ctx, command),
+        error: clean(ctx, failed?.error),
+        requested: redactText(ctx, requestedName(command)),
+        nearest: clean(ctx, nearest),
+      },
+      "page-content",
+    );
+    cause.data = {
+      ...cause.data,
+      nearest: clean(ctx, nearest),
+      pageContent: true,
+      artifacts: [snapshotArtifact, report],
+    };
+    cause.message += ` The nearest interactive elements are in data.nearest.`;
+  } catch {
+    /* The original failure stands without the page picture. */
+  }
+}
+/**
+ * ui verify and ui proof with viewports: one call for one claim. The call
+ * is one step with ordered sub-steps. When sub-step K fails, sub-steps before
+ * it stay passed, K keeps its failure and its page evidence, and the rest are
+ * "not run". The step exits 1 and stays in the log.
+ */
+interface Viewport {
+  width: number;
+  height: number;
+  label: string;
+}
+interface VerifyPlan {
+  open?: string;
+  dos: string[];
+  expects: Condition[];
+  focusMoved?: string;
+  proof?: string;
+  viewports: Viewport[];
+  /** ui proof checks its expectations after each resize, not before it. */
+  deferExpects?: boolean;
+  timeoutMs: number;
+}
+interface SubStep {
+  id: string;
+  label: string;
+  status: "passed" | "failed" | "not run";
+  detail?: string;
+}
+function verifyUsage(message: string): Fault {
+  return new Fault(
+    "BROWSER_USAGE",
+    message,
+    'Use spyglass ui verify --open /dashboard --do "find role button click --name Save" --expect text=Saved --proof saved --viewport 1280x800 --viewport 390x844.',
+  );
+}
+function parseViewport(value: string | undefined): Viewport {
+  const found = /^(\d{2,5})x(\d{2,5})$/.exec(value ?? "");
+  const width = Number(found?.[1]);
+  const height = Number(found?.[2]);
+  if (!found || width < 100 || width > 10000 || height < 100 || height > 10000)
+    throw verifyUsage("--viewport needs WIDTHxHEIGHT, for example 1280x800.");
+  return { width, height, label: `${width}x${height}` };
+}
+function parseTimeout(value: string | undefined): number {
+  const timeoutMs = Number(value);
+  if (
+    !value ||
+    !/^\d+$/.test(value) ||
+    timeoutMs < 1 ||
+    timeoutMs > MAX_EXPECT_TIMEOUT_MS
+  )
+    throw verifyUsage(
+      `--timeout-ms must be an integer from 1 to ${MAX_EXPECT_TIMEOUT_MS}.`,
+    );
+  return timeoutMs;
+}
+function parseVerifyArgs(args: string[]): VerifyPlan {
+  const plan: VerifyPlan = {
+    dos: [],
+    expects: [],
+    viewports: [],
+    timeoutMs: DEFAULT_EXPECT_TIMEOUT_MS,
+  };
+  const value = (i: number, flag: string) => {
+    const next = args[i];
+    if (next === undefined || next === "")
+      throw verifyUsage(`${flag} needs a value.`);
+    return next;
+  };
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i]!;
+    if (flag === "--open") plan.open = value(++i, flag);
+    else if (flag === "--do") plan.dos.push(value(++i, flag));
+    else if (flag === "--expect")
+      plan.expects.push(parseExpectSpec(value(++i, flag)));
+    else if (flag === "--expect-focus-moved")
+      plan.focusMoved = value(++i, flag);
+    else if (flag === "--proof") plan.proof = value(++i, flag);
+    else if (flag === "--viewport")
+      plan.viewports.push(parseViewport(args[++i]));
+    else if (flag === "--timeout-ms") plan.timeoutMs = parseTimeout(args[++i]);
+    else throw verifyUsage(`ui verify does not accept ${flag}.`);
+  }
+  if (plan.viewports.length && plan.proof === undefined)
+    throw verifyUsage("--viewport needs --proof LABEL.");
+  if (plan.focusMoved !== undefined && !plan.dos.length)
+    throw verifyUsage("--expect-focus-moved needs at least one --do action.");
+  if (
+    plan.open === undefined &&
+    !plan.dos.length &&
+    !plan.expects.length &&
+    plan.proof === undefined
+  )
+    throw verifyUsage("ui verify needs --open, --do, --expect or --proof.");
+  return plan;
+}
+/** `ui proof LABEL [--viewport WxH]... [--expect COND]... [--timeout-ms MS]` */
+function parseProofArgs(args: string[]): VerifyPlan | undefined {
+  const label = args[0];
+  if (!label || label.startsWith("--"))
+    throw new Fault(
+      "BROWSER_LABEL",
+      "Missing proof label.",
+      "Use spyglass ui proof <label>.",
+    );
+  if (args.length === 1) return undefined;
+  const plan: VerifyPlan = {
+    dos: [],
+    expects: [],
+    viewports: [],
+    proof: label,
+    timeoutMs: DEFAULT_EXPECT_TIMEOUT_MS,
+  };
+  for (let i = 1; i < args.length; i++) {
+    const flag = args[i]!;
+    if (flag === "--viewport") plan.viewports.push(parseViewport(args[++i]));
+    else if (flag === "--expect") {
+      const spec = args[++i];
+      if (spec === undefined || spec === "")
+        throw verifyUsage("--expect needs a value.");
+      plan.expects.push(parseExpectSpec(spec));
+    } else if (flag === "--timeout-ms")
+      plan.timeoutMs = parseTimeout(args[++i]);
+    else throw verifyUsage(`ui proof does not accept ${flag}.`);
+  }
+  plan.deferExpects = plan.viewports.length > 0;
+  return plan;
+}
+async function readFocus(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<{ element: FocusedElement; url?: string }> {
+  const result = await run(ctx, id, domains, [
+    ["eval", focusedElementScript],
+    ["get", "url"],
+  ]);
+  const reply = (result.data[0] as { result?: Record<string, unknown> })
+    ?.result;
+  if (!reply || !("result" in reply))
+    throw new Fault(
+      "BROWSER_COMMAND_FAILED",
+      "agent-browser returned no focused-element result.",
+      "Check the supported agent-browser version with spyglass doctor.",
+      3,
+    );
+  const url = currentUrl(result.data);
+  return {
+    element: reply.result as FocusedElement,
+    url: url ? redactText(ctx, url) : undefined,
+  };
+}
+/** The page as it is, kept when a sub-step fails. */
+async function captureVerifyFailure(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<PageObservation | undefined> {
+  const image = proofPath(ctx, "verify-failure");
+  try {
+    const result = await run(
+      ctx,
+      id,
+      domains,
+      [
+        ["get", "url"],
+        ["get", "title"],
+        ["eval", focusedElementScript],
+        ["snapshot", "-i", "-c", "--delta"],
+        ["network", "requests"],
+        frameCommand,
+        ["screenshot", image],
+        ["console"],
+        ["console", "--clear"],
+        ["errors"],
+        ["errors", "--clear"],
+      ],
+      30000,
+    );
+    const picture = imageArtifact(ctx, image, "verify-failure.png");
+    const snapshot = (result.data as Row[]).find(
+      (item) => item?.command?.[0] === "snapshot",
+    );
+    const snapshotArtifact = ctx.artifact(
+      "verify-failure-snapshot.json",
+      snapshot ?? result.data,
+      "page-snapshot",
+    );
+    const page = ctx.artifact(
+      "verify-failure-page.json",
+      { pageContent: true, results: clean(ctx, result.data) },
+      "page-content",
+    );
+    return observationFrom(ctx, result.data, [
+      String(picture.path),
+      snapshotArtifact.path,
+      page.path,
+    ]);
+  } catch (error) {
+    rmSync(image, { force: true });
+    ctx.artifact(
+      "verify-failure-capture-error.json",
+      {
+        pageContent: true,
+        captureFailure:
+          error instanceof Error ? redactText(ctx, error.message) : "failed",
+      },
+      "page-content",
+    );
+    return undefined;
+  }
+}
+/**
+ * The compact picture of a page that a ui command returns first. The full
+ * snapshot stays in an artifact when it is longer than the line budget, so a
+ * model reads a few lines, not a page tree.
+ */
+const OBSERVATION_LINE_BUDGET = 40;
+interface PageObservation {
+  url?: string;
+  title?: string;
+  focused: string | null;
+  consoleErrors: number;
+  failedRequests: number;
+  interactiveCount: number;
+  changedLines: number;
+  artifacts: string[];
+}
+type Row = {
+  command?: string[];
+  result?: Record<string, unknown>;
+  success?: boolean;
+};
+/** The commands that an observation reads, without clearing anything. */
+const observationCommands = (): Command[] => [
+  ["get", "url"],
+  ["get", "title"],
+  ["eval", focusedElementScript],
+  ["console"],
+  ["errors"],
+  ["network", "requests"],
+];
+function snapshotParts(item: Row | undefined): {
+  text: string;
+  refs: Record<string, { role?: string }>;
+} {
+  const raw = item?.result?.snapshot;
+  const text =
+    typeof raw === "string"
+      ? raw
+      : typeof (raw as { tree?: unknown } | undefined)?.tree === "string"
+        ? String((raw as { tree: string }).tree)
+        : "";
+  const refs =
+    (item?.result?.refs as Record<string, { role?: string }> | undefined) ??
+    (raw as { refs?: Record<string, { role?: string }> } | undefined)?.refs ??
+    {};
+  return { text, refs };
+}
+function observationFrom(
+  ctx: Context,
+  items: unknown[],
+  artifacts: string[],
+): PageObservation {
+  const rows = items as Row[];
+  const find = (head: string, sub?: string) =>
+    rows.find(
+      (row) =>
+        row?.success !== false &&
+        row?.command?.[0] === head &&
+        (sub === undefined || row.command[1] === sub),
+    );
+  const text = (value: unknown) =>
+    typeof value === "string" && value ? redactText(ctx, value) : undefined;
+  const focus = rows.find(
+    (row) =>
+      row?.command?.[0] === "eval" && row.command[1] === focusedElementScript,
+  )?.result?.result as { label?: string } | null | undefined;
+  const messages =
+    (find("console")?.result?.messages as
+      Array<{ type?: string }> | undefined) ?? [];
+  const errors =
+    (find("errors")?.result?.errors as unknown[] | undefined) ?? [];
+  const requests =
+    (find("network")?.result?.requests as
+      | Array<{ status?: number; failed?: boolean; errorText?: string }>
+      | undefined) ?? [];
+  const snapshot = snapshotParts(find("snapshot"));
+  return {
+    url: text(find("get", "url")?.result?.url),
+    title: text(find("get", "title")?.result?.title),
+    focused: focus ? (text(focus.label) ?? "") : null,
+    consoleErrors:
+      messages.filter((message) => message.type === "error").length +
+      errors.length,
+    failedRequests: requests.filter(
+      (request) =>
+        (typeof request.status === "number" && request.status >= 400) ||
+        request.failed === true ||
+        Boolean(request.errorText),
+    ).length,
+    interactiveCount: Object.values(snapshot.refs).filter(
+      (ref) => ref.role && interactiveRoles.has(ref.role),
+    ).length,
+    changedLines: snapshot.text
+      ? snapshot.text.split("\n").filter(Boolean).length
+      : 0,
+    artifacts,
+  };
+}
+/** The state of the page now, for a step that took no proof. */
+async function observePage(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<PageObservation | undefined> {
+  try {
+    const result = await run(
+      ctx,
+      id,
+      domains,
+      [...observationCommands(), ["snapshot", "-i", "-c"]],
+      30000,
+    );
+    return observationFrom(ctx, result.data, []);
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * Keep a long snapshot out of the output: a preview stays in the result and
+ * the whole tree goes to an artifact.
+ */
+function boundSnapshot(ctx: Context, item: Row | undefined): string[] {
+  if (!item?.result) return [];
+  const { text } = snapshotParts(item);
+  const lines = text.split("\n");
+  if (lines.length <= OBSERVATION_LINE_BUDGET) return [];
+  const artifact = ctx.artifact("snapshot.json", item, "page-snapshot");
+  const preview =
+    lines.slice(0, OBSERVATION_LINE_BUDGET).join("\n") +
+    `\n… ${lines.length - OBSERVATION_LINE_BUDGET} more lines in ${artifact.path}`;
+  const raw = item.result.snapshot;
+  // The element list names every element: it stays in the artifact too.
+  delete item.result.refs;
+  item.result.snapshot =
+    typeof raw === "string"
+      ? preview
+      : (() => {
+          const { refs: _refs, ...rest } = raw as Record<string, unknown>;
+          return { ...rest, tree: preview, truncated: true };
+        })();
+  return [artifact.path];
+}
+
+interface ProofResult {
+  picture: Record<string, unknown>;
+  artifacts: Record<string, unknown>[];
+  results: unknown[];
+  observation: PageObservation;
+}
+async function captureProof(
+  ctx: Context,
+  seat: string,
+  id: Identity,
+  domains: string,
+  label: string,
+  suffix = "",
+): Promise<ProofResult> {
+  const name = safeLabel(label) + suffix,
+    image = proofPath(ctx, "proof-" + name);
+  try {
+    const result = await run(ctx, id, domains, [
+      ["snapshot", "-i", "-c", "--delta"],
+      ["get", "url"],
+      ["get", "title"],
+      // Read each list before it is cleared: a clear returns no entries.
+      ["console"],
+      ["console", "--clear"],
+      ["errors"],
+      ["errors", "--clear"],
+      ["eval", focusedElementScript],
+      ["network", "requests"],
+      ["network", "requests", "--clear"],
+      frameCommand,
+      ["screenshot", image],
+    ]);
+    const picture = imageArtifact(ctx, image, "proof-" + name + ".png");
+    const snapshot = (result.data as Row[]).find(
+      (item) => item?.command?.[0] === "snapshot",
+    );
+    const snapshotArtifact = ctx.artifact(
+      "proof-" + name + "-snapshot.json",
+      snapshot ?? result.data,
+      "page-snapshot",
+    );
+    const details = ctx.artifact(
+      "proof-" + name + "-details.json",
+      {
+        label: name,
+        seat,
+        step: ctx.step.id,
+        pageContent: true,
+        results: clean(ctx, result.data),
+      },
+      "page-content",
+    );
+    return {
+      picture,
+      artifacts: [picture, snapshotArtifact, details] as unknown as Record<
+        string,
+        unknown
+      >[],
+      results: result.data,
+      observation: observationFrom(ctx, result.data, [
+        String(picture.path),
+        String((snapshotArtifact as { path: string }).path),
+        String((details as { path: string }).path),
+      ]),
+    };
+  } catch (error) {
+    rmSync(image, { force: true });
+    throw error;
+  }
+}
+async function runVerify(
+  ctx: Context,
+  seat: string,
+  id: Identity,
+  domains: string,
+  plan: VerifyPlan,
+): Promise<Record<string, unknown>> {
+  const started = Date.now();
+  const steps: SubStep[] = [];
+  const add = (stepId: string, label: string): SubStep => {
+    const step: SubStep = { id: stepId, label, status: "not run" };
+    steps.push(step);
+    return step;
+  };
+  const openStep =
+    plan.open !== undefined ? add("open", `open ${plan.open}`) : undefined;
+  const doSteps = plan.dos.map((text, i) => add(`do-${i + 1}`, text));
+  const focusStep =
+    plan.focusMoved !== undefined
+      ? add("focus-moved", `focus moves to ${plan.focusMoved}`)
+      : undefined;
+  const expectSteps = plan.deferExpects
+    ? []
+    : plan.expects.map((condition, i) => add(`expect-${i + 1}`, condition.id));
+  const proofSteps =
+    plan.proof === undefined
+      ? []
+      : plan.viewports.length
+        ? plan.viewports.map((viewport) =>
+            add(
+              `proof-${viewport.label}`,
+              `proof ${plan.proof} at ${viewport.label}`,
+            ),
+          )
+        : [add("proof", `proof ${plan.proof}`)];
+  const viewports: { viewport: string; artifact: string }[] = [];
+  const extra: Record<string, unknown> = {};
+  const outcome: { failure?: Fault } = {};
+  let last: Observation = {};
+  let page: PageObservation | undefined;
+  const trackFailure = (step: SubStep | undefined, error: unknown) => {
+    const failure = error instanceof Fault ? error : fault(error);
+    outcome.failure = failure;
+    if (step && step.status === "not run") {
+      step.status = "failed";
+      step.detail = failure.message;
+    }
+  };
+
+  /**
+   * Run the commands in order, in as few agent-browser calls as the order
+   * allows: commands run together until an interactive one, which settles
+   * before the next command starts. A failure names its own sub-step.
+   */
+  const runBatch = async (
+    entries: { step: SubStep; command: Command }[],
+  ): Promise<void> => {
+    const groups: (typeof entries)[] = [];
+    let current: typeof entries = [];
+    for (const entry of entries) {
+      current.push(entry);
+      if (isInteractive(entry.command)) {
+        groups.push(current);
+        current = [];
+      }
+    }
+    if (current.length) groups.push(current);
+    for (const group of groups) {
+      try {
+        await run(
+          ctx,
+          id,
+          domains,
+          group.map((entry) => entry.command),
+        );
+      } catch (error) {
+        let owner = group.at(-1)!;
+        if (error instanceof Fault && Array.isArray(error.data.results)) {
+          const at = (error.data.results as Item[]).findIndex(
+            (item) => item?.success === false,
+          );
+          if (at >= 0 && group[at]) owner = group[at]!;
+        }
+        // Everything before the failed command ran and passed.
+        for (const entry of group) {
+          if (entry === owner) break;
+          entry.step.status = "passed";
+        }
+        owner.step.status = "failed";
+        owner.step.detail =
+          error instanceof Fault ? error.message : String(error);
+        if (error instanceof Fault) {
+          await diagnoseSelector(ctx, id, domains, error);
+          if (error.data.nearest) extra.nearest = error.data.nearest;
+        }
+        throw error;
+      }
+      for (const entry of group) entry.step.status = "passed";
+      if (isInteractive(group.at(-1)!.command)) await settle(ctx, id, domains);
+    }
+  };
+
+  /** Check every command's policy in order; run those that precede a refusal. */
+  const prepare = (
+    queue: { step: SubStep; build: () => Command }[],
+  ): {
+    runnable: { step: SubStep; command: Command }[];
+    refusal?: { step: SubStep; error: unknown };
+  } => {
+    const runnable: { step: SubStep; command: Command }[] = [];
+    for (const item of queue) {
+      try {
+        runnable.push({ step: item.step, command: item.build() });
+      } catch (error) {
+        return { runnable, refusal: { step: item.step, error } };
+      }
+    }
+    return { runnable };
+  };
+  const checked = (words: Command): Command => {
+    if (["screenshot", "batch"].includes(words[0] ?? ""))
+      throw new Fault(
+        "BROWSER_POLICY",
+        `${words[0]} cannot be an action of ui verify; it could write outside run evidence or hide commands.`,
+        "Use --proof LABEL for a screenshot.",
+      );
+    return validate(ctx, words);
+  };
+  const batchFor = async (queue: { step: SubStep; build: () => Command }[]) => {
+    const { runnable, refusal } = prepare(queue);
+    await runBatch(runnable);
+    if (refusal) {
+      refusal.step.status = "failed";
+      refusal.step.detail =
+        refusal.error instanceof Fault
+          ? refusal.error.message
+          : String(refusal.error);
+      throw refusal.error;
+    }
+  };
+
+  const observe = async (conditions: Condition[], timeoutMs = plan.timeoutMs) =>
+    pollConditions(ctx, id, domains, conditions, timeoutMs);
+  /** All at once first; then one at a time, so the first failure is named. */
+  const expectAll = async (
+    conditions: Condition[],
+    stepsFor: SubStep[] | undefined,
+  ): Promise<void> => {
+    if (!conditions.length) return;
+    const all = await observe(conditions, 1);
+    last = all.observation;
+    if (all.passed) {
+      for (const step of stepsFor ?? []) step.status = "passed";
+      return;
+    }
+    for (let i = 0; i < conditions.length; i++) {
+      const single = await observe([conditions[i]!]);
+      last = single.observation;
+      if (single.passed) {
+        if (stepsFor) stepsFor[i]!.status = "passed";
+        continue;
+      }
+      const verdict = single.conditions[0]!;
+      const step = stepsFor?.[i];
+      if (step) {
+        step.status = "failed";
+        step.detail = `${verdict.id}: ${verdict.observed}`;
+      }
+      throw new Fault(
+        "BROWSER_EXPECTATION_FAILED",
+        `Expectation ${verdict.id} did not hold after ${single.elapsedMs} ms (${verdict.observed}).`,
+        "Inspect the page with spyglass ui snapshot; failed steps stay in the run log.",
+        1,
+        { elapsedMs: single.elapsedMs, polls: single.polls },
+      );
+    }
+  };
+
+  const proxyAfter = ctx.run.browserProxy?.sequence ?? 0;
+  try {
+    if (openStep)
+      await batchFor([
+        {
+          step: openStep,
+          build: () => checked(["open", plan.open!]),
+        },
+      ]);
+    let before: { element: FocusedElement; url?: string } | undefined;
+    if (focusStep) before = await readFocus(ctx, id, domains);
+    await batchFor(
+      doSteps.map((step, i) => ({
+        step,
+        build: () => checked(parseWords(plan.dos[i]!)),
+      })),
+    );
+    if (focusStep) {
+      const after = await readFocus(ctx, id, domains);
+      const moved =
+        before?.element?.label !== plan.focusMoved &&
+        after.element?.label === plan.focusMoved;
+      const evidence = ctx.artifact(
+        "focused.json",
+        {
+          seat,
+          pageContent: true,
+          url: after.url,
+          expected: plan.focusMoved,
+          before: before?.element ?? null,
+          after: after.element ?? null,
+          moved,
+        },
+        "page-content",
+      );
+      extra.focus = {
+        before: before?.element ?? null,
+        after: after.element ?? null,
+        artifact: evidence.path,
+      };
+      if (!moved) {
+        focusStep.status = "failed";
+        focusStep.detail =
+          before?.element?.label === plan.focusMoved
+            ? `focus was already on "${plan.focusMoved}" before the action`
+            : `focus is on ${after.element ? `"${after.element.label}"` : "the page body"}, not "${plan.focusMoved}"`;
+        throw new Fault(
+          "BROWSER_EXPECTATION_FAILED",
+          focusStep.detail + ".",
+          "Inspect focused.json: it keeps the focus before and after the action.",
+          1,
+        );
+      }
+      focusStep.status = "passed";
+    }
+    if (!plan.deferExpects) await expectAll(plan.expects, expectSteps);
+    if (plan.proof !== undefined) {
+      if (!plan.viewports.length) {
+        page = (await captureProof(ctx, seat, id, domains, plan.proof))
+          .observation;
+        proofSteps[0]!.status = "passed";
+      } else
+        for (let i = 0; i < plan.viewports.length; i++) {
+          const viewport = plan.viewports[i]!;
+          const step = proofSteps[i]!;
+          try {
+            await run(ctx, id, domains, [
+              [
+                "set",
+                "viewport",
+                String(viewport.width),
+                String(viewport.height),
+              ],
+            ]);
+            await settle(ctx, id, domains);
+            await expectAll(plan.expects, undefined);
+            const shot = await captureProof(
+              ctx,
+              seat,
+              id,
+              domains,
+              plan.proof,
+              `-${viewport.label}`,
+            );
+            page = shot.observation;
+            viewports.push({
+              viewport: viewport.label,
+              artifact: String(shot.picture.path),
+            });
+            step.status = "passed";
+          } catch (error) {
+            if (step.status === "not run") {
+              step.status = "failed";
+              step.detail =
+                error instanceof Fault ? error.message : String(error);
+            }
+            throw error;
+          }
+        }
+    }
+    await checkProxy(ctx, proxyAfter);
+    page ??= await observePage(ctx, id, domains);
+  } catch (error) {
+    trackFailure(
+      steps.find((step) => step.status === "failed"),
+      error,
+    );
+    page = await captureVerifyFailure(ctx, id, domains);
+  }
+
+  const failure = outcome.failure;
+  const passed = !failure;
+  const assertionRows = [
+    ...steps
+      .filter((step) => step.id.startsWith("expect-"))
+      .map((step) => ({
+        id: step.label,
+        ok: step.status === "passed",
+        detail: step.status === "passed" ? "held" : (step.detail ?? "not run"),
+      })),
+    ...steps
+      .filter((step) => !step.id.startsWith("expect-"))
+      .map((step) => ({
+        id: step.id,
+        ok: step.status === "passed",
+        detail:
+          step.status === "passed" ? "passed" : (step.detail ?? "not run"),
+      })),
+  ];
+  const data: Record<string, unknown> = {
+    summary: `${passed ? "PASS" : "FAIL"} ${steps
+      .map((step) => `${step.id}:${step.status}`)
+      .join(" ")}`,
+    ...(page ? { observation: page } : {}),
+    seat,
+    pageContent: true,
+    passed,
+    elapsedMs: Date.now() - started,
+    subSteps: steps.map((step) => ({
+      id: step.id,
+      label: clean(ctx, step.label),
+      status: step.status,
+      ...(step.detail ? { detail: redactText(ctx, step.detail) } : {}),
+    })),
+    claims: assertionRows,
+    ...(viewports.length ? { viewports } : {}),
+    ...(last.url ? { lastObservation: last } : {}),
+    ...extra,
+    artifacts: ctx.step.artifacts.slice(),
+  };
+  if (failure) {
+    const cause: Fault = failure;
+    throw new Fault(cause.code, cause.message, cause.next, cause.exit, {
+      ...cause.data,
+      ...data,
+    });
+  }
+  return data;
+}
+
 export async function browser(
   ctx: Context,
   args: string[],
@@ -1341,26 +2747,48 @@ export async function browser(
     seat = picked.seat,
     action = picked.args;
   if (!action.length) return browserHelp();
+  // --relogin is one of the two flags that end a command; --settle is the other.
+  const reloginAt = action.indexOf("--relogin");
+  const relogin = reloginAt > 0 && reloginAt >= action.length - 2;
+  if (relogin) action.splice(reloginAt, 1);
   const policy = origins(ctx),
     id = identity(ctx, seat);
-  await expireIdleBrowsers(
-    ctx,
-    action[0] === "login" && action[1] ? action[1] : seat,
-    policy.domains,
-  );
+  const used = action[0] === "login" && action[1] ? action[1] : seat;
+  // The browser of a seat can shut down while it is idle. With --relogin and a
+  // login for the seat, the expiry is kept in the step and the seat signs in
+  // again before the command runs; otherwise the command fails.
+  let relogged:
+    { expired: string[]; message: string; loggedIn: string[] } | undefined;
+  try {
+    await expireIdleBrowsers(ctx, used, policy.domains);
+  } catch (error) {
+    if (
+      relogin &&
+      error instanceof Fault &&
+      error.code === "BROWSER_EXPIRED" &&
+      action[0] !== "login" &&
+      ctx.run.profile.seats[used]?.login
+    )
+      relogged = {
+        expired: (error.data.expiredSeats as string[] | undefined) ?? [used],
+        message: error.message,
+        loggedIn: [],
+      };
+    else throw error;
+  }
   const startedProxy = await ensureBrowserProxy(
     ctx.run,
     policy.exact,
     idleTimeoutMs(ctx),
   );
-  try {
+  const dispatch = async (): Promise<Record<string, unknown>> => {
     if (action[0] === "login") {
       const name = action[1];
       if (!name)
         throw new Fault(
           "BROWSER_SEAT",
           "Missing seat after login.",
-          "Use spyglass ui login <seat>.",
+          "Use spyglass ui login SEAT, with a seat name from the profile.",
         );
       if (!ctx.run.profile.seats[name])
         throw new Fault(
@@ -1376,19 +2804,24 @@ export async function browser(
       }
       return login(ctx, name, loginId, [...policy.domains.split(",")]);
     }
-    if (action[0] === "proof") {
-      if (!action[1])
-        throw new Fault(
-          "BROWSER_LABEL",
-          "Missing proof label.",
-          "Use spyglass ui proof <label>.",
-        );
+    if (action[0] === "proof" || action[0] === "verify") {
+      const plan =
+        action[0] === "verify"
+          ? parseVerifyArgs(action.slice(1))
+          : parseProofArgs(action.slice(1));
       const fresh = await ensure(ctx, id, policy.domains);
       if (fresh) {
         ctx.run.sessions[seat] = id.session;
         saveRun(ctx.run);
       }
-      return proof(ctx, seat, id, [...policy.domains.split(",")], action[1]);
+      if (!plan)
+        return proof(ctx, seat, id, [...policy.domains.split(",")], action[1]!);
+      try {
+        return await runVerify(ctx, seat, id, policy.domains, plan);
+      } finally {
+        ctx.run.activeSeat = seat;
+        saveRun(ctx.run);
+      }
     }
     if (action[0] === "focused") {
       const fresh = await ensure(ctx, id, policy.domains);
@@ -1398,7 +2831,26 @@ export async function browser(
       }
       return focused(ctx, seat, id, policy.domains, action.slice(1));
     }
+    if (action[0] === "expect") {
+      const fresh = await ensure(ctx, id, policy.domains);
+      if (fresh) {
+        ctx.run.sessions[seat] = id.session;
+        saveRun(ctx.run);
+      }
+      const reply = await expectCommand(
+        ctx,
+        seat,
+        id,
+        policy.domains,
+        action.slice(1),
+      );
+      ctx.run.activeSeat = seat;
+      saveRun(ctx.run);
+      return reply;
+    }
     let input = [...action];
+    const wantSettle = input.length > 1 && input.at(-1) === "--settle";
+    if (wantSettle) input.pop();
     if (input[0] === "open") {
       if (!input[1])
         throw new Fault(
@@ -1438,6 +2890,12 @@ export async function browser(
         commands[0]!.slice(1),
       );
     }
+    if (wantSettle && (commands.length !== 1 || !isInteractive(commands[0]!)))
+      throw new Fault(
+        "BROWSER_USAGE",
+        "--settle follows one click, dblclick, press, fill, select, type or find ... click command.",
+        "Use spyglass ui find role button click --name Save --settle.",
+      );
     const mayNavigate = new Set([
       "open",
       "click",
@@ -1452,6 +2910,7 @@ export async function browser(
       "pushstate",
     ]);
     if (
+      !wantSettle &&
       commands.some((command) => mayNavigate.has(command[0] ?? "")) &&
       commands.at(-1)?.[0] !== "get"
     )
@@ -1461,15 +2920,42 @@ export async function browser(
       ctx.run.sessions[seat] = id.session;
       saveRun(ctx.run);
     }
-    const result = await run(ctx, id, policy.domains, commands);
+    let result: { reply: Reply; data: unknown[] };
+    let settled: Record<string, unknown> | undefined;
+    // A snapshot also reads the facts of an observation in the same call.
+    const observing = commands.length === 1 && commands[0]![0] === "snapshot";
+    if (observing) commands.push(...observationCommands());
+    try {
+      result = await run(ctx, id, policy.domains, commands);
+      if (wantSettle) {
+        settled = await settle(ctx, id, policy.domains);
+        // The page that the action led to, after it settled.
+        const tail = await run(ctx, id, policy.domains, [["get", "url"]]);
+        result = { reply: tail.reply, data: [...result.data, ...tail.data] };
+      }
+    } catch (error) {
+      if (error instanceof Fault)
+        await diagnoseSelector(ctx, id, policy.domains, error);
+      throw error;
+    }
     const url = currentUrl(result.data);
     if (url) checkUrl(ctx, url);
     ctx.run.activeSeat = seat;
     saveRun(ctx.run);
+    let observation: PageObservation | undefined;
+    if (observing) {
+      const rows = result.data as Row[];
+      // Count first: the bound drops the element list from the output.
+      observation = observationFrom(ctx, rows, []);
+      observation.artifacts = boundSnapshot(ctx, rows[0]);
+      result = { ...result, data: [rows[0]] };
+    }
     return {
+      ...(observation ? { observation } : {}),
       seat,
       pageContent: true,
       currentUrl: url ? redactText(ctx, url) : undefined,
+      ...(settled ? { settled } : {}),
       results: clean(ctx, result.data),
       session: {
         namespace: id.namespace,
@@ -1477,11 +2963,54 @@ export async function browser(
         isolatedSeat: seat,
       },
     };
+  };
+  try {
+    if (relogged) {
+      const loginId = identity(ctx, used);
+      if (await ensure(ctx, loginId, policy.domains)) {
+        ctx.run.sessions[used] = loginId.session;
+        saveRun(ctx.run);
+      }
+      await login(ctx, used, loginId, [...policy.domains.split(",")]);
+      relogged.loggedIn.push(used);
+    }
+    const out = await dispatch();
+    return relogged ? { ...out, relogin: relogged } : out;
   } catch (error) {
+    if (relogged && error instanceof Fault)
+      error.data = { ...error.data, relogin: relogged };
     if (startedProxy && !Object.keys(ctx.run.sessions).length)
       await stopBrowserProxy(ctx.run).catch(() => undefined);
     throw error;
   }
+}
+/**
+ * Start the browser of a seat and its proxy, while the app starts. `get url`
+ * launches a browser on an empty page and reaches no network address.
+ */
+export async function startWarm(ctx: Context, seat?: string): Promise<void> {
+  const name = seat ?? "default";
+  const policy = origins(ctx);
+  const id = identity(ctx, name);
+  await ensureBrowserProxy(ctx.run, policy.exact, idleTimeoutMs(ctx));
+  if (await ensure(ctx, id, policy.domains)) {
+    ctx.run.sessions[name] = id.session;
+    saveRun(ctx.run);
+  }
+  await run(ctx, id, policy.domains, [["get", "url"]]);
+}
+/** Sign the warm seat in once the app is ready, when the seat has a login. */
+export async function finishWarm(
+  ctx: Context,
+  seat?: string,
+): Promise<{ seat: string; browser: boolean; loggedIn: boolean }> {
+  const info = { seat: seat ?? "default", browser: true, loggedIn: false };
+  if (seat && ctx.run.profile.seats[seat]?.login) {
+    const policy = origins(ctx);
+    await login(ctx, seat, identity(ctx, seat), [...policy.domains.split(",")]);
+    info.loggedIn = true;
+  }
+  return info;
 }
 export async function browserDoctor(
   ctx: Context,
@@ -1532,7 +3061,12 @@ export async function browserDoctor(
         { seat },
       );
     if (meta.active !== true && (!proxyLive || stale)) {
-      sessions.push({ seat, active: false, expired: true, next: EXPIRED_NEXT });
+      sessions.push({
+        seat,
+        active: false,
+        expired: true,
+        next: expiredNext(ctx.run.id, seat),
+      });
       continue;
     }
     if (meta.active !== true)

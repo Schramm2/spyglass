@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
+import { connect } from "node:net";
 import { existsSync } from "node:fs";
-import { readFile, readdir, rm, stat } from "node:fs/promises";
+import { readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -12,8 +13,10 @@ import {
   baseProfile,
   git,
   makeRepo,
+  readRunFile,
   removeRepo,
   runCli,
+  runRecord,
   spawnCapture,
   waitFor,
   writeJson,
@@ -955,7 +958,7 @@ surfaceTest(
         { ok: false, code: 3 },
       );
       assert.equal(expired.error.code, "BROWSER_EXPIRED");
-      assert.match(expired.error.next, /ui login/);
+      assert.match(expired.error.next, /ui --run browser-idle login default/);
       assert.equal(
         await browserRunning(open.data.session),
         false,
@@ -1296,8 +1299,17 @@ surfaceTest(
         },
       );
 
+      // The container health check can lag pg_isready; ps waits for it.
       const ps = assertEnvelope(
-        await runCli(dir, ["--json", "--run", run, "ps"]),
+        await runCli(dir, [
+          "--json",
+          "--run",
+          run,
+          "ps",
+          "--wait",
+          "--timeout-ms",
+          "30000",
+        ]),
         { ok: true, code: 0 },
       );
       assert.match(JSON.stringify(ps.data), new RegExp(project));
@@ -1476,6 +1488,1391 @@ surfaceTest(
     } finally {
       if (run) await runCli(dir, ["--json", "--run", run, "down"]);
       await rm(removedTree, { recursive: true, force: true });
+      await removeRepo(dir);
+      await page.close();
+    }
+  },
+);
+
+// Slice 2 of docs/verification-speed.md: ui expect, settle and diagnostics.
+async function upBrowserRun(name, { plan, profile } = {}) {
+  const dir = await makeRepo({
+    profile: profile ?? baseProfile(),
+    ...(plan ? { plan } : {}),
+  });
+  const up = assertEnvelope(
+    await runCli(dir, [
+      "--json",
+      "up",
+      "--run",
+      name,
+      ...(plan ? ["--plan", "plan.json"] : []),
+    ]),
+    { ok: true, code: 0 },
+  );
+  return { dir, run: up.run ?? up.data.id };
+}
+const ui = (dir, run, args, expected = { ok: true, code: 0 }) =>
+  runCli(dir, ["--json", "--run", run, "ui", ...args], {
+    timeoutMs: 60000,
+  }).then((result) => assertEnvelope(result, expected));
+const evidenceJson = async (dir, run, artifact) =>
+  JSON.parse(
+    await readFile(
+      join(dir, ".spyglass/runs", run, "spyglass", artifact.path),
+      "utf8",
+    ),
+  );
+
+surfaceTest(
+  "ui expect polls inside one call and retains the last observation when a condition never holds",
+  async () => {
+    const { dir, run } = await upBrowserRun("expect-poll");
+    try {
+      await ui(dir, run, ["open", "/login?delayed=1"]);
+      const passed = await ui(dir, run, [
+        "expect",
+        "--visible",
+        "input[name=email]",
+        "--title",
+        "Spyglass demo",
+        "--url",
+        "/login*",
+        "--count",
+        "input=2",
+        "--timeout-ms",
+        "5000",
+      ]);
+      assert.match(passed.data.summary, /^PASS /);
+      assert.ok(
+        passed.data.polls >= 2,
+        "the delayed form needs more than one poll",
+      );
+      const record = await evidenceJson(
+        dir,
+        run,
+        passed.artifacts.find((a) => a.path.endsWith("expect.json")),
+      );
+      assert.equal(record.passed, true);
+      assert.ok(
+        record.conditions.length >= 4 && record.conditions.every((c) => c.ok),
+      );
+      assert.ok(passed.data.claims.every((claim) => claim.ok === true));
+
+      const started = Date.now();
+      const never = await ui(
+        dir,
+        run,
+        ["expect", "--text", "This text never appears", "--timeout-ms", "700"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(never.error.code, "BROWSER_EXPECTATION_FAILED");
+      assert.ok(Date.now() - started >= 600, "it polled until the deadline");
+      assert.ok(never.data.elapsedMs >= 650);
+      assert.equal(never.data.claims[0].ok, false);
+      const failed = await evidenceJson(
+        dir,
+        run,
+        never.data.artifacts.find((a) => a.path.endsWith("expect.json")),
+      );
+      assert.equal(failed.passed, false);
+      assert.match(failed.lastObservation.url, /\/login/);
+      assert.equal(failed.lastObservation.title, "Spyglass demo");
+
+      // A condition that holds only after its deadline is a failure.
+      await ui(dir, run, ["open", "/login?delayed=1"]);
+      await ui(
+        dir,
+        run,
+        ["expect", "--visible", "input[name=email]", "--timeout-ms", "100"],
+        { ok: false, code: 1 },
+      );
+
+      await ui(dir, run, ["open", "/error"]);
+      const errors = await ui(
+        dir,
+        run,
+        ["expect", "--no-errors", "--timeout-ms", "800"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(errors.error.code, "BROWSER_EXPECTATION_FAILED");
+
+      const value = await ui(
+        dir,
+        run,
+        ["expect", "--attr", "input:value=secret"],
+        { ok: false, code: 2 },
+      );
+      assert.equal(
+        value.error.code,
+        "BROWSER_POLICY",
+        "input values stay unread",
+      );
+      const log = await readRunFile(dir, run, "spyglass/log.jsonl");
+      assert.ok(
+        log.includes(never.step),
+        "the failed expectation stays in the log",
+      );
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "a selector that matches nothing returns the nearest interactive roles and labels",
+  async () => {
+    const { dir, run } = await upBrowserRun("selector-diagnostics");
+    try {
+      await ui(dir, run, ["open", "/login"]);
+      const miss = await ui(
+        dir,
+        run,
+        ["find", "role", "button", "click", "--name", "Sing in"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(miss.error.code, "BROWSER_COMMAND_FAILED");
+      const nearest = miss.data.nearest;
+      assert.ok(
+        Array.isArray(nearest) && nearest.length > 0 && nearest.length <= 10,
+      );
+      assert.deepEqual(
+        nearest[0],
+        { role: "button", name: "Sign in" },
+        "the closest name comes first",
+      );
+      assert.ok(
+        nearest.some((row) => row.role === "textbox" && /Email/.test(row.name)),
+      );
+      const snapshot = miss.data.artifacts.find(
+        (a) => a.kind === "page-snapshot",
+      );
+      assert.ok(snapshot, "the page snapshot is retained");
+      assert.match(
+        JSON.stringify(await evidenceJson(dir, run, snapshot)),
+        /Sign in/,
+      );
+
+      const label = await ui(
+        dir,
+        run,
+        ["find", "label", "Emial", "fill", "x"],
+        {
+          ok: false,
+          code: 1,
+        },
+      );
+      assert.ok(label.data.nearest.some((row) => /Email/.test(row.name)));
+      assert.ok(
+        (await readRunFile(dir, run, "spyglass/log.jsonl")).includes(miss.step),
+      );
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui --settle waits for the navigation that a click starts",
+  async () => {
+    const { dir, run } = await upBrowserRun("settle");
+    try {
+      await ui(dir, run, ["open", "/login"]);
+      await ui(dir, run, [
+        "find",
+        "label",
+        "Email",
+        "fill",
+        "agent@example.test",
+      ]);
+      await ui(dir, run, [
+        "find",
+        "label",
+        "Password",
+        "fill",
+        "demo-password-for-local-tests",
+      ]);
+      const click = await ui(dir, run, [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Sign in",
+        "--settle",
+      ]);
+      assert.ok(click.data.settled, "the step records its settle wait");
+      assert.match(click.data.currentUrl, /\/dashboard$/);
+      const url = await ui(dir, run, ["get", "url"]);
+      assert.match(JSON.stringify(url.data.results), /\/dashboard/);
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+// Slice 3 of docs/verification-speed.md: ui verify and ui proof --viewport.
+const demoSeat = {
+  demo: {
+    login: {
+      path: "/login",
+      steps: [
+        { fill: { label: "Email" }, value: "agent@example.test" },
+        { fill: { label: "Password" }, secret: "env:DEMO_PASSWORD" },
+        { click: { role: "button", name: "Sign in" } },
+      ],
+      done: { urlContains: "/dashboard" },
+    },
+  },
+};
+const verifyPlan = {
+  claims: [
+    {
+      id: "form-works",
+      behavior: "The dashboard shows its question form.",
+      entryPoint: "The dashboard.",
+      precondition: "The demo user is signed in.",
+      expected: "The form is visible and enabled.",
+      case: "Valid demo user.",
+      checks: ["browser"],
+      evidence: ["verify record"],
+      kind: "behavior",
+      required: true,
+    },
+    {
+      id: "form-looks-right",
+      behavior: "The dashboard fits desktop and phone viewports.",
+      entryPoint: "The dashboard.",
+      precondition: "The demo user is signed in.",
+      expected: "The form is readable at 1280x800 and 390x844.",
+      case: "Valid demo user.",
+      checks: ["browser"],
+      evidence: ["inspected screenshots"],
+      kind: "visual",
+      required: true,
+    },
+  ],
+  gates: [],
+  limits: [],
+};
+const demoEnv = { DEMO_PASSWORD: "verify-demo-password" };
+const uiEnv = (dir, run, args, expected = { ok: true, code: 0 }) =>
+  runCli(dir, ["--json", "--run", run, "ui", ...args], {
+    env: demoEnv,
+    timeoutMs: 60000,
+  }).then((result) => assertEnvelope(result, expected));
+const pendingFile = async (dir, run) =>
+  JSON.parse(await readRunFile(dir, run, "spyglass/result.json"));
+const subSteps = (envelope) =>
+  envelope.data.subSteps.map(({ id, status }) => `${id}:${status}`);
+
+surfaceTest(
+  "ui verify runs actions, expectations and a two-viewport proof as one step and links the claim",
+  async () => {
+    const dir = await makeRepo({
+      profile: baseProfile({ seats: demoSeat }),
+      plan: verifyPlan,
+    });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "verify-pass", "--plan", "plan.json"],
+          { env: demoEnv },
+        ),
+        { ok: true, code: 0 },
+      ).run;
+      await uiEnv(dir, run, ["login", "demo"]);
+      const verify = await uiEnv(dir, run, [
+        "verify",
+        "--open",
+        "/dashboard",
+        "--do",
+        'find label Question fill "Does the settle work?"',
+        "--expect",
+        "text=Ask a question",
+        "--expect",
+        "visible=#question",
+        "--expect",
+        "enabled=button",
+        "--expect",
+        "title=Questions",
+        "--proof",
+        "dashboard",
+        "--viewport",
+        "1280x800",
+        "--viewport",
+        "390x844",
+        "--claim",
+        "form-works",
+        "--claim",
+        "form-looks-right",
+      ]);
+      assert.deepEqual(subSteps(verify), [
+        "open:passed",
+        "do-1:passed",
+        "expect-1:passed",
+        "expect-2:passed",
+        "expect-3:passed",
+        "expect-4:passed",
+        "proof-1280x800:passed",
+        "proof-390x844:passed",
+      ]);
+      assert.ok(verify.data.claims.every((claim) => claim.ok === true));
+      const images = verify.artifacts
+        .map((a) => a.path)
+        .filter((path) => /\.png$/.test(path));
+      assert.equal(images.length, 2);
+      assert.ok(
+        images.some((path) => path.endsWith("proof-dashboard-1280x800.png")),
+      );
+      assert.ok(
+        images.some((path) => path.endsWith("proof-dashboard-390x844.png")),
+      );
+
+      const pending = await pendingFile(dir, run);
+      const works = pending.claims.find((c) => c.id === "form-works");
+      const looks = pending.claims.find((c) => c.id === "form-looks-right");
+      assert.deepEqual(works.steps, [verify.step]);
+      assert.equal(works.observed, "", "observed stays for the operator");
+      assert.equal(works.outcome, "not run");
+      assert.deepEqual(
+        looks.inspections.map(({ viewport, artifact, expected, observed }) => ({
+          viewport,
+          artifact,
+          expected,
+          observed,
+        })),
+        [
+          {
+            viewport: "1280x800",
+            artifact: images.find((p) => p.includes("1280x800")),
+            expected: "",
+            observed: "",
+          },
+          {
+            viewport: "390x844",
+            artifact: images.find((p) => p.includes("390x844")),
+            expected: "",
+            observed: "",
+          },
+        ],
+        "viewport and artifact are filled; the words stay for the operator",
+      );
+      const unobserved = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+        { ok: false, code: 2 },
+      );
+      assert.ok(
+        unobserved.data.findings.some((f) => f.code === "RESULT_SCHEMA"),
+      );
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], { env: demoEnv });
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui verify keeps passed sub-steps, fails at the first bad expectation and cannot back a claim",
+  async () => {
+    const dir = await makeRepo({
+      profile: baseProfile({ seats: demoSeat }),
+      plan: verifyPlan,
+    });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "verify-fail", "--plan", "plan.json"],
+          { env: demoEnv },
+        ),
+        { ok: true, code: 0 },
+      ).run;
+      await uiEnv(dir, run, ["login", "demo"]);
+      const failed = await uiEnv(
+        dir,
+        run,
+        [
+          "verify",
+          "--open",
+          "/dashboard",
+          "--do",
+          "find role button click --name 'Submit question'",
+          "--expect",
+          "text=Ask a question",
+          "--expect",
+          "text=This text never appears",
+          "--expect",
+          "visible=#question",
+          "--timeout-ms",
+          "600",
+          "--proof",
+          "never",
+          "--claim",
+          "form-works",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(failed.error.code, "BROWSER_EXPECTATION_FAILED");
+      assert.deepEqual(subSteps(failed), [
+        "open:passed",
+        "do-1:passed",
+        "expect-1:passed",
+        "expect-2:failed",
+        "expect-3:not run",
+        "proof:not run",
+      ]);
+      const artifacts = failed.data.artifacts;
+      assert.ok(
+        artifacts.some((a) => /\.png$/.test(a.path)),
+        "a failure screenshot is kept",
+      );
+      assert.ok(
+        artifacts.some((a) => a.kind === "page-snapshot"),
+        "a delta snapshot is kept",
+      );
+      const pending = await pendingFile(dir, run);
+      assert.deepEqual(
+        pending.claims.find((c) => c.id === "form-works").steps,
+        [],
+      );
+      assert.ok(
+        (await readRunFile(dir, run, "spyglass/log.jsonl")).includes(
+          failed.step,
+        ),
+      );
+
+      await runCli(dir, [
+        "--json",
+        "--run",
+        run,
+        "result",
+        "set",
+        "--claim",
+        "form-works",
+        "--outcome",
+        "passed",
+        "--observed",
+        "I saw the form.",
+        "--step",
+        failed.step,
+      ]);
+      const rejected = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+        { ok: false, code: 1 },
+      );
+      const named = rejected.data.findings.filter(
+        (f) => f.claim === "form-works",
+      );
+      assert.ok(
+        named.some(
+          (f) =>
+            f.code === "EXPECTATION_FAILED" &&
+            /This text never appears/.test(f.message),
+        ),
+        JSON.stringify(rejected.data.findings),
+      );
+      assert.ok(
+        named.some(
+          (f) =>
+            f.code === "EXPECTATION_NOT_RUN" &&
+            /visible=#question/.test(f.message),
+        ),
+        "the expectation that did not run is named",
+      );
+      assert.ok(named.some((f) => f.code === "FAILED_STEP"));
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], { env: demoEnv });
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui verify refuses an action outside the origin allowlist and keeps the actions that ran",
+  async () => {
+    const { dir, run } = await upBrowserRun("verify-origin");
+    try {
+      const blocked = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--open",
+          "/login",
+          "--do",
+          "find label Email fill agent@example.test",
+          "--do",
+          "open https://example.invalid/",
+          "--do",
+          "find label Password click",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(blocked.error.code, "BROWSER_ORIGIN_BLOCKED");
+      assert.deepEqual(subSteps(blocked), [
+        "open:passed",
+        "do-1:passed",
+        "do-2:failed",
+        "do-3:not run",
+      ]);
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui verify --expect-focus-moved keeps both focus records and fails when focus did not move",
+  async () => {
+    const { dir, run } = await upBrowserRun("verify-focus");
+    try {
+      const moved = await ui(dir, run, [
+        "verify",
+        "--open",
+        "/login",
+        "--do",
+        "find label Email click",
+        "--expect-focus-moved",
+        "Email",
+      ]);
+      const focus = await evidenceJson(
+        dir,
+        run,
+        moved.artifacts.find((a) => a.path.endsWith("focused.json")),
+      );
+      assert.equal(focus.before, null);
+      assert.equal(focus.after.label, "Email");
+
+      const already = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--do",
+          "find label Password click",
+          "--expect-focus-moved",
+          "Email",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(already.error.code, "BROWSER_EXPECTATION_FAILED");
+      const kept = await evidenceJson(
+        dir,
+        run,
+        already.data.artifacts.find((a) => a.path.endsWith("focused.json")),
+      );
+      assert.equal(
+        kept.before.label,
+        "Email",
+        "focus was on Email before the action",
+      );
+      assert.equal(kept.after.label, "Password");
+
+      await ui(dir, run, ["open", "/login"]);
+      const wrong = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--do",
+          "find label Password click",
+          "--expect-focus-moved",
+          "Email",
+        ],
+        { ok: false, code: 1 },
+      );
+      const wrongFocus = await evidenceJson(
+        dir,
+        run,
+        wrong.data.artifacts.find((a) => a.path.endsWith("focused.json")),
+      );
+      assert.equal(wrongFocus.after.label, "Password");
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "a viewport that fails its expectation keeps the earlier screenshots and no visual claim passes",
+  async () => {
+    const page = await servePage(
+      '<!doctype html><title>Responsive</title><style>@media (max-width: 600px){#wide{display:none}}</style><h1 id="wide">Wide layout</h1><p id="always">Always here</p>',
+    );
+    const plan = {
+      claims: [
+        {
+          id: "layout",
+          behavior: "The wide heading shows on every viewport.",
+          entryPoint: "The page.",
+          precondition: "None.",
+          expected: "The heading is visible at 1280x800 and 390x844.",
+          case: "Both viewports.",
+          checks: ["browser"],
+          evidence: ["screenshots"],
+          kind: "visual",
+          required: true,
+        },
+      ],
+      gates: [],
+      limits: [],
+    };
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile, plan });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "up",
+          "--run",
+          "viewport-fail",
+          "--plan",
+          "plan.json",
+        ]),
+        { ok: true, code: 0 },
+      ).run;
+      const failed = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--open",
+          "/",
+          "--expect",
+          "visible=#wide",
+          "--timeout-ms",
+          "500",
+          "--proof",
+          "layout",
+          "--viewport",
+          "1280x800",
+          "--viewport",
+          "390x844",
+          "--claim",
+          "layout",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(failed.error.code, "BROWSER_EXPECTATION_FAILED");
+      const images = failed.data.artifacts
+        .map((a) => a.path)
+        .filter((p) => /\.png$/.test(p));
+      assert.ok(
+        images.some((p) => p.endsWith("proof-layout-1280x800.png")),
+        "the first viewport screenshot stays",
+      );
+      assert.ok(
+        !images.some((p) => p.endsWith("proof-layout-390x844.png")),
+        "no proof for the failed viewport",
+      );
+      assert.equal(images.length, 2, "one proof and one failure screenshot");
+      const pending = await pendingFile(dir, run);
+      assert.deepEqual(pending.claims[0].steps, []);
+      assert.deepEqual(pending.claims[0].inspections, []);
+      assert.equal(pending.claims[0].outcome, "not run");
+
+      // ui proof takes the same viewport and expectation options.
+      const proof = await ui(dir, run, [
+        "proof",
+        "again",
+        "--viewport",
+        "1280x800",
+        "--expect",
+        "visible=#wide",
+      ]);
+      assert.ok(
+        proof.artifacts.some((a) =>
+          a.path.endsWith("proof-again-1280x800.png"),
+        ),
+      );
+      const bad = await ui(
+        dir,
+        run,
+        [
+          "proof",
+          "phone",
+          "--viewport",
+          "390x844",
+          "--expect",
+          "visible=#wide",
+          "--timeout-ms",
+          "400",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(bad.error.code, "BROWSER_EXPECTATION_FAILED");
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+      await page.close();
+    }
+  },
+);
+
+surfaceTest(
+  "a proof right after ui open does not wait for the first browser frame",
+  async () => {
+    // A new headless page can make its first screenshot wait about 10 seconds.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const { dir, run } = await upBrowserRun(`first-frame-${attempt}`);
+      try {
+        await ui(dir, run, ["open", "/login"]);
+        const proof = await ui(dir, run, ["proof", "first-frame"]);
+        const log = (await readRunFile(dir, run, "spyglass/log.jsonl"))
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line));
+        const step = log.find((entry) => entry.id === proof.step);
+        assert.ok(
+          step.durationMs < 5000,
+          `attempt ${attempt}: the proof took ${step.durationMs} ms`,
+        );
+      } finally {
+        await runCli(dir, ["--json", "--run", run, "down"]);
+        await removeRepo(dir);
+      }
+    }
+  },
+);
+
+surfaceTest(
+  "the browser proxy stays up when clients reset their connections",
+  async () => {
+    const { dir, run } = await upBrowserRun("proxy-reset");
+    try {
+      await ui(dir, run, ["open", "/login"]);
+      const record = JSON.parse(
+        await readFile(await runRecord(dir, run), "utf8"),
+      );
+      const { port, pid } = record.browserProxy;
+      // A browser resets connections as it starts and as it closes pages.
+      for (let i = 0; i < 100; i++)
+        await new Promise((resolve) => {
+          const socket = connect(port, "127.0.0.1", () => {
+            socket.write(
+              "CONNECT blocked.example.invalid:443 HTTP/1.1\r\nHost: blocked.example.invalid:443\r\n\r\n",
+            );
+            socket.resetAndDestroy();
+            resolve();
+          });
+          socket.on("error", () => resolve());
+        });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assert.doesNotThrow(
+        () => process.kill(pid, 0),
+        "the proxy process ended",
+      );
+      await ui(dir, run, ["get", "title"]);
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+// Slice 4 of docs/verification-speed.md: db assertions, role cache and ps --wait.
+async function startDemoDatabase(dir, project) {
+  const composeArgs = [
+    "compose",
+    "-p",
+    project,
+    "-f",
+    "fixtures/demo-app/compose.yaml",
+  ];
+  const started = await spawnCapture(
+    "docker",
+    [...composeArgs, "up", "-d", "--wait"],
+    { cwd: dir, timeoutMs: 120000 },
+  );
+  assert.equal(
+    started.code,
+    0,
+    `demo PostgreSQL did not start: ${started.stderr}`,
+  );
+  const mapped = await spawnCapture(
+    "docker",
+    [...composeArgs, "port", "db", "5432"],
+    { cwd: dir },
+  );
+  assert.equal(mapped.code, 0, mapped.stderr);
+  const port = Number(mapped.stdout.trim().split(":").at(-1));
+  return {
+    composeArgs,
+    env: {
+      SPYGLASS_TEST_DATABASE_URL: `postgres://spyglass:spyglass-demo-only@127.0.0.1:${port}/spyglass_demo`,
+    },
+  };
+}
+
+surfaceTest(
+  "db --expect-col and --expect-empty record assertions, and the role inspection is read once per run",
+  async () => {
+    const project = `spyglass-e2e-${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      compose: {
+        project,
+        files: ["fixtures/demo-app/compose.yaml"],
+        required: ["db"],
+      },
+      db: { connection: "env:SPYGLASS_TEST_DATABASE_URL" },
+    });
+    const dir = await makeRepo({ profile });
+    let run;
+    let compose;
+    try {
+      compose = await startDemoDatabase(dir, project);
+      const { env } = compose;
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "db-assert"], { env }),
+        { ok: true, code: 0 },
+      ).run;
+      const db = (args, expected = { ok: true, code: 0 }) =>
+        runCli(dir, ["--json", "--run", run, "db", ...args], { env }).then(
+          (result) => assertEnvelope(result, expected),
+        );
+      const stored = async () =>
+        JSON.parse(await readFile(await runRecord(dir, run), "utf8"));
+
+      const ok = await db([
+        "SELECT 'alpha' AS name, 3 AS n, '{\"k\": {\"v\": 7}}'::jsonb AS doc",
+        "--expect-rows",
+        "1",
+        "--expect-col",
+        "name=alpha",
+        "--expect-col",
+        "n=3",
+        "--expect-col",
+        "doc.k.v=7",
+        "--expect-col",
+        "name!=beta",
+      ]);
+      assert.ok(ok.data.claims.every((claim) => claim.ok === true));
+      assert.equal(ok.data.claims.length, 5);
+
+      const wrong = await db(
+        [
+          "SELECT 'alpha' AS name",
+          "--expect-rows",
+          "1",
+          "--expect-col",
+          "name=beta",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(wrong.error.code, "DATABASE_EXPECTATION_FAILED");
+      assert.equal(wrong.data.rowCount, 1, "the row count matched");
+      const result = wrong.artifacts.find((a) => a.kind === "database");
+      assert.ok(result, "the bounded query result stays");
+      const record = JSON.parse(
+        await readRunFile(dir, run, `spyglass/${result.path}`),
+      );
+      assert.equal(record.rows[0].name, "alpha");
+      assert.equal(record.assertions.at(-1).ok, false);
+      await db(["SELECT 'alpha' AS name", "--expect-col", "missing=1"], {
+        ok: false,
+        code: 1,
+      });
+
+      await db(["SELECT 1 WHERE false", "--expect-empty"]);
+      const notEmpty = await db(["SELECT 1 AS one", "--expect-empty"], {
+        ok: false,
+        code: 1,
+      });
+      assert.equal(notEmpty.error.code, "DATABASE_ROW_COUNT");
+      await db(["SELECT 1", "--expect-empty", "--expect-rows", "1"], {
+        ok: false,
+        code: 2,
+      });
+
+      // doctor read the role at up; db reuses it and doctor reads it again.
+      const cached = (await stored()).databaseRole;
+      assert.match(cached.connection, /^[0-9a-f]{64}$/, "keyed by a hash");
+      assert.ok(
+        !JSON.stringify(cached).includes("spyglass-demo-only"),
+        "the cache holds no connection string",
+      );
+      assert.equal(cached.role.name, "spyglass");
+      const record2 = await runRecord(dir, run);
+      const tampered = await stored();
+      tampered.databaseRole.role.name = "from-the-cache";
+      await writeFile(record2, JSON.stringify(tampered));
+      const reused = await db(["SELECT 1 AS one"]);
+      assert.equal(
+        reused.data.role.name,
+        "from-the-cache",
+        "the cache is used",
+      );
+      assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "doctor"], { env }),
+        {
+          ok: true,
+          code: 0,
+        },
+      );
+      assert.equal(
+        (await stored()).databaseRole.role.name,
+        "spyglass",
+        "doctor refreshes it",
+      );
+      // A cached role never lets a write through.
+      await db(["CREATE TABLE spyglass_cache_guard(id integer)"], {
+        ok: false,
+        code: 1,
+      });
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], {
+          env: compose?.env,
+        });
+      if (compose)
+        await spawnCapture("docker", [...compose.composeArgs, "down", "-v"], {
+          cwd: dir,
+          timeoutMs: 60000,
+        });
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ps --wait polls a required container to healthy and fails at its deadline while it is starting",
+  async () => {
+    const project = `spyglass-e2e-${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+    const composeFile = [
+      "services:",
+      "  slow:",
+      "    image: postgres:17-alpine",
+      '    entrypoint: ["sh", "-c", "sleep 600"]',
+      "    healthcheck:",
+      '      test: ["CMD-SHELL", "test -f /tmp/ready"]',
+      "      interval: 1s",
+      "      timeout: 2s",
+      "      retries: 100",
+      "",
+    ].join("\n");
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: undefined,
+      api: undefined,
+      browser: undefined,
+      compose: { project, files: ["compose-slow.yaml"], required: ["slow"] },
+    });
+    const dir = await makeRepo({
+      profile,
+      files: { "compose-slow.yaml": composeFile },
+    });
+    const compose = ["compose", "-p", project, "-f", "compose-slow.yaml"];
+    let run;
+    try {
+      const started = await spawnCapture("docker", [...compose, "up", "-d"], {
+        cwd: dir,
+        timeoutMs: 120000,
+      });
+      assert.equal(started.code, 0, started.stderr);
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "ps-wait"]),
+        {
+          ok: true,
+          code: 0,
+        },
+      ).run;
+      const ps = (args, expected = { ok: true, code: 0 }) =>
+        runCli(dir, ["--json", "--run", run, "ps", ...args], {
+          timeoutMs: 60000,
+        }).then((result) => assertEnvelope(result, expected));
+
+      const now = await ps([], { ok: false, code: 1 });
+      assert.equal(now.error.code, "REQUIRED_CONTAINER_STOPPED");
+      assert.match(
+        JSON.stringify(now.data.containers),
+        /starting|unhealthy/,
+        "a running container that is not healthy is not ready",
+      );
+      const waited = await ps(["--wait", "--timeout-ms", "1500"], {
+        ok: false,
+        code: 1,
+      });
+      assert.equal(waited.error.code, "REQUIRED_CONTAINER_STOPPED");
+      assert.ok(waited.data.polls >= 2, "it polled");
+      assert.ok(waited.data.elapsedMs >= 1000);
+      assert.ok(
+        waited.artifacts.some((a) => a.kind === "container"),
+        "the last list stays",
+      );
+
+      const ready = await spawnCapture(
+        "docker",
+        [...compose, "exec", "-T", "slow", "touch", "/tmp/ready"],
+        {
+          cwd: dir,
+          timeoutMs: 30000,
+        },
+      );
+      assert.equal(ready.code, 0, ready.stderr);
+      const healthy = await ps(["--wait", "--timeout-ms", "30000"]);
+      assert.deepEqual(healthy.data.missing, []);
+      assert.match(JSON.stringify(healthy.data.containers), /healthy/);
+      assert.equal((await ps([])).data.missing.length, 0);
+      await ps(["--timeout-ms", "100"], { ok: false, code: 2 });
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await spawnCapture("docker", [...compose, "down", "-v"], {
+        cwd: dir,
+        timeoutMs: 60000,
+      });
+      await removeRepo(dir);
+    }
+  },
+);
+
+// Slice 6 of docs/verification-speed.md: up --warm and ui --relogin.
+const loginSeats = {
+  demo: {
+    login: {
+      path: "/login",
+      steps: [
+        { fill: { label: "Email" }, value: "agent@example.test" },
+        { fill: { label: "Password" }, secret: "env:DEMO_PASSWORD" },
+        { click: { role: "button", name: "Sign in" } },
+      ],
+      done: { urlContains: "/dashboard" },
+    },
+  },
+  plain: {},
+};
+const seatEnv = { DEMO_PASSWORD: "warm-demo-password" };
+
+surfaceTest(
+  "up --warm starts the browser and signs the seat in while the app starts, and cleans up when the app never becomes ready",
+  async () => {
+    const dir = await makeRepo({ profile: baseProfile({ seats: loginSeats }) });
+    let run;
+    try {
+      const up = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "warm", "--warm", "--seat", "demo"],
+          { env: seatEnv, timeoutMs: 60000 },
+        ),
+        { ok: true, code: 0 },
+      );
+      run = up.run;
+      assert.deepEqual(up.data.warm, {
+        seat: "demo",
+        browser: true,
+        loggedIn: true,
+      });
+      const doctor = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "doctor"], { env: seatEnv }),
+        { ok: true, code: 0 },
+      );
+      assert.equal(doctor.data.browser.proxy.healthy, true);
+      assert.deepEqual(
+        doctor.data.browser.sessions.map(({ seat, active }) => ({
+          seat,
+          active,
+        })),
+        [{ seat: "demo", active: true }],
+      );
+      const url = await ui(dir, run, ["get", "url"]);
+      assert.match(
+        JSON.stringify(url.data.results),
+        /\/dashboard/,
+        "already signed in",
+      );
+      await runCli(dir, ["--json", "--run", run, "down"], { env: seatEnv });
+      run = undefined;
+      assert.deepEqual(await proxyPids(dir), []);
+
+      // --seat needs --warm, and --warm needs a web address.
+      assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "up",
+          "--run",
+          "seat-only",
+          "--seat",
+          "demo",
+        ]),
+        { ok: false, code: 2 },
+      );
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], { env: seatEnv });
+      await removeRepo(dir);
+    }
+
+    // The app never listens: up fails and the warm browser and proxy end.
+    const broken = await makeRepo({
+      profile: baseProfile({
+        launch: {
+          mode: "owned",
+          command: [process.execPath, "-e", "setTimeout(() => {}, 60000)"],
+          ready: {
+            url: "http://127.0.0.1:${port}/health",
+            status: 200,
+            timeoutMs: 1500,
+          },
+        },
+      }),
+    });
+    try {
+      const failed = await runCli(
+        broken,
+        ["--json", "up", "--run", "warm-broken", "--warm"],
+        { timeoutMs: 60000 },
+      );
+      assertEnvelope(failed, { ok: false, code: 3 });
+      await waitFor(async () => !(await proxyPids(broken)).length, {
+        message: "the warm proxy must end when up fails",
+      });
+      const status = assertEnvelope(
+        await runCli(broken, ["--json", "status", "--run", "warm-broken"]),
+        { ok: true, code: 0 },
+      );
+      assert.equal(status.data.state, "failed");
+      assertEnvelope(
+        await runCli(broken, ["--json", "--run", "warm-broken", "down"]),
+        {
+          ok: true,
+          code: 0,
+        },
+      );
+    } finally {
+      await runCli(broken, ["--json", "--run", "warm-broken", "down"]);
+      await removeRepo(broken);
+    }
+  },
+);
+
+surfaceTest(
+  "ui --relogin signs a seat in again after its browser expired, and keeps the expiry in the step",
+  async () => {
+    const profile = baseProfile({
+      seats: loginSeats,
+      browser: {
+        allowedOrigins: ["http://127.0.0.1:${port}"],
+        idleTimeoutMs: 3000,
+      },
+    });
+    const dir = await makeRepo({ profile });
+    const runs = [];
+    try {
+      const started = [];
+      for (const name of ["relogin-plain", "relogin-demo"]) {
+        const up = assertEnvelope(
+          await runCli(dir, ["--json", "up", "--run", name], { env: seatEnv }),
+          { ok: true, code: 0 },
+        );
+        runs.push(up.run);
+        started.push(up.run);
+      }
+      const [plain, demo] = started;
+      const open = await runCli(
+        dir,
+        ["--json", "--run", plain, "ui", "--seat", "plain", "open", "/"],
+        { env: seatEnv },
+      );
+      const plainSession = assertEnvelope(open, { ok: true, code: 0 }).data
+        .session;
+      const login = await runCli(
+        dir,
+        ["--json", "--run", demo, "ui", "login", "demo"],
+        { env: seatEnv },
+      );
+      const demoSession = assertEnvelope(login, { ok: true, code: 0 }).data
+        .session;
+      await waitFor(
+        async () =>
+          !(await browserRunning(plainSession)) &&
+          !(await browserRunning(demoSession)) &&
+          !(await proxyPids(dir)).length,
+        {
+          timeoutMs: 40000,
+          intervalMs: 500,
+          message: "the idle browsers must shut down",
+        },
+      );
+
+      const kept = assertEnvelope(
+        await runCli(
+          dir,
+          [
+            "--json",
+            "--run",
+            plain,
+            "ui",
+            "--seat",
+            "plain",
+            "get",
+            "url",
+            "--relogin",
+          ],
+          { env: seatEnv },
+        ),
+        { ok: false, code: 3 },
+      );
+      assert.equal(
+        kept.error.code,
+        "BROWSER_EXPIRED",
+        "a seat without a login stays expired",
+      );
+
+      const again = await runCli(
+        dir,
+        [
+          "--json",
+          "--run",
+          demo,
+          "ui",
+          "--seat",
+          "demo",
+          "get",
+          "url",
+          "--relogin",
+        ],
+        { env: seatEnv, timeoutMs: 60000 },
+      );
+      const relogged = assertEnvelope(again, { ok: true, code: 0 });
+      assert.deepEqual(relogged.data.relogin.expired, ["demo"]);
+      assert.deepEqual(relogged.data.relogin.loggedIn, ["demo"]);
+      assert.match(relogged.data.relogin.message, /shut down/);
+      assert.match(JSON.stringify(relogged.data.results), /\/dashboard/);
+      const entries = (await readRunFile(dir, demo, "spyglass/log.jsonl"))
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      assert.deepEqual(
+        entries.find((entry) => entry.id === relogged.step).data.relogin
+          .expired,
+        ["demo"],
+        "the expiry stays in the step record",
+      );
+      assert.ok(!JSON.stringify(relogged).includes(seatEnv.DEMO_PASSWORD));
+    } finally {
+      for (const name of runs)
+        await runCli(dir, ["--json", "--run", name, "down"], { env: seatEnv });
+      await removeRepo(dir);
+    }
+  },
+);
+
+// Slice 7 of docs/verification-speed.md: bounded observations.
+surfaceTest(
+  "ui snapshot, ui proof and ui verify return a bounded observation and keep a long snapshot in an artifact",
+  async () => {
+    const buttons = Array.from(
+      { length: 120 },
+      (_, i) => `<button>Item ${i}</button>`,
+    ).join("");
+    const page = await servePage(
+      `<!doctype html><title>Long page</title><h1>Many buttons</h1><input aria-label="Name" autofocus>${buttons}<script>console.error("page console error")</script>`,
+    );
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "observe"]),
+        {
+          ok: true,
+          code: 0,
+        },
+      ).run;
+      await ui(dir, run, ["open", "/"]);
+      const snapshot = await ui(dir, run, ["snapshot", "--full"]);
+      const observation = snapshot.data.observation;
+      assert.equal(observation.title, "Long page");
+      assert.match(observation.url, /^http:\/\/127\.0\.0\.1:\d+\/$/);
+      assert.ok(
+        observation.interactiveCount >= 120,
+        `${observation.interactiveCount}`,
+      );
+      assert.equal(observation.consoleErrors, 1);
+      assert.equal(typeof observation.failedRequests, "number");
+      assert.ok(observation.changedLines > 40);
+      assert.equal(
+        observation.artifacts.length,
+        1,
+        "the full snapshot is an artifact",
+      );
+      const kept = snapshot.artifacts.find(
+        (a) => a.path === observation.artifacts[0],
+      );
+      assert.equal(kept.kind, "page-snapshot");
+      const full = JSON.stringify(await evidenceJson(dir, run, kept));
+      assert.ok(full.includes("Item 119"), "the artifact has the whole tree");
+      const shown = JSON.stringify(snapshot.data.results);
+      assert.ok(!shown.includes("Item 119"), "the output has a preview only");
+      assert.match(shown, /more lines in/);
+      assert.ok(
+        JSON.stringify(snapshot.data).length < 6000,
+        "the output stays short",
+      );
+
+      const proof = await ui(dir, run, ["proof", "long"]);
+      assert.equal(proof.data.observation.consoleErrors, 1);
+      assert.equal(proof.data.observation.title, "Long page");
+      assert.ok(
+        proof.data.observation.artifacts.some((p) => p.endsWith(".png")),
+      );
+      assert.equal(
+        proof.data.results,
+        undefined,
+        "the raw results stay in the details artifact",
+      );
+
+      const verify = await ui(dir, run, [
+        "verify",
+        "--do",
+        "get title",
+        "--expect",
+        "title=Long page",
+        "--proof",
+        "v",
+      ]);
+      assert.equal(verify.data.observation.title, "Long page");
+      const failed = await ui(
+        dir,
+        run,
+        ["verify", "--expect", "text=never shown", "--timeout-ms", "300"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(failed.data.observation.title, "Long page");
+      assert.ok(
+        failed.data.observation.artifacts.some((p) => p.endsWith(".png")),
+      );
+      const bare = await ui(dir, run, ["verify", "--do", "get title"]);
+      assert.equal(
+        bare.data.observation.title,
+        "Long page",
+        "a step without a proof still observes the page",
+      );
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
       await removeRepo(dir);
       await page.close();
     }

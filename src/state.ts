@@ -3,6 +3,7 @@ import {
   existsSync,
   globSync,
   lstatSync,
+  type Stats,
   mkdirSync,
   readFileSync,
   readlinkSync,
@@ -38,6 +39,26 @@ export interface Artifact {
   sha256: string;
   kind: string;
   step: string;
+}
+/**
+ * What a driving command links its step to in the pending result file. Only
+ * mechanical facts move: step IDs, artifact paths and the later read. The
+ * operator still writes every observation and every claim outcome.
+ */
+export interface StepLinks {
+  claims: string[];
+  independentRead: boolean;
+  controls: { id: string; state: "failed" | "restored" }[];
+  gates: string[];
+  /** For `evidence add`: the step that the evidence belongs to. */
+  evidenceFor?: string;
+}
+export interface LinkSummary {
+  claims: string[];
+  controls: string[];
+  gates: string[];
+  skipped: string[];
+  error?: string;
 }
 export interface Step {
   run: string;
@@ -94,6 +115,11 @@ export interface Run {
   ownerCleaned: boolean;
   cleanup: boolean;
   lastDoctor?: string;
+  /**
+   * The database role privileges that doctor or the first db call read, for
+   * the connection with this hash. A db call reuses them; doctor refreshes.
+   */
+  databaseRole?: { connection: string; role: Record<string, unknown> };
 }
 function stateDirectory(key: string): string {
   return join(
@@ -220,7 +246,92 @@ export function assertWorktree(run: Run, repo: string, command: string): void {
     `Run this command from ${run.repo}. Run down there before you remove that worktree.`,
   );
 }
-export function source(repo: string, profile: Profile): Source {
+/**
+ * What a file looked like when it was last hashed: the modification and
+ * change times, the size, the inode and the mode. A change time cannot be set
+ * back, so a rewrite that keeps the size and restores the modification time
+ * still shows.
+ */
+export interface FileStat {
+  m: number;
+  c: number;
+  s: number;
+  i: number;
+  f: number;
+}
+interface StatTable {
+  version: 1;
+  cachedAt: number;
+  entries: Record<string, FileStat>;
+}
+export interface SourceCheck {
+  mode: "fast" | "full";
+  files: number;
+  rehashed: number;
+}
+const STAT_TABLE = "source-stat.json";
+let lastSourceCheck: SourceCheck | undefined;
+const statOf = (s: Stats): FileStat => ({
+  m: s.mtimeMs,
+  c: s.ctimeMs,
+  s: s.size,
+  i: s.ino,
+  f: s.mode,
+});
+const sameStat = (a: FileStat, b: FileStat): boolean =>
+  a.m === b.m && a.c === b.c && a.s === b.s && a.i === b.i && a.f === b.f;
+/**
+ * A clock that counts whole seconds can give a second write in the same
+ * second the same times. Read such a file again while it is that recent.
+ */
+const racy = (stat: FileStat, cachedAt: number): boolean =>
+  (stat.m % 1000 === 0 || stat.c % 1000 === 0) &&
+  Math.max(stat.m, stat.c) > cachedAt - 2000;
+function readStatTable(run: Run): StatTable | undefined {
+  try {
+    const table = JSON.parse(
+      readFileSync(join(runHome(run), STAT_TABLE), "utf8"),
+    ) as StatTable;
+    return table.version === 1 && table.entries ? table : undefined;
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * Keep the stat of each file whose hash is the baseline hash, never of a
+ * changed one: a later fast check trusts the table for the files it lists.
+ */
+export function writeStatTable(
+  run: Run,
+  record: Record<string, FileStat>,
+  current: Record<string, string>,
+): void {
+  const entries: Record<string, FileStat> = {};
+  for (const [name, stat] of Object.entries(record))
+    if (current[name] === run.source.files[name]) entries[name] = stat;
+  try {
+    const file = join(runHome(run), STAT_TABLE);
+    mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+    writeFileSync(
+      file,
+      JSON.stringify({ version: 1, cachedAt: Date.now(), entries }),
+      { mode: 0o600 },
+    );
+  } catch {
+    /* The table only saves time. */
+  }
+}
+interface SourceOptions {
+  /** Reuse the baseline hash of a file whose stat the table still holds. */
+  reuse?: { files: Record<string, string>; table: StatTable };
+  record?: Record<string, FileStat>;
+  counts?: { files: number; rehashed: number };
+}
+export function source(
+  repo: string,
+  profile: Profile,
+  options: SourceOptions = {},
+): Source {
   const r = spawnSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
@@ -278,7 +389,25 @@ export function source(repo: string, profile: Profile): Source {
       }
       const s = lstatSync(p);
       if (s.isSymbolicLink()) files[name] = hash(`link:${readlinkSync(p)}`);
-      else if (s.isFile()) files[name] = hash(readFileSync(p));
+      else if (s.isFile()) {
+        const stat = statOf(s);
+        if (options.record) options.record[name] = stat;
+        const prior = options.reuse?.table.entries[name];
+        const known = options.reuse?.files[name];
+        if (options.counts) options.counts.files++;
+        if (
+          prior &&
+          known &&
+          known !== "missing" &&
+          sameStat(prior, stat) &&
+          !racy(stat, options.reuse!.table.cachedAt)
+        )
+          files[name] = known;
+        else {
+          files[name] = hash(readFileSync(p));
+          if (options.counts) options.counts.rehashed++;
+        }
+      }
     } catch (e) {
       if (e && typeof e === "object" && "code" in e && e.code === "ENOENT")
         files[name] = "missing";
@@ -298,17 +427,36 @@ export function source(repo: string, profile: Profile): Source {
   }).stdout.trim();
   return { commit, hash: hash(JSON.stringify(files)), files };
 }
-export function sourceChanges(run: Run): string[] {
-  const now = source(run.repo, run.profile);
-  return [
+/**
+ * The inputs that differ from the baseline of `up`. The fast check reads again
+ * only the files whose stat changed since the last full check, and every file
+ * that is new. A full check hashes every file: doctor and report use it.
+ */
+export function sourceChanges(
+  run: Run,
+  mode: "fast" | "full" = "fast",
+): string[] {
+  const counts = { files: 0, rehashed: 0 };
+  const table = mode === "fast" ? readStatTable(run) : undefined;
+  const record: Record<string, FileStat> = {};
+  const now = source(run.repo, run.profile, {
+    reuse: table ? { files: run.source.files, table } : undefined,
+    record,
+    counts,
+  });
+  lastSourceCheck = { mode: table ? "fast" : "full", ...counts };
+  const changes = [
     ...(now.commit !== run.source.commit ? ["Git commit changed"] : []),
     ...[
       ...new Set([...Object.keys(now.files), ...Object.keys(run.source.files)]),
     ].filter((k) => now.files[k] !== run.source.files[k]),
   ];
+  // A full pass verified every file, so it renews the table.
+  if (mode === "full" || !table) writeStatTable(run, record, now.files);
+  return changes;
 }
-export function assertSource(run: Run): void {
-  const changes = sourceChanges(run);
+export function assertSource(run: Run, mode: "fast" | "full" = "fast"): void {
+  const changes = sourceChanges(run, mode);
   if (changes.length)
     throw new Fault(
       "STALE_SOURCE",
@@ -377,12 +525,160 @@ export function lock(run: Run, command: string): () => void {
   }
   return () => rmSync(path, { recursive: true, force: true });
 }
+export function blankClaim(
+  claim: Plan["claims"][number],
+): Result["claims"][number] {
+  return {
+    id: claim.id,
+    outcome: "not run",
+    steps: [],
+    observed: "",
+    artifacts: [],
+    ...(claim.kind === "side-effect" ? { independentRead: "" } : {}),
+    ...(claim.kind === "visual" ? { inspections: [] } : {}),
+  };
+}
+function blankControl(run: Run, id: string): Result["controls"][number] {
+  return {
+    id,
+    failedRun: run.id,
+    failedStep: "",
+    restoredStep: "",
+    observedFailure: "",
+    observedPass: "",
+  };
+}
+function stepSucceeded(step: Step): boolean {
+  return (
+    step.status === "passed" &&
+    step.exitCode === 0 &&
+    !step.data?.error &&
+    step.data?.passed !== false &&
+    step.data?.timedOut !== true
+  );
+}
+const addOnce = (list: string[], value: string) => {
+  if (value && !list.includes(value)) list.push(value);
+};
+/**
+ * Add a finished step to the pending result of the run. A failed step is never
+ * cited by a claim, so a retry does not leave a failed assertion in it; the
+ * failed step stays in the log. A problem with the file never fails the step.
+ */
+export function linkPendingResult(
+  run: Run,
+  step: Step,
+  links: StepLinks,
+): LinkSummary {
+  const summary: LinkSummary = {
+    claims: [],
+    controls: [],
+    gates: [],
+    skipped: [],
+  };
+  let pending: Result;
+  try {
+    pending = readJson(run.resultPath) as Result;
+    if (!Array.isArray(pending.claims)) throw new Error("no claims array");
+  } catch (error) {
+    summary.error = `Cannot update the pending result ${run.resultPath}: ${error instanceof Error ? error.message : String(error)}`;
+    return summary;
+  }
+  pending.controls ??= [];
+  pending.gates ??= [];
+  const passed = stepSucceeded(step);
+  const paths = step.artifacts.map((artifact) => artifact.path);
+  const claimRow = (id: string) => {
+    let row = pending.claims.find((item) => item.id === id);
+    if (!row) {
+      row = blankClaim(run.plan.claims.find((item) => item.id === id)!);
+      pending.claims.push(row);
+    }
+    return row;
+  };
+  const cite = (id: string) => {
+    const row = claimRow(id);
+    addOnce(row.steps, step.id);
+    if (links.evidenceFor) addOnce(row.steps, links.evidenceFor);
+    row.artifacts ??= [];
+    for (const path of paths) addOnce(row.artifacts, path);
+    return row;
+  };
+  for (const id of links.claims) {
+    if (!passed) {
+      summary.skipped.push(`claim ${id}: the step failed, so it is not cited`);
+      continue;
+    }
+    const row = cite(id);
+    if (links.independentRead) row.independentRead = step.id;
+    // A visual claim gets one inspection per viewport that the step captured.
+    // The viewport and the screenshot are facts of the run; what the image
+    // shows stays for the operator to write.
+    const shots = step.data?.viewports;
+    if (
+      run.plan.claims.find((item) => item.id === id)?.kind === "visual" &&
+      Array.isArray(shots)
+    ) {
+      row.inspections ??= [];
+      for (const shot of shots as { viewport?: string; artifact?: string }[])
+        if (
+          shot.viewport &&
+          shot.artifact &&
+          !row.inspections.some((item) => item.artifact === shot.artifact)
+        )
+          row.inspections.push({
+            viewport: shot.viewport,
+            expected: "",
+            observed: "",
+            artifact: shot.artifact,
+          });
+    }
+    summary.claims.push(id);
+  }
+  for (const { id, state } of links.controls) {
+    let row = pending.controls.find((item) => item.id === id);
+    if (!row) pending.controls.push((row = blankControl(run, id)));
+    if (state === "failed") {
+      row.failedStep = step.id;
+      summary.controls.push(`${id}:failed`);
+    } else if (passed) {
+      row.restoredStep = step.id;
+      // The control's own claim must cite the restored pass.
+      const spec = run.plan.controls.find((item) => item.id === id);
+      if (spec && run.plan.claims.some((item) => item.id === spec.claim))
+        cite(spec.claim);
+      summary.controls.push(`${id}:restored`);
+    } else
+      summary.skipped.push(
+        `control ${id}: the restored step failed, so it is not linked`,
+      );
+  }
+  for (const name of links.gates) {
+    let row = pending.gates.find((item) => item.name === name);
+    if (!row)
+      pending.gates.push((row = { name, outcome: "not run", steps: [] }));
+    row.outcome = passed ? "passed" : "failed";
+    if (passed) addOnce(row.steps, step.id);
+    summary.gates.push(`${name}:${row.outcome}`);
+  }
+  try {
+    writeJson(run.resultPath, pending);
+  } catch (error) {
+    summary.error = `Cannot write the pending result: ${error instanceof Error ? error.message : String(error)}`;
+  }
+  return summary;
+}
 export class Context {
   vault: Secrets;
   step: Step;
   run: Run;
+  links?: StepLinks;
+  linked?: LinkSummary;
+  /** up --warm: start the seat's browser while the app starts. */
+  warm?: { seat?: string };
   constructor(run: Run, command: string, args: string[]) {
     this.run = run;
+    lastSourceCheck = undefined;
     this.vault = new Secrets(run.repo);
     this.vault.collect(run.profile);
     this.step = {
@@ -493,6 +789,13 @@ export class Context {
     this.step.durationMs = Date.now() - Date.parse(this.step.startedAt);
     this.step.data = this.vault.clean(data);
     this.step.args = this.vault.clean(this.step.args);
+    if (lastSourceCheck)
+      this.step.data = { ...this.step.data, sourceCheck: lastSourceCheck };
+    // A removed worktree took the pending result with it.
+    if (this.links && !worktreeRemoved(this.run)) {
+      this.linked = linkPendingResult(this.run, this.step, this.links);
+      this.step.data = { ...this.step.data, linked: this.linked };
+    }
     // A removed worktree took the log with it; never recreate its folders.
     if (!worktreeRemoved(this.run)) {
       const file = safePath(join(this.run.evidence, "spyglass"), "log.jsonl");

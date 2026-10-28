@@ -23,7 +23,7 @@ export function fault(error: unknown): Fault {
     : new Fault(
         "ENVIRONMENT",
         error instanceof Error ? error.message : String(error),
-        "Run spyglass doctor --run <id> and inspect the retained command output.",
+        "Run spyglass doctor and inspect the retained command output.",
         3,
       );
 }

@@ -7,12 +7,13 @@ import {
   readFileSync,
   readSync,
 } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
 import { basename, relative, resolve } from "node:path";
 import { Client } from "pg";
 import type { QueryConfig, QueryResult } from "pg";
 import { Fault } from "./errors.js";
-import { beneath, safePath } from "./files.js";
-import { saveRun, type Context } from "./state.js";
+import { beneath, hash, safePath } from "./files.js";
+import { saveRun, steps, type Context } from "./state.js";
 
 const MAX_API_BODY_BYTES = 5 * 1024 * 1024;
 const MAX_API_PREVIEW_CHARS = 4000;
@@ -21,6 +22,8 @@ const MAX_DB_ROWS = 1000;
 const MAX_DB_OUTPUT_BYTES = 1024 * 1024;
 const MAX_DB_SQL_BYTES = 100_000;
 const DB_STATEMENT_TIMEOUT_MS = 10000;
+const API_POLL_TIMEOUT_MS = 15_000;
+const API_POLL_INTERVAL_MS = 250;
 const SECRET_REFERENCE = /^(?:env:|file:|dotenv:|op:\/\/)/;
 const SENSITIVE_FIELD =
   /(?:pass(?:word)?|token|secret|api[_-]?key|authorization|cookie|credential)/i;
@@ -83,7 +86,7 @@ async function api(
   if (args.length < 2)
     throw usage(
       "api",
-      "spyglass api METHOD PATH [--seat NAME] [--data JSON|@FILE] [--expect STATUS]",
+      "spyglass api METHOD PATH [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--expect-json PATH=VALUE] [--expect-body-contains TEXT] [--wait-until PATH=VALUE [--fail-on PATH=VALUE] [--timeout-ms MS] [--interval-ms MS]]",
     );
   const method = args[0]!.toUpperCase();
   if (!/^(GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS)$/.test(method)) {
@@ -115,6 +118,13 @@ async function api(
   let seatName: string | undefined;
   let dataArg: string | undefined;
   let expectedStatus: number | undefined;
+  const jsonChecks: JsonCheck[] = [];
+  const bodyChecks: string[] = [];
+  let waitUntil: JsonCheck | undefined;
+  let failOn: JsonCheck | undefined;
+  let timeoutMs = API_POLL_TIMEOUT_MS;
+  let intervalMs = API_POLL_INTERVAL_MS;
+  let pollTuning = false;
   for (let i = 2; i < args.length; i++) {
     const option = args[i]!;
     if (option === "--seat") {
@@ -140,10 +150,41 @@ async function api(
         );
       }
       expectedStatus = Number(raw);
+    } else if (option === "--expect-json") {
+      jsonChecks.push(parseJsonCheck("api", option, args[++i], true));
+    } else if (option === "--expect-body-contains") {
+      const text = args[++i];
+      if (text === undefined || text === "")
+        throw usage("api", "--expect-body-contains requires text.");
+      bodyChecks.push(text);
+    } else if (option === "--wait-until") {
+      waitUntil = parseJsonCheck("api", option, args[++i], false);
+    } else if (option === "--fail-on") {
+      failOn = parseJsonCheck("api", option, args[++i], false);
+    } else if (option === "--timeout-ms" || option === "--interval-ms") {
+      const raw = args[++i];
+      const value = Number(raw);
+      const [low, high] =
+        option === "--timeout-ms" ? [1, 120_000] : [50, 10_000];
+      if (!raw || !/^\d+$/.test(raw) || value < low || value > high)
+        throw usage(
+          "api",
+          `${option} requires an integer from ${low} through ${high}.`,
+        );
+      if (option === "--timeout-ms") timeoutMs = value;
+      else intervalMs = value;
+      pollTuning = true;
     } else {
       throw usage("api", `Unknown API option: ${option}.`);
     }
   }
+  if (waitUntil && !["GET", "HEAD"].includes(method))
+    throw usage(
+      "api",
+      "--wait-until repeats the request, so it needs GET or HEAD; a repeated write would repeat its side effect.",
+    );
+  if (pollTuning && !waitUntil)
+    throw usage("api", "--timeout-ms and --interval-ms need --wait-until.");
 
   let requestValue: unknown;
   let requestBody: string | undefined;
@@ -197,61 +238,88 @@ async function api(
     body: sanitizeValue(ctx, requestValue ?? null),
   };
 
-  let response: Response | undefined;
-  let body: ParsedBody;
-  try {
-    response = await fetch(target, {
-      method,
-      headers: requestHeaders,
-      body: method === "GET" || method === "HEAD" ? undefined : requestBody,
-      redirect: "manual",
-      signal: AbortSignal.timeout(15000),
-    });
-    body = await responseBody(response);
-  } catch (error) {
-    const message = redactUrls(
-      ctx,
-      error instanceof Error ? error.message : String(error),
-    );
-    const record = {
-      request: requestRecord,
-      response: response
-        ? {
-            status: response.status,
-            statusText: response.statusText,
-            redirectLocation: response.headers.get("location")
-              ? safeLocation(target, response.headers.get("location")!)
-              : undefined,
-          }
-        : null,
-      error: message,
-    };
-    const artifact = ctx.artifact("api-response.json", record, "api");
-    if (error instanceof Fault) {
-      throw new Fault(error.code, error.message, error.next, error.exit, {
+  const attempt = async (): Promise<{
+    response: Response;
+    body: ParsedBody;
+  }> => {
+    let response: Response | undefined;
+    let body: ParsedBody;
+    try {
+      response = await fetch(target, {
         method,
-        url: safeUrl(target),
-        ...(response ? { status: response.status } : {}),
-        artifacts: [artifact],
-        error: message,
+        headers: requestHeaders,
+        body: method === "GET" || method === "HEAD" ? undefined : requestBody,
+        redirect: "manual",
+        signal: AbortSignal.timeout(15000),
       });
+      body = await responseBody(response);
+    } catch (error) {
+      const message = redactUrls(
+        ctx,
+        error instanceof Error ? error.message : String(error),
+      );
+      const record = {
+        request: requestRecord,
+        response: response
+          ? {
+              status: response.status,
+              statusText: response.statusText,
+              redirectLocation: response.headers.get("location")
+                ? safeLocation(target, response.headers.get("location")!)
+                : undefined,
+            }
+          : null,
+        error: message,
+      };
+      const artifact = ctx.artifact("api-response.json", record, "api");
+      if (error instanceof Fault) {
+        throw new Fault(error.code, error.message, error.next, error.exit, {
+          method,
+          url: safeUrl(target),
+          ...(response ? { status: response.status } : {}),
+          artifacts: [artifact],
+          error: message,
+        });
+      }
+      throw new Fault(
+        "API_REQUEST_FAILED",
+        `API request failed: ${message}.`,
+        "Check the run API address and app logs, then retry.",
+        3,
+        { method, url: safeUrl(target), artifacts: [artifact], error: message },
+      );
     }
-    throw new Fault(
-      "API_REQUEST_FAILED",
-      `API request failed: ${message}.`,
-      "Check the run API address and app logs, then retry.",
-      3,
-      { method, url: safeUrl(target), artifacts: [artifact], error: message },
-    );
-  }
+    return { response, body };
+  };
 
-  if (!response)
-    throw new Fault(
-      "API_REQUEST_FAILED",
-      "The API did not return a response.",
-      "Check the run API address and retry.",
-      3,
-    );
+  // One request, or a bounded poll of a GET until --wait-until holds. A
+  // --fail-on state ends the poll at once.
+  const started = Date.now();
+  let polls = 0;
+  let outcome: "reached" | "timeout" | "failed" | undefined;
+  let last = await attempt();
+  polls++;
+  if (waitUntil || failOn)
+    for (;;) {
+      const seen = last.body.value;
+      if (failOn && jsonMatches(seen, failOn).ok) {
+        outcome = "failed";
+        break;
+      }
+      if (!waitUntil || jsonMatches(seen, waitUntil).ok) {
+        outcome = waitUntil ? "reached" : undefined;
+        break;
+      }
+      if (Date.now() + intervalMs >= started + timeoutMs) {
+        outcome = "timeout";
+        break;
+      }
+      await new Promise((done) => setTimeout(done, intervalMs));
+      last = await attempt();
+      polls++;
+    }
+  const elapsedMs = Date.now() - started;
+  const { response, body } = last;
   const responseText = body.text;
   const location = response.headers.get("location") ?? undefined;
   const headers = Object.fromEntries(
@@ -267,7 +335,65 @@ async function api(
     body: sanitizeValue(ctx, body.value),
     ...(location ? { redirectLocation: safeLocation(target, location) } : {}),
   };
-  const record = { request: requestRecord, response: responseRecord };
+
+  // Every expectation is a structured assertion of the step, in the shape
+  // that check records.
+  const assertions: Assertion[] = [];
+  if (expectedStatus !== undefined)
+    assertions.push({
+      id: `status=${expectedStatus}`,
+      ok: response.status === expectedStatus,
+      detail: `HTTP ${response.status}`,
+    });
+  for (const check of jsonChecks) {
+    const verdict = jsonMatches(body.value, check);
+    assertions.push({
+      id: `json ${check.id}`,
+      ok: verdict.ok,
+      detail: verdict.detail,
+    });
+  }
+  for (const text of bodyChecks)
+    assertions.push({
+      id: `body-contains ${text}`,
+      ok: responseText.includes(text),
+      detail: responseText.includes(text) ? "found" : "not found",
+    });
+  if (waitUntil)
+    assertions.push({
+      id: `wait-until ${waitUntil.id}`,
+      ok: outcome === "reached",
+      detail:
+        outcome === "reached"
+          ? `reached after ${polls} poll${polls === 1 ? "" : "s"}`
+          : outcome === "failed"
+            ? `a fail-on state came first`
+            : `not reached in ${elapsedMs} ms`,
+    });
+  if (failOn)
+    assertions.push({
+      id: `fail-on ${failOn.id}`,
+      ok: outcome !== "failed",
+      detail: outcome === "failed" ? "reached" : "not reached",
+    });
+  const polling =
+    waitUntil || failOn
+      ? {
+          polls,
+          elapsedMs,
+          timeoutMs,
+          intervalMs,
+          waitUntil: waitUntil?.id,
+          failOn: failOn?.id,
+          outcome: outcome ?? "single",
+        }
+      : undefined;
+  const record = {
+    request: requestRecord,
+    response: responseRecord,
+    ...(assertions.length ? { assertions } : {}),
+    ...(polling ? { polling } : {}),
+  };
   const artifact = ctx.artifact("api-response.json", record, "api");
   const cleanValue = sanitizeValue(ctx, body.value);
   const preview = previewBody(cleanValue, redactUrls(ctx, responseText));
@@ -278,6 +404,8 @@ async function api(
     body: preview,
     artifacts: [artifact],
     ...(location ? { redirectLocation: safeLocation(target, location) } : {}),
+    ...(assertions.length ? { claims: assertions } : {}),
+    ...(polling ? { polls, elapsedMs } : {}),
   };
 
   if (expectedStatus !== undefined && response.status !== expectedStatus) {
@@ -289,7 +417,90 @@ async function api(
       data,
     );
   }
+  const failed = assertions.filter((item) => !item.ok);
+  if (failed.length)
+    throw new Fault(
+      "API_EXPECTATION_FAILED",
+      `API expectation failed: ${failed.map((item) => `${item.id} (${item.detail})`).join("; ")}${polling ? `; ${polls} poll${polls === 1 ? "" : "s"} in ${elapsedMs} ms` : ""}.`,
+      "Inspect the saved final response and the assertions, then correct the API behavior or the expectation.",
+      1,
+      data,
+    );
   return sanitizeValue(ctx, data) as Record<string, unknown>;
+}
+
+interface Assertion {
+  id: string;
+  ok: boolean;
+  detail?: string;
+}
+interface JsonCheck {
+  id: string;
+  path: string[];
+  expected: string;
+  negate: boolean;
+}
+/** `PATH=VALUE`, or `PATH!=VALUE` when the check allows it. */
+function parseJsonCheck(
+  command: string,
+  flag: string,
+  raw: string | undefined,
+  allowNegate: boolean,
+): JsonCheck {
+  const found = /^([^=!\s]+)(!=|=)([\s\S]*)$/.exec(raw ?? "");
+  if (!found || (found[2] === "!=" && !allowNegate))
+    throw usage(
+      command,
+      `${flag} requires PATH=VALUE${allowNegate ? " or PATH!=VALUE" : ""}, for example status=complete or items.length=3.`,
+    );
+  return {
+    id: `${found[1]}${found[2]}${found[3]}`,
+    path: found[1]!.split("."),
+    expected: found[3]!,
+    negate: found[2] === "!=",
+  };
+}
+/** A value at a dotted path: object keys, array indexes and length. */
+function valueAt(
+  root: unknown,
+  path: string[],
+): { found: boolean; value?: unknown } {
+  let value = root;
+  for (const part of path) {
+    if (Array.isArray(value)) {
+      if (part === "length") value = value.length;
+      else if (/^\d+$/.test(part) && Number(part) < value.length)
+        value = value[Number(part)];
+      else return { found: false };
+    } else if (typeof value === "string" && part === "length")
+      value = value.length;
+    else if (value && typeof value === "object" && Object.hasOwn(value, part))
+      value = (value as Record<string, unknown>)[part];
+    else return { found: false };
+  }
+  return { found: true, value };
+}
+function sameValue(actual: unknown, expected: string): boolean {
+  try {
+    if (isDeepStrictEqual(actual, JSON.parse(expected))) return true;
+  } catch {
+    /* Not a JSON literal: compare as text. */
+  }
+  return typeof actual !== "object" && String(actual) === expected;
+}
+/** A path that is not in the data fails both `=` and `!=`. */
+function jsonMatches(
+  root: unknown,
+  check: JsonCheck,
+): { ok: boolean; detail: string } {
+  const at = valueAt(root, check.path);
+  if (!at.found) return { ok: false, detail: "no value at the path" };
+  const same = sameValue(at.value, check.expected);
+  const shown = JSON.stringify(at.value);
+  return {
+    ok: check.negate ? !same : same,
+    detail: `observed ${shown && shown.length > 80 ? shown.slice(0, 79) + "…" : shown}`,
+  };
 }
 
 function safeUrl(url: URL): string {
@@ -463,7 +674,10 @@ async function database(
 ): Promise<Record<string, unknown>> {
   const sql = args[0];
   if (!sql || sql.startsWith("--"))
-    throw usage("db", 'spyglass db "<read-only SQL>" [--expect-rows N]');
+    throw usage(
+      "db",
+      'spyglass db "<read-only SQL>" [--expect-rows N | --expect-empty] [--expect-col COLUMN=VALUE]',
+    );
   if (Buffer.byteLength(sql) > MAX_DB_SQL_BYTES)
     throw new Fault(
       "DATABASE_QUERY_TOO_LARGE",
@@ -472,16 +686,25 @@ async function database(
       2,
     );
   let expectedRows: number | undefined;
+  let expectEmpty = false;
+  const columnChecks: JsonCheck[] = [];
   for (let i = 1; i < args.length; i++) {
     if (args[i] === "--expect-rows") {
       const raw = args[++i];
       if (!raw || raw.startsWith("--") || !/^\d+$/.test(raw))
         throw usage("db", "--expect-rows requires a non-negative integer.");
       expectedRows = Number(raw);
+    } else if (args[i] === "--expect-empty") {
+      expectEmpty = true;
+      expectedRows = 0;
+    } else if (args[i] === "--expect-col") {
+      columnChecks.push(parseJsonCheck("db", "--expect-col", args[++i], true));
     } else {
       throw usage("db", `Unknown database option: ${args[i]}.`);
     }
   }
+  if (expectEmpty && args.includes("--expect-rows"))
+    throw usage("db", "--expect-empty and --expect-rows exclude each other.");
   const connectionString = databaseConnection(ctx);
   if (
     !/^(?:select|with|values|table|show|explain)\b/i.test(
@@ -516,7 +739,17 @@ async function database(
       `SET LOCAL statement_timeout = '${DB_STATEMENT_TIMEOUT_MS}ms'`,
     );
     await client.query(`SET LOCAL lock_timeout = '5000ms'`);
-    role = await inspectDatabaseRole(client);
+    // The role does not change between calls of one run: reuse what doctor or
+    // an earlier call read. doctor reads it again.
+    const connectionKey = hash(connectionString);
+    role =
+      ctx.run.databaseRole?.connection === connectionKey
+        ? ctx.run.databaseRole.role
+        : undefined;
+    if (!role) {
+      role = await inspectDatabaseRole(client);
+      ctx.run.databaseRole = { connection: connectionKey, role };
+    }
     if (/^(?:select|with|values|table)\b/i.test(stripLeadingSqlComments(sql))) {
       const declare = extendedQuery(
         `DECLARE spyglass_result NO SCROLL CURSOR FOR ${sql}`,
@@ -586,7 +819,29 @@ async function database(
     outputLimitExceeded = true;
     data = makeData();
   }
-  const artifact = ctx.artifact("database-result.json", data, "database");
+  const assertions: Assertion[] = [];
+  if (expectedRows !== undefined)
+    assertions.push({
+      id: expectEmpty ? "empty" : `rows=${expectedRows}`,
+      ok: rowCount === expectedRows,
+      detail: `${rowCount} row${rowCount === 1 ? "" : "s"}`,
+    });
+  for (const check of columnChecks) {
+    const verdict = jsonMatches(rows[0], check);
+    assertions.push({
+      id: `col ${check.id}`,
+      ok: verdict.ok,
+      detail: rows.length ? verdict.detail : "no row",
+    });
+  }
+  const shown: JsonObject = assertions.length
+    ? { ...data, claims: assertions }
+    : data;
+  const artifact = ctx.artifact(
+    "database-result.json",
+    assertions.length ? { ...data, assertions } : data,
+    "database",
+  );
   if (failure) {
     const message = ctx.vault.text(errorText(failure));
     throw new Fault(
@@ -594,7 +849,7 @@ async function database(
       `Database query failed: ${message}.`,
       "Check the query and database role, then retry.",
       1,
-      { ...data, artifacts: [artifact] },
+      { ...shown, artifacts: [artifact] },
     );
   }
   if (rowLimitExceeded) {
@@ -603,7 +858,7 @@ async function database(
       `Database returned more than ${MAX_DB_ROWS} rows.`,
       "Narrow the query or add a limit. Spyglass retained only the first bounded rows.",
       1,
-      { ...data, artifacts: [artifact] },
+      { ...shown, artifacts: [artifact] },
     );
   }
   if (outputLimitExceeded) {
@@ -612,7 +867,7 @@ async function database(
       `Database output exceeded ${MAX_DB_OUTPUT_BYTES} bytes.`,
       "Select fewer or smaller columns and retry. Spyglass retained no unbounded result.",
       1,
-      { ...data, artifacts: [artifact] },
+      { ...shown, artifacts: [artifact] },
     );
   }
   if (expectedRows !== undefined && rowCount !== expectedRows) {
@@ -621,10 +876,21 @@ async function database(
       `Database returned ${rowCount} rows; expected ${expectedRows}.`,
       "Inspect the saved query result and correct the query or expected row count.",
       1,
-      { ...data, artifacts: [artifact] },
+      { ...shown, artifacts: [artifact] },
     );
   }
-  return { ...data, artifacts: [artifact] };
+  const wrong = assertions.filter(
+    (item) => item.id.startsWith("col ") && !item.ok,
+  );
+  if (wrong.length)
+    throw new Fault(
+      "DATABASE_EXPECTATION_FAILED",
+      `Database column expectation failed: ${wrong.map((item) => `${item.id} (${item.detail})`).join("; ")}.`,
+      "Inspect the saved query result and correct the query or the expected value.",
+      1,
+      { ...shown, artifacts: [artifact] },
+    );
+  return { ...shown, artifacts: [artifact] };
 }
 
 function databaseConnection(ctx: Context): string {
@@ -645,8 +911,9 @@ function databaseConnection(ctx: Context): string {
 export async function readDatabaseRole(
   ctx: Context,
 ): Promise<Record<string, unknown>> {
+  const connectionString = databaseConnection(ctx);
   const client = new Client({
-    connectionString: databaseConnection(ctx),
+    connectionString,
     connectionTimeoutMillis: 5000,
     statement_timeout: DB_STATEMENT_TIMEOUT_MS,
     query_timeout: DB_STATEMENT_TIMEOUT_MS + 2000,
@@ -664,6 +931,7 @@ export async function readDatabaseRole(
     const role = await inspectDatabaseRole(client);
     await client.query("COMMIT");
     transaction = false;
+    ctx.run.databaseRole = { connection: hash(connectionString), role };
     return sanitizeValue(ctx, role) as Record<string, unknown>;
   } catch (error) {
     if (connected && transaction) {
@@ -820,44 +1088,66 @@ async function composePs(
   ctx: Context,
   args: string[],
 ): Promise<Record<string, unknown>> {
-  if (args.length) throw usage("ps", "spyglass ps");
+  let wait = false;
+  let timeoutMs = 30_000;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--wait") wait = true;
+    else if (args[i] === "--timeout-ms") {
+      const raw = args[++i];
+      timeoutMs = Number(raw);
+      if (!raw || !/^\d+$/.test(raw) || timeoutMs < 1 || timeoutMs > 600_000)
+        throw usage("ps", "--timeout-ms requires an integer from 1 to 600000.");
+    } else throw usage("ps", "spyglass ps [--wait [--timeout-ms MS]]");
+  }
+  if (!wait && args.length) throw usage("ps", "--timeout-ms needs --wait.");
   const scope = composeScope(ctx);
   const command = [...scope.command, "ps", "--all", "--format", "json"];
-  const result = await ctx.execute(command, { timeoutMs: 20000 });
-  if (result.exitCode !== 0)
-    throw composeFault(
-      ctx,
-      "COMPOSE_PS_FAILED",
-      "Docker Compose could not inspect the run project.",
-      result.exitCode,
-      result.stdout,
-      result.stderr,
+  const started = Date.now();
+  let polls = 0;
+  let containers: JsonObject[] = [];
+  let missing: string[] = [];
+  for (;;) {
+    polls++;
+    const result = await ctx.execute(command, { timeoutMs: 20000 });
+    if (result.exitCode !== 0)
+      throw composeFault(
+        ctx,
+        "COMPOSE_PS_FAILED",
+        "Docker Compose could not inspect the run project.",
+        result.exitCode,
+        result.stdout,
+        result.stderr,
+      );
+    let rows: JsonObject[];
+    try {
+      rows = parseComposeJson(result.stdout);
+    } catch (error) {
+      throw new Fault(
+        "COMPOSE_OUTPUT_INVALID",
+        `Docker Compose returned invalid JSON: ${ctx.vault.text(errorText(error))}.`,
+        "Check the installed Docker Compose version and run spyglass doctor.",
+      );
+    }
+    containers = rows
+      .filter((row) => !row.project || row.project === scope.project)
+      .map((row) => normalizeContainer(row));
+    missing = scope.required.filter(
+      (service) =>
+        !containers.some(
+          (container) =>
+            container.service === service && containerReady(container),
+        ),
     );
-  let rows: JsonObject[];
-  try {
-    rows = parseComposeJson(result.stdout);
-  } catch (error) {
-    throw new Fault(
-      "COMPOSE_OUTPUT_INVALID",
-      `Docker Compose returned invalid JSON: ${ctx.vault.text(errorText(error))}.`,
-      "Check the installed Docker Compose version and run spyglass doctor.",
-    );
+    if (!missing.length || !wait || Date.now() + 500 >= started + timeoutMs)
+      break;
+    await new Promise((done) => setTimeout(done, 500));
   }
-  const containers = rows
-    .filter((row) => !row.project || row.project === scope.project)
-    .map((row) => normalizeContainer(row));
-  const missing = scope.required.filter(
-    (service) =>
-      !containers.some(
-        (container) =>
-          container.service === service && containerReady(container),
-      ),
-  );
   const data = {
     project: scope.project,
     containers,
     required: scope.required,
     missing,
+    ...(wait ? { polls, elapsedMs: Date.now() - started } : {}),
   };
   const artifact = ctx.artifact("compose-ps.json", data, "container");
   if (missing.length) {
@@ -876,32 +1166,79 @@ async function logs(
   ctx: Context,
   args: string[],
 ): Promise<Record<string, unknown>> {
+  const form =
+    "spyglass logs [SERVICE] (--since MARK | --since-step STEP_ID | --since-last) [--grep PATTERN] [--expect-text TEXT] [--forbid-text TEXT]";
   let service: string | undefined;
   let since: string | undefined;
+  let sinceStep: string | undefined;
+  let sinceLast = false;
+  let grepText: string | undefined;
+  const expectText: string[] = [];
+  const forbidText: string[] = [];
+  const value = (i: number, flag: string): string => {
+    const next = args[i];
+    if (next === undefined || next === "" || next.startsWith("--"))
+      throw usage("logs", `${flag} requires a value.`);
+    return next;
+  };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
-    if (arg === "--since") {
-      since = args[++i];
-      if (!since || since.startsWith("--"))
-        throw usage("logs", "--since requires a mark label.");
-    } else if (arg.startsWith("--")) {
+    if (arg === "--since") since = value(++i, "--since");
+    else if (arg === "--since-step") sinceStep = value(++i, "--since-step");
+    else if (arg === "--since-last") sinceLast = true;
+    else if (arg === "--grep") grepText = value(++i, "--grep");
+    else if (arg === "--expect-text")
+      expectText.push(value(++i, "--expect-text"));
+    else if (arg === "--forbid-text")
+      forbidText.push(value(++i, "--forbid-text"));
+    else if (arg.startsWith("--")) {
       throw usage("logs", `Unknown log option: ${arg}.`);
     } else if (service === undefined) {
       service = arg;
     } else {
-      throw usage("logs", "spyglass logs [SERVICE] --since MARK");
+      throw usage("logs", form);
     }
   }
-  if (!since) throw usage("logs", "spyglass logs [SERVICE] --since MARK");
-  const markedAt = ctx.run.marks?.[since];
-  if (!markedAt) {
-    const known = Object.keys(ctx.run.marks ?? {});
-    throw new Fault(
-      "UNKNOWN_MARK",
-      `Unknown log mark ${since}. Available marks: ${known.join(", ") || "none"}.`,
-      "Run spyglass mark LABEL, then use that label with --since.",
-    );
+  if ([since, sinceStep, sinceLast || undefined].filter(Boolean).length !== 1)
+    throw usage("logs", `Give one log window: ${form}`);
+  let pattern: RegExp | undefined;
+  if (grepText !== undefined)
+    try {
+      pattern = new RegExp(grepText);
+    } catch {
+      throw usage("logs", "--grep requires a valid regular expression.");
+    }
+  let markedAt: string | undefined;
+  let window: Record<string, unknown>;
+  if (since) {
+    markedAt = ctx.run.marks?.[since];
+    if (!markedAt) {
+      const known = Object.keys(ctx.run.marks ?? {});
+      throw new Fault(
+        "UNKNOWN_MARK",
+        `Unknown log mark ${since}. Available marks: ${known.join(", ") || "none"}.`,
+        "Run spyglass mark LABEL, then use that label with --since.",
+      );
+    }
+    window = { mark: since };
+  } else {
+    const recorded = steps(ctx.run);
+    const step = sinceStep
+      ? recorded.find((item) => item.id === sinceStep)
+      : recorded.at(-1);
+    if (!step) {
+      if (sinceStep)
+        throw new Fault(
+          "UNKNOWN_STEP",
+          `Run ${ctx.run.id} has no step ${sinceStep}.`,
+          `Use a step ID from spyglass status --run ${ctx.run.id} or the step log.`,
+        );
+      throw usage("logs", "--since-last needs an earlier step in this run.");
+    }
+    markedAt = step.startedAt;
+    window = { sinceStep: step.id };
   }
+  const filters = { pattern, grepText, expectText, forbidText };
 
   if (ctx.run.profile.compose) {
     if (service && !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(service))
@@ -933,16 +1270,14 @@ async function logs(
         result.stdout,
         result.stderr,
       );
-    const content = ctx.vault.text(result.stdout);
-    const artifact = ctx.artifact("compose-logs.txt", content, "container-log");
-    return {
-      project: scope.project,
-      service: service ?? null,
-      mark: since,
-      markedAt,
-      logs: content,
-      artifacts: [artifact],
-    };
+    return finishLogs(
+      ctx,
+      ctx.vault.text(result.stdout),
+      filters,
+      "compose-logs.txt",
+      "container-log",
+      { project: scope.project, service: service ?? null, ...window, markedAt },
+    );
   }
 
   if (service && service !== "app" && service !== ctx.run.profile.app) {
@@ -969,16 +1304,69 @@ async function logs(
       return match ? Date.parse(match[1]!) >= timestamp : false;
     })
     .join("\n");
-  const clean = ctx.vault.text(selected);
-  const artifact = ctx.artifact("process-logs.txt", clean, "process-log");
-  return {
-    service: service ?? "app",
-    mark: since,
-    markedAt,
-    logs: clean,
-    truncated,
+  return finishLogs(
+    ctx,
+    ctx.vault.text(selected),
+    filters,
+    "process-logs.txt",
+    "process-log",
+    { service: service ?? "app", ...window, markedAt, truncated },
+  );
+}
+
+/**
+ * Filter the log lines, keep the log as evidence, then check the text
+ * expectations on what remains. A failed expectation keeps the artifact.
+ */
+function finishLogs(
+  ctx: Context,
+  text: string,
+  filters: {
+    pattern?: RegExp;
+    grepText?: string;
+    expectText: string[];
+    forbidText: string[];
+  },
+  name: string,
+  kind: string,
+  base: Record<string, unknown>,
+): Record<string, unknown> {
+  const logs = filters.pattern
+    ? text
+        .split(/\r?\n/)
+        .filter((line) => filters.pattern!.test(line))
+        .join("\n")
+    : text;
+  const assertions: Assertion[] = [
+    ...filters.expectText.map((item) => ({
+      id: `expect-text ${item}`,
+      ok: logs.includes(item),
+      detail: logs.includes(item) ? "found" : "not found",
+    })),
+    ...filters.forbidText.map((item) => ({
+      id: `forbid-text ${item}`,
+      ok: !logs.includes(item),
+      detail: logs.includes(item) ? "found" : "not found",
+    })),
+  ];
+  const artifact = ctx.artifact(name, logs, kind);
+  const data: Record<string, unknown> = {
+    ...base,
+    ...(filters.grepText !== undefined ? { grep: filters.grepText } : {}),
+    logs,
     artifacts: [artifact],
+    ...(assertions.length ? { claims: assertions } : {}),
   };
+  const failed = assertions.filter((item) => !item.ok);
+  if (failed.length)
+    throw new Fault(
+      "LOG_EXPECTATION_FAILED",
+      `Log expectation failed: ${failed.map((item) => item.id).join("; ")}.`,
+      "Inspect the retained log. Correct the app, or the text that you expect or forbid.",
+      1,
+      data,
+    );
+  return data;
 }
 
 function readBoundedLog(path: string): { content: string; truncated: boolean } {
@@ -1157,9 +1545,12 @@ function normalizeContainer(row: JsonObject): JsonObject {
   };
 }
 
+// A container with a health check is ready only when it is healthy; one that
+// is still starting, or is unhealthy, is not.
 function containerReady(container: JsonObject): boolean {
   const state = String(container.state ?? "").toLowerCase();
-  return state === "running";
+  const health = String(container.health ?? "").toLowerCase();
+  return state === "running" && (health === "" || health === "healthy");
 }
 
 function composeFault(

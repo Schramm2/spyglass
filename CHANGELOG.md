@@ -6,6 +6,130 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `result --check` applies the rules of `result` and records nothing.
+  `result` and `result --check` return every finding at once in
+  `data.findings`. Each finding has a `repair`, the next action that clears
+  it, and names the claim, gate or control. Schema errors in the result file
+  are findings too.
+- `result` needs no `--file`: it reads the pending result of the run
+  (`resultPath`).
+- `--claim ID`, `--independent-read`, `--control ID:failed|restored` and
+  `--gate NAME` on `ui`, `api`, `db`, `check`, `exec` and `evidence add` link
+  a finished step into the pending result: the step ID, its artifacts, the
+  later read, and the failed and restored steps of a control. Spyglass never
+  writes `observed`, an inspection's `observed` text or a claim `outcome`.
+  Steps run with these flags show `data.linked`.
+- `result set` edits the pending result with flags: claim outcome and
+  observation, inspections, steps, gates, controls, operator and limits.
+
+- `ui expect` polls one or more conditions inside one call (`--url`, `--text`,
+  `--title`, `--selector`, `--visible`, `--hidden`, `--enabled`, `--checked`,
+  `--count`, `--focused`, `--attr`, `--no-errors`) until `--timeout-ms`
+  (default 5000). It writes `expect.json`, records each condition as an
+  assertion and exits 1 with the last observation when one never holds.
+- `--settle` on one `click`, `dblclick`, `press`, `fill`, `select`, `type` or
+  `find ... click` waits for the navigation and DOM changes that the action
+  starts, without waiting for network idle.
+- A selector action that matches no element returns `data.nearest`, up to 10
+  interactive roles and names from the page, and keeps the page snapshot.
+
+- `ui verify` runs the actions (`--open`, `--do`), expectations (`--expect`),
+  an optional focus check (`--expect-focus-moved LABEL`) and a proof
+  (`--proof LABEL`, with `--viewport WxH` for each viewport) as one step with
+  ordered sub-steps. The first failure keeps the sub-steps before it as
+  passed, saves a failure screenshot and a delta snapshot, and marks the rest
+  `not run`.
+- `ui proof LABEL` takes `--viewport WxH` (repeatable) and `--expect`: it
+  resizes, settles, checks the expectations and saves
+  `proof-LABEL-WxH.png` for each viewport.
+- With `--claim ID` on a visual claim, a step that captured viewports adds an
+  inspection for each, with `viewport` and `artifact` and empty text for you.
+- `result` reports `EXPECTATION_FAILED`, `EXPECTATION_NOT_RUN`,
+  `ACTION_FAILED` and `ACTION_NOT_RUN` when a claim cites a batch step with a
+  failed or skipped sub-step.
+
+- `api --expect-json PATH=VALUE` (or `PATH!=VALUE`) and
+  `--expect-body-contains TEXT` check the response and record each check as an
+  assertion of the step.
+- `api GET --wait-until PATH=VALUE` polls inside one call, with `--fail-on`,
+  `--timeout-ms` and `--interval-ms`. It keeps the poll count, the elapsed time
+  and the final response. A poll that times out or reaches a fail state fails
+  the step and cannot be an independent read.
+- `db --expect-col COLUMN=VALUE` and `--expect-empty` record assertions and
+  fail with `DATABASE_EXPECTATION_FAILED` when a value differs.
+- `logs --since-step STEP_ID` and `--since-last` read the log with no `mark`;
+  `--grep`, `--expect-text` and `--forbid-text` filter and check it. A failed
+  check exits 1 with `LOG_EXPECTATION_FAILED`; an unknown step fails with
+  `UNKNOWN_STEP`.
+- `ps --wait [--timeout-ms MS]` polls until each required service is ready.
+
+- `status --work --run ID` lists what each claim, control and gate still
+  needs, by the rules of `result --check`.
+- `up` cites a planned gate that an earlier run passed on the same source and
+  profile, with kept evidence and the same binding values: the pending result
+  names its `run` and `steps`, and `up` and `status` list `citedGates`.
+  `up --cite-gates-from RUN` cites one run and fails with
+  `GATE_CITATION_REJECTED` when it cannot. `result set --gate-run RUN` cites
+  the gates of a run later.
+- `finish [--file PATH] [--cleanup CHECK]` runs `result`, `doctor`, the owner
+  cleanup check, `down` and `report` in order. Each stage is its own step. The
+  first failed stage stops it, writes no report and names the repair.
+
+- `up --warm [--seat SEAT]` starts the exact-origin browser proxy and the
+  headless browser of a seat while the app starts, and signs the seat in when
+  it has a login and the app is ready. When `up` fails, the warm browser and
+  proxy close.
+- `check a,b` and `check --gates [--concurrency N]` run checks at the same
+  time. Each check is its own step. A failed check fails the call with
+  `CHECK_FAILED` and `data.checks` names every result.
+- `--relogin` on `ui` signs a seat in again when its browser expired and the
+  seat has a login. The step keeps the expiry as `data.relogin`.
+- `module.enableCompileCache` in the CLI. `check`, `exec`, `api` and `db` read
+  again only the source files whose stat changed since the last full check, and
+  `data.sourceCheck` counts them; `doctor` and `report` hash every file.
+  `bench/overhead.mjs` and `bench/journey.mjs` measure the added time and a
+  12-claim journey.
+
+- `ui snapshot`, `ui proof` and `ui verify` return `data.observation`: the URL
+  and title, the focused element, the counts of console errors, failed
+  requests and interactive elements, the changed lines and the artifacts, in
+  at most 40 lines. The whole snapshot stays in the artifact `snapshot.json`.
+- `replay --from RUN [--failed-only] [--execute]` lists, or runs again, the
+  `check`, `exec`, `api`, `db` and `ui` steps that the claims of an earlier run
+  cite. Each replayed step is a step of the new run and links to the same
+  claim. Spyglass skips a step with a masked secret, stops at the first failed
+  step and sets `failedRun` and `failedStep` on a control that the earlier run
+  failed. It writes no observed text and no outcome.
+
+### Changed
+
+- The `next` action of a failed command names the run, the seat and the flags
+  that it needs, so it can be run as written.
+- `doctor` runs its independent probes at the same time.
+- A `ui` command no longer loads the HTTP client library (about 25 ms); the
+  added time of `ui get title` fell from about 105 ms to about 85 ms at the
+  median on the test machine.
+- A container with a health check that is `starting` or `unhealthy` is no
+  longer ready: `ps` fails with `REQUIRED_CONTAINER_STOPPED`, as for a stopped
+  container.
+- `db` reads the role privileges once per run, at `doctor` or on the first
+  query, and reuses them for the same connection; `doctor` reads them again.
+- `ui` reports the last URL of a command batch as `currentUrl`, not the first.
+
+### Fixed
+
+- A screenshot of a page that has not drawn a frame no longer waits about 10
+  seconds for the first frame in a headless browser. Spyglass makes the page
+  draw before each screenshot.
+- The run's browser proxy no longer ends when a browser resets a connection.
+  An error on a proxy socket had no handler, so one reset ended the proxy
+  process and the next browser command failed with
+  `BROWSER_PROXY_UNAVAILABLE`, in about one run in ten on a loaded machine.
+  The error text now says whether the proxy gave no answer or answered as
+  another process.
+
 ## [1.2.0] - 2026-10-24
 
 ### Added

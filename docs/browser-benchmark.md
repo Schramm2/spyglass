@@ -80,3 +80,35 @@ SPYGLASS_TEST_SURFACES=1 node --test --test-concurrency=1 \
   --test-name-pattern='agent-browser uses a fresh|browser blocks page navigation' \
   tests/e2e/surfaces.test.mjs
 ```
+
+## Overhead gate
+
+`bench/overhead.mjs` repeats this method as a gate. It needs `agent-browser`,
+Chromium and a build (`npm run build`).
+
+```sh
+node bench/overhead.mjs
+node bench/overhead.mjs --pairs 20 --gate-cold --label after-fastpath
+```
+
+The script starts the demo app in a temporary Git repository. It measures:
+
+- the cold start: a new `spyglass --version` process, 20 times;
+- each scenario: 20 pairs of the direct `agent-browser batch --bail --json`
+  command, then the Spyglass command, on the same run, session, proxy and
+  browser. The scenarios are `ui get title`, `ui expect --title` and a `ui verify` batch of five actions and a proof. A scenario
+  that this build does not support shows as skipped.
+
+It prints the median (p50) and p95 of the added time for each scenario and
+writes `bench/results/overhead-DATE[-LABEL].json`. It exits with status 1 when
+the p50 added time is more than 120 ms or the p95 is more than 150 ms. With
+`--gate-cold`, it also exits with status 1 when the cold start p50 is more than
+100 ms. It exits with status 2 when the measurement itself fails.
+
+
+Latest result (2026-10-28, 20 pairs, one machine): `ui get title` adds 83 ms at
+the median and 101 ms at p95; `ui expect --title` adds 94 ms and 104 ms; a
+`ui verify` batch of five actions and a proof adds 107 ms and 126 ms. The cold
+start is 61 ms at the median. The gate passes. The 1.2.0 build on the same
+machine added 114 ms and 134 ms for `ui get title`. See
+`docs/verification-speed.md` for the journey results.
