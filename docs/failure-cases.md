@@ -37,6 +37,11 @@ results and retained evidence.
 | Containers | A run stops. | Spyglass stops its own processes and browser. The repository owner cleans its containers; shared services and evidence remain. |
 | Report | The operator edits the result file but does not record it with `result`. | The report ignores the unrecorded file, stays incomplete with `RESULT_MISSING`, and `status` names `result` as the next command until a result is recorded. |
 | Report | Required work or owner cleanup is missing. | The report files are still produced, but the run is incomplete and exits with failed-check status. |
+| Claim | A step run with `--claim ID` fails, and no later step for `ID` passes. | The pending result does not cite the failed step and leaves the claim `not run`. The failed step stays in `log.jsonl`. `result` rejects a `passed` outcome for `ID` that cites it, with `FAILED_STEP`. |
+| Claim | A step run with `--claim ID`, `--control ID:failed\|restored` or `--gate NAME` passes. | Spyglass adds the step and the artifacts it made to the pending result. It never writes `observed`, an inspection's `observed` or a claim `outcome`. |
+| Result | `result` or `result --check` inspects a result file with multiple independent errors (for example, a missing step on claim A and a missing inspection on claim B). | Both `result` and `result --check` report all findings together in `data.findings` with the same rules and messages, and each finding has a `repair` hint. `--check` does not record the result on the run. |
+| Result | `result` is run without `--file`. | Spyglass reads the pending result file of the run (`resultPath`). It does not read another file. |
+| Result | `result set` is given an unknown claim, gate or control ID, or an unknown outcome. | The command exits with status 2 and names the valid IDs. It does not change the pending result. |
 | Operator | A required input is missing while JSON mode is active. | Stdout contains one versioned result object, stderr contains diagnostics, and the command exits without prompting. |
 
 Regression tests also cover these review findings. Each test failed on the CLI

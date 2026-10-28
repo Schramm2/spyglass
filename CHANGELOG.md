@@ -6,6 +6,24 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `result --check` applies the rules of `result` and records nothing.
+  `result` and `result --check` return every finding at once in
+  `data.findings`. Each finding has a `repair`, the next action that clears
+  it, and names the claim, gate or control. Schema errors in the result file
+  are findings too.
+- `result` needs no `--file`: it reads the pending result of the run
+  (`resultPath`).
+- `--claim ID`, `--independent-read`, `--control ID:failed|restored` and
+  `--gate NAME` on `ui`, `api`, `db`, `check`, `exec` and `evidence add` link
+  a finished step into the pending result: the step ID, its artifacts, the
+  later read, and the failed and restored steps of a control. Spyglass never
+  writes `observed`, an inspection's `observed` text or a claim `outcome`.
+  Steps run with these flags show `data.linked`.
+- `result set` edits the pending result with flags: claim outcome and
+  observation, inspections, steps, gates, controls, operator and limits.
+
 ## [1.2.0] - 2026-10-24
 
 ### Added

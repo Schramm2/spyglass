@@ -458,8 +458,10 @@ spyglass report --run terminal-trial --json</code></pre>
           <div class="call">
             <pre><code>spyglass init                                   # write spyglass.json; review it
 spyglass up --run my-change --plan verification-plan.json --json
-spyglass check verify --run my-change --json    # run a named check
-spyglass result --run my-change --file PATH     # record claim results
+spyglass check verify --run my-change --claim CLAIM_ID --json   # run a check; link it to a claim
+spyglass result set --run my-change --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass result --check --run my-change         # validate; record nothing
+spyglass result --run my-change                 # record claim results
 spyglass doctor --run my-change --json
 spyglass down --run my-change --json            # clean up owned resources
 spyglass report --run my-change --json          # write the offline report</code></pre>
@@ -471,9 +473,16 @@ spyglass report --run my-change --json          # write the offline report</code
           </p>
           <p>
             <code>up --plan</code> writes a pending result file and prints its
-            path. Put the step IDs, artifact paths and observations from your
-            checks into that file. Then record it with
-            <code>spyglass result</code>. If a check fails, keep the original
+            path. Run each step with <code>--claim ID</code>: when the step
+            passes, Spyglass adds its step ID and its artifact paths to that
+            claim in the pending file. You write only what a person must judge:
+            what you observed and the outcome of each claim, with
+            <code>spyglass result set</code>. Check the file with
+            <code>spyglass result --check</code>. It lists every finding at once
+            in <code>data.findings</code>, and each finding has a
+            <code>repair</code>. Then record it with
+            <code>spyglass result</code>, which reads the pending file when you
+            give no <code>--file</code>. If a check fails, keep the original
             expectation. Repair the source and start a new run.
           </p>
         </section>
@@ -836,7 +845,9 @@ spyglass report --run my-change --json          # write the offline report</code
             data-keys="check named profile command assertions artifacts cleanup"
           >
             <h3><code>check</code></h3>
-            <pre class="usage"><code>spyglass check NAME --run ID</code></pre>
+            <pre
+              class="usage"
+            ><code>spyglass check NAME --run ID [--claim ID] [--independent-read] [--control ID:failed|restored] [--gate NAME]</code></pre>
             <p>
               Run a profile command with its bindings, environment and deadline.
               result:exit checks the child exit; result:json requires nonempty
@@ -844,6 +855,8 @@ spyglass report --run my-change --json          # write the offline report</code
               Failed assertions, skips and artifact errors remain failures even
               when the child exits zero. Declared artifacts must be in allowed
               import roots. cleanup:true records successful owner cleanup.
+              --claim ID, --independent-read, --control ID:failed|restored and
+              --gate NAME link a step into the pending result; see result.
             </p>
             <div class="call">
               <pre><code>spyglass check verify --run change-42 --json</code></pre>
@@ -858,7 +871,7 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>exec</code></h3>
             <pre
               class="usage"
-            ><code>spyglass exec [--timeout-ms MILLISECONDS] --run ID -- COMMAND [ARGUMENTS]</code></pre>
+            ><code>spyglass exec [--timeout-ms MILLISECONDS] [--claim ID] [--independent-read] [--control ID:failed|restored] [--gate NAME] --run ID -- COMMAND [ARGUMENTS]</code></pre>
             <p>
               Run a trusted command as separate arguments and retain output. The
               default deadline is 300 seconds; --timeout-ms selects an integer
@@ -866,7 +879,9 @@ spyglass report --run my-change --json          # write the offline report</code
               data.exitCode retains the child status; the CLI exits 1 for a
               failed child. Global options go before --. exec is not a sandbox
               and command success alone proves only its declared command-level
-              condition.
+              condition. --claim ID, --independent-read, --control
+              ID:failed|restored and --gate NAME link a step into the pending
+              result; see result. Put them before --.
             </p>
             <div class="call">
               <pre><code>spyglass exec --run change-42 --json -- npm test</code></pre>
@@ -881,7 +896,7 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>api</code></h3>
             <pre
               class="usage"
-            ><code>spyglass api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS]</code></pre>
+            ><code>spyglass api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--claim ID] [--independent-read]</code></pre>
             <p>
               Request a path relative to profile.api. A named seat resolves its
               token reference privately. Requests stay on the configured origin;
@@ -889,7 +904,9 @@ spyglass report --run my-change --json          # write the offline report</code
               before sending. Save the masked request and response, print a
               short body, and compare --expect when given. HTTP 202 means
               accepted, not completed: wait for completion and then make a
-              separate read. Keep raw credentials out of argv.
+              separate read. Keep raw credentials out of argv. --claim ID,
+              --independent-read, --control ID:failed|restored and --gate NAME
+              link a step into the pending result; see result.
             </p>
             <div class="call">
               <pre><code>spyglass api GET /jobs/123 --run change-42 --seat member --expect 200 --json</code></pre>
@@ -904,14 +921,16 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>db</code></h3>
             <pre
               class="usage"
-            ><code>spyglass db SQL --run ID [--expect-rows N]</code></pre>
+            ><code>spyglass db SQL --run ID [--expect-rows N] [--claim ID] [--independent-read]</code></pre>
             <p>
               Run one PostgreSQL statement through the extended protocol in a
               read-only transaction. profile.db.connection must be a secret
               reference. Retained results are bounded to 1,000 rows and 1 MiB;
               overflow is a failed check. No psql meta-commands. Role warnings
               describe remaining function-side-effect limits. Use the owner
-              database; this command creates no server.
+              database; this command creates no server. --claim ID,
+              --independent-read, --control ID:failed|restored and --gate NAME
+              link a step into the pending result; see result.
             </p>
             <div class="call">
               <pre><code>spyglass db "SELECT 42 AS answer" --run change-42 --expect-rows 1 --json</code></pre>
@@ -978,13 +997,14 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>evidence</code></h3>
             <pre
               class="usage"
-            ><code>spyglass evidence add --step STEP_ID --file PATH --run ID</code></pre>
+            ><code>spyglass evidence add --step STEP_ID --file PATH --run ID [--claim ID]</code></pre>
             <p>
               Copy a regular file from the evidence folder or a profile.imports
               root. Retain its checksum and producing-step reference. Original
               files remain unchanged. Reject unsafe paths, symlinks and
               unsupported formats. Use named-check artifact declarations for
-              normal check output.
+              normal check output. --claim ID links the evidence step and
+              STEP_ID into the pending result.
             </p>
             <div class="call">
               <pre><code>spyglass evidence add --step 123456 --file runs/owner/result.json --run change-42 --json</code></pre>
@@ -999,23 +1019,44 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>result</code></h3>
             <pre
               class="usage"
-            ><code>spyglass result --file PATH --run ID</code></pre>
+            ><code>spyglass result [--file PATH] [--check] --run ID | result set --claim ID|--gate NAME|--control ID OPTIONS --run ID</code></pre>
             <p>
-              Read the edited result template printed by up. Validate claim IDs,
-              cited steps and artifacts, visual inspection, independent reads,
-              gates and predeclared negative controls. For multiple viewports
-              use inspections with viewport, expected, observed and artifact for
-              each cited screenshot. The single inspection remains supported.
-              Controls include failedRun; replace its current run ID when the
-              failure belongs to an earlier run, also one from another worktree
-              of the repository. Keep that worktree until the report. A gate can
-              name run, another run with the same source identity, profile and
-              bindings whose steps prove it. Use spyglass schema result for the
-              full shape. Recording a result does not complete cleanup or
-              certify semantic coverage.
+              Validate and record the result. Without --file, read the pending
+              result of the run; up prints its path. Validate claim IDs, cited
+              steps and artifacts, visual inspection, independent reads, gates
+              and predeclared negative controls. Every finding is in
+              data.findings at once, and each finding has a repair: the next
+              action that clears it. --check applies the same rules and records
+              nothing. Spyglass refuses to record a result that has a blocking
+              finding. For multiple viewports use inspections with viewport,
+              expected, observed and artifact for each cited screenshot. The
+              single inspection remains supported. Controls include failedRun;
+              replace its current run ID when the failure belongs to an earlier
+              run, also one from another worktree of the repository. Keep that
+              worktree until the report. A gate can name run, another run with
+              the same source identity and profile whose steps prove it; it
+              fails when its step used a binding with another value. status and
+              up list the rules for this plan in resultRules. Use spyglass
+              schema result for the full shape. Recording a result does not
+              complete cleanup or certify semantic coverage. LINKING: --claim ID
+              adds a passing step and its artifacts to claim ID in the pending
+              result. --independent-read also sets the later read of a
+              side-effect claim. --control ID:failed sets failedStep; --control
+              ID:restored sets restoredStep and cites it in the control claim.
+              --gate NAME adds a passing step and sets the gate outcome to
+              passed; a failed step sets failed. A failed step is not cited by a
+              claim. Linking never writes observed, an inspection observed text
+              or a claim outcome. result set writes them from flags: --claim ID
+              --outcome passed --observed TEXT [--step ID] [--artifact PATH]
+              [--independent-read STEP] [--reason TEXT] [--inspect
+              VIEWPORT:ARTIFACT --expected TEXT --observed TEXT]; --gate NAME
+              --outcome passed [--step ID]; --control ID --observed-failure TEXT
+              --observed-pass TEXT [--failed-run RUN] [--failed-step ID]
+              [--restored-step ID]; --operator agent|human; --limit TEXT. An
+              --observed after --inspect belongs to that inspection.
             </p>
             <div class="call">
-              <pre><code>spyglass result --file .spyglass/runs/change-42/spyglass/result.json --run change-42 --json</code></pre>
+              <pre><code>spyglass result --check --run change-42 --json</code></pre>
               <button class="copy" type="button" data-copy>Copy</button>
             </div>
           </article>
@@ -1314,6 +1355,82 @@ spyglass schema result</code></pre>
           <p>
             <code>up --plan</code> writes a pending result file and prints its
             path. Record the edited file with <code>spyglass result</code>.
+          </p>
+          <h3>Link steps to claims</h3>
+          <p>
+            A driving command (<code>ui</code>, <code>api</code>,
+            <code>db</code>, <code>check</code>, <code>exec</code>,
+            <code>evidence add</code>) can link its step to the pending result
+            while it runs:
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Flag</th>
+                  <th scope="col">When the step passes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>--claim ID</code></td>
+                  <td>
+                    Adds the step ID and the artifacts of the step to claim
+                    <code>ID</code>. Repeat it for more claims.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--independent-read</code></td>
+                  <td>
+                    With <code>--claim</code>, sets
+                    <code>independentRead</code> of the claim to this step. Use
+                    it on the read that follows a side effect.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--control ID:failed</code></td>
+                  <td>
+                    Sets <code>failedStep</code> of control <code>ID</code>. The
+                    step fails on purpose, so Spyglass links it when it fails.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--control ID:restored</code></td>
+                  <td>
+                    Sets <code>restoredStep</code> of control <code>ID</code>
+                    and cites it in the claim of the control.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--gate NAME</code></td>
+                  <td>
+                    Adds the step to gate <code>NAME</code> and sets its outcome
+                    to <code>passed</code>. A failed step sets
+                    <code>failed</code>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            A failed step is not cited by a claim; it stays in the step log.
+            Spyglass never writes <code>observed</code>, the
+            <code>observed</code> text of an inspection or the
+            <code>outcome</code> of a claim. You write them with
+            <code>result set</code>:
+          </p>
+          <div class="call">
+            <pre><code>spyglass result set --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass result set --claim CLAIM_ID --inspect 1280x800:ARTIFACT.png \
+  --expected "WHAT SHOULD SHOW" --observed "WHAT THE IMAGE SHOWS"
+spyglass result set --control CONTROL_ID --observed-failure "..." --observed-pass "..."
+spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p>
+            An <code>--observed</code> after <code>--inspect</code> belongs to
+            that inspection. <code>result set</code> refuses an unknown claim,
+            gate, control or step before it changes the file.
           </p>
           <h3>Inspections</h3>
           <p>
@@ -1732,6 +1849,71 @@ spyglass schema result</code></pre>
                   <td>
                     The report files are still produced, but the run is
                     incomplete and exits with failed-check status.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Claim</td>
+                  <td>
+                    A step run with <code>--claim ID</code> fails, and no later
+                    step for <code>ID</code> passes.
+                  </td>
+                  <td>
+                    The pending result does not cite the failed step and leaves
+                    the claim <code>not run</code>. The failed step stays in
+                    <code>log.jsonl</code>. <code>result</code> rejects a
+                    <code>passed</code> outcome for <code>ID</code> that cites
+                    it, with <code>FAILED_STEP</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Claim</td>
+                  <td>
+                    A step run with <code>--claim ID</code>,
+                    <code>--control ID:failed|restored</code> or
+                    <code>--gate NAME</code> passes.
+                  </td>
+                  <td>
+                    Spyglass adds the step and the artifacts it made to the
+                    pending result. It never writes <code>observed</code>, an
+                    inspection's <code>observed</code> or a claim
+                    <code>outcome</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Result</td>
+                  <td>
+                    <code>result</code> or <code>result --check</code> inspects
+                    a result file with multiple independent errors (for example,
+                    a missing step on claim A and a missing inspection on claim
+                    B).
+                  </td>
+                  <td>
+                    Both <code>result</code> and
+                    <code>result --check</code> report all findings together in
+                    <code>data.findings</code> with the same rules and messages,
+                    and each finding has a <code>repair</code> hint.
+                    <code>--check</code> does not record the result on the run.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Result</td>
+                  <td>
+                    <code>result</code> is run without <code>--file</code>.
+                  </td>
+                  <td>
+                    Spyglass reads the pending result file of the run
+                    (<code>resultPath</code>). It does not read another file.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Result</td>
+                  <td>
+                    <code>result set</code> is given an unknown claim, gate or
+                    control ID, or an unknown outcome.
+                  </td>
+                  <td>
+                    The command exits with status 2 and names the valid IDs. It
+                    does not change the pending result.
                   </td>
                 </tr>
                 <tr>

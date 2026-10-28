@@ -18,6 +18,7 @@ import { planSchema, profileSchema, validate } from "./schema.js";
 import {
   Context,
   assertSource,
+  blankClaim,
   ignored,
   lockInfo,
   runDirectory,
@@ -180,15 +181,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
         observedFailure: "",
         observedPass: "",
       })),
-      claims: plan.claims.map((c) => ({
-        id: c.id,
-        outcome: "not run",
-        steps: [],
-        observed: "",
-        artifacts: [],
-        ...(c.kind === "side-effect" ? { independentRead: "" } : {}),
-        ...(c.kind === "visual" ? { inspections: [] } : {}),
-      })),
+      claims: plan.claims.map(blankClaim),
       gates: plan.gates.map((name) => ({
         name,
         outcome: "not run",

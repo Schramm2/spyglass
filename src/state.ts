@@ -39,6 +39,26 @@ export interface Artifact {
   kind: string;
   step: string;
 }
+/**
+ * What a driving command links its step to in the pending result file. Only
+ * mechanical facts move: step IDs, artifact paths and the later read. The
+ * operator still writes every observation and every claim outcome.
+ */
+export interface StepLinks {
+  claims: string[];
+  independentRead: boolean;
+  controls: { id: string; state: "failed" | "restored" }[];
+  gates: string[];
+  /** For `evidence add`: the step that the evidence belongs to. */
+  evidenceFor?: string;
+}
+export interface LinkSummary {
+  claims: string[];
+  controls: string[];
+  gates: string[];
+  skipped: string[];
+  error?: string;
+}
 export interface Step {
   run: string;
   profileHash: string;
@@ -377,10 +397,133 @@ export function lock(run: Run, command: string): () => void {
   }
   return () => rmSync(path, { recursive: true, force: true });
 }
+export function blankClaim(
+  claim: Plan["claims"][number],
+): Result["claims"][number] {
+  return {
+    id: claim.id,
+    outcome: "not run",
+    steps: [],
+    observed: "",
+    artifacts: [],
+    ...(claim.kind === "side-effect" ? { independentRead: "" } : {}),
+    ...(claim.kind === "visual" ? { inspections: [] } : {}),
+  };
+}
+function blankControl(run: Run, id: string): Result["controls"][number] {
+  return {
+    id,
+    failedRun: run.id,
+    failedStep: "",
+    restoredStep: "",
+    observedFailure: "",
+    observedPass: "",
+  };
+}
+function stepSucceeded(step: Step): boolean {
+  return (
+    step.status === "passed" &&
+    step.exitCode === 0 &&
+    !step.data?.error &&
+    step.data?.passed !== false &&
+    step.data?.timedOut !== true
+  );
+}
+const addOnce = (list: string[], value: string) => {
+  if (value && !list.includes(value)) list.push(value);
+};
+/**
+ * Add a finished step to the pending result of the run. A failed step is never
+ * cited by a claim, so a retry does not leave a failed assertion in it; the
+ * failed step stays in the log. A problem with the file never fails the step.
+ */
+export function linkPendingResult(
+  run: Run,
+  step: Step,
+  links: StepLinks,
+): LinkSummary {
+  const summary: LinkSummary = {
+    claims: [],
+    controls: [],
+    gates: [],
+    skipped: [],
+  };
+  let pending: Result;
+  try {
+    pending = readJson(run.resultPath) as Result;
+    if (!Array.isArray(pending.claims)) throw new Error("no claims array");
+  } catch (error) {
+    summary.error = `Cannot update the pending result ${run.resultPath}: ${error instanceof Error ? error.message : String(error)}`;
+    return summary;
+  }
+  pending.controls ??= [];
+  pending.gates ??= [];
+  const passed = stepSucceeded(step);
+  const paths = step.artifacts.map((artifact) => artifact.path);
+  const claimRow = (id: string) => {
+    let row = pending.claims.find((item) => item.id === id);
+    if (!row) {
+      row = blankClaim(run.plan.claims.find((item) => item.id === id)!);
+      pending.claims.push(row);
+    }
+    return row;
+  };
+  const cite = (id: string) => {
+    const row = claimRow(id);
+    addOnce(row.steps, step.id);
+    if (links.evidenceFor) addOnce(row.steps, links.evidenceFor);
+    row.artifacts ??= [];
+    for (const path of paths) addOnce(row.artifacts, path);
+    return row;
+  };
+  for (const id of links.claims) {
+    if (!passed) {
+      summary.skipped.push(`claim ${id}: the step failed, so it is not cited`);
+      continue;
+    }
+    const row = cite(id);
+    if (links.independentRead) row.independentRead = step.id;
+    summary.claims.push(id);
+  }
+  for (const { id, state } of links.controls) {
+    let row = pending.controls.find((item) => item.id === id);
+    if (!row) pending.controls.push((row = blankControl(run, id)));
+    if (state === "failed") {
+      row.failedStep = step.id;
+      summary.controls.push(`${id}:failed`);
+    } else if (passed) {
+      row.restoredStep = step.id;
+      // The control's own claim must cite the restored pass.
+      const spec = run.plan.controls.find((item) => item.id === id);
+      if (spec && run.plan.claims.some((item) => item.id === spec.claim))
+        cite(spec.claim);
+      summary.controls.push(`${id}:restored`);
+    } else
+      summary.skipped.push(
+        `control ${id}: the restored step failed, so it is not linked`,
+      );
+  }
+  for (const name of links.gates) {
+    let row = pending.gates.find((item) => item.name === name);
+    if (!row)
+      pending.gates.push((row = { name, outcome: "not run", steps: [] }));
+    row.outcome = passed ? "passed" : "failed";
+    if (passed) addOnce(row.steps, step.id);
+    summary.gates.push(`${name}:${row.outcome}`);
+  }
+  try {
+    writeJson(run.resultPath, pending);
+  } catch (error) {
+    summary.error = `Cannot write the pending result: ${error instanceof Error ? error.message : String(error)}`;
+  }
+  return summary;
+}
 export class Context {
   vault: Secrets;
   step: Step;
   run: Run;
+  links?: StepLinks;
+  linked?: LinkSummary;
   constructor(run: Run, command: string, args: string[]) {
     this.run = run;
     this.vault = new Secrets(run.repo);
@@ -493,6 +636,11 @@ export class Context {
     this.step.durationMs = Date.now() - Date.parse(this.step.startedAt);
     this.step.data = this.vault.clean(data);
     this.step.args = this.vault.clean(this.step.args);
+    // A removed worktree took the pending result with it.
+    if (this.links && !worktreeRemoved(this.run)) {
+      this.linked = linkPendingResult(this.run, this.step, this.links);
+      this.step.data = { ...this.step.data, linked: this.linked };
+    }
     // A removed worktree took the log with it; never recreate its folders.
     if (!worktreeRemoved(this.run)) {
       const file = safePath(join(this.run.evidence, "spyglass"), "log.jsonl");

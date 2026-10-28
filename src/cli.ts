@@ -13,7 +13,7 @@ import {
   runs,
   saveRun,
 } from "./state.js";
-import type { Run } from "./state.js";
+import type { Run, StepLinks } from "./state.js";
 const help = `Spyglass — verify a change and retain its evidence.
 
 Commands:
@@ -30,10 +30,13 @@ Commands:
   ps | logs SERVICE            Inspect the profile's Compose project
   mark NAME                    Save a timestamp for later log inspection
   evidence add --step ID --file PATH
-  result --file FILE           Validate and record claim results
+  result [--file FILE] [--check]  Validate and record claim results
+  result set --claim ID ...    Edit the pending result with flags
   down                         Clean up this run's owned resources
   report                       Write an offline evidence report
 
+Step flags on ui, api, db, check, exec, evidence: --claim ID --independent-read
+  --control ID:failed|restored --gate NAME link the step into the pending result.
 Global options: --json --run ID --profile PATH --binding NAME=VALUE
 SPYGLASS_RUN selects an existing run. --run takes precedence.
 Exit codes: 0 success; 1 failed verification; 2 invalid input; 3 environment failure.
@@ -45,6 +48,84 @@ Examples:
   spyglass down --run change-42
   spyglass report --run change-42
 A successful command is evidence for a step. It does not by itself prove a claim.`;
+const linkCommands = ["ui", "api", "db", "check", "exec", "evidence"];
+/**
+ * Take the step-linking flags out of a driving command's arguments, so the
+ * command module never sees them. Arguments after `--` belong to the child.
+ */
+function takeLinks(rest: string[]): StepLinks {
+  const links: StepLinks = {
+    claims: [],
+    independentRead: false,
+    controls: [],
+    gates: [],
+  };
+  let end = rest.includes("--") ? rest.indexOf("--") : rest.length;
+  for (let i = 0; i < end;) {
+    const a = rest[i]!;
+    if (a === "--independent-read") {
+      links.independentRead = true;
+      rest.splice(i, 1);
+      end--;
+    } else if (["--claim", "--control", "--gate"].includes(a)) {
+      const v = requireValue(rest[i + 1], a);
+      if (a === "--claim") links.claims.push(v);
+      else if (a === "--gate") links.gates.push(v);
+      else {
+        const at = v.lastIndexOf(":");
+        const state = v.slice(at + 1);
+        if (at < 1 || (state !== "failed" && state !== "restored"))
+          throw new Fault(
+            "INVALID_USAGE",
+            "--control needs ID:failed or ID:restored.",
+            "Use --control ready-control:failed for the failing attempt and --control ready-control:restored for the passing one.",
+          );
+        links.controls.push({ id: v.slice(0, at), state });
+      }
+      rest.splice(i, 2);
+      end -= 2;
+    } else i++;
+  }
+  return links;
+}
+function linked(links: StepLinks): boolean {
+  return Boolean(
+    links.claims.length ||
+    links.controls.length ||
+    links.gates.length ||
+    links.independentRead,
+  );
+}
+/** Refuse a link to a claim, control or gate that the plan lacks. */
+function checkLinks(run: Run, links: StepLinks): void {
+  const unknown = (kind: string, names: string[], known: string[]) => {
+    const bad = names.find((name) => !known.includes(name));
+    if (bad !== undefined)
+      throw new Fault(
+        `UNKNOWN_${kind.toUpperCase()}`,
+        `The plan of run ${run.id} has no ${kind} ${bad}. Known ${kind}s: ${known.join(", ") || "none"}.`,
+        `Use a ${kind} ID from spyglass status --run ${run.id}.`,
+      );
+  };
+  if (links.independentRead && !links.claims.length)
+    throw new Fault(
+      "INVALID_USAGE",
+      "--independent-read needs --claim ID.",
+      "Add --claim ID to the step that reads the completed state.",
+    );
+  unknown(
+    "claim",
+    links.claims,
+    run.plan.claims.map((c) => c.id),
+  );
+  unknown(
+    "control",
+    links.controls.map((c) => c.id),
+    run.plan.controls.map((c) => c.id),
+  );
+  unknown("gate", links.gates, run.plan.gates);
+}
+
 const raw = process.argv.slice(2);
 let json = false;
 let selected: string | undefined;
@@ -126,7 +207,9 @@ function emit(data: Record<string, unknown>, error?: Fault): void {
     status: error ? "failed" : "passed",
     run: run?.id ?? null,
     step: ctx?.step.id ?? null,
-    data: ctx ? ctx.vault.clean(data) : data,
+    data: ctx
+      ? ctx.vault.clean(ctx.linked ? { ...data, linked: ctx.linked } : data)
+      : data,
     artifacts: ctx?.step.artifacts ?? [],
     error: error
       ? {
@@ -260,13 +343,41 @@ try {
       );
     const allowed: Record<string, string[]> = {
       init: ["--force"],
-      result: ["--file"],
+      result:
+        args[1] === "set"
+          ? [
+              "--claim",
+              "--gate",
+              "--control",
+              "--outcome",
+              "--observed",
+              "--reason",
+              "--step",
+              "--artifact",
+              "--independent-read",
+              "--inspect",
+              "--expected",
+              "--observed-failure",
+              "--observed-pass",
+              "--failed-run",
+              "--failed-step",
+              "--restored-step",
+              "--operator",
+              "--limit",
+            ]
+          : ["--file", "--check"],
       evidence: ["--step", "--file"],
       artifact: ["--step", "--file"],
       api: ["--seat", "--data", "--expect"],
       db: ["--expect-rows"],
       logs: ["--since"],
     };
+    let links: StepLinks | undefined;
+    if (linkCommands.includes(command)) {
+      const rest = args.splice(1);
+      links = takeLinks(rest);
+      args.push(...rest);
+    }
     if (!["exec", "ui"].includes(command))
       for (const a of args.slice(1))
         if (a.startsWith("--") && !(allowed[command] ?? []).includes(a))
@@ -304,6 +415,15 @@ try {
       release = lock(run, command);
       run = loadRun(repo, run.id);
       ctx = new Context(run, command, args.slice(1));
+      if (links && linked(links)) {
+        checkLinks(run, links);
+        ctx.links = links;
+        // The evidence belongs to the step it attaches to as well.
+        if (command === "evidence") {
+          const at = args.indexOf("--step");
+          if (at > 0 && args[at + 1]) links.evidenceFor = args[at + 1];
+        }
+      }
       let data: Record<string, unknown>;
       if (["exec", "check", "ui", "api", "db"].includes(command)) {
         if (

@@ -153,15 +153,27 @@ side-effect claim names its independent read. A visual claim includes your
 image inspection. Report gates, environment checks, stand-ins, uncovered paths,
 owner cleanup, and remaining limits separately.
 
-Edit the result template printed by `up`. The output of `up` and `status` (not
-the template) lists `resultRules`: what each claim, control and gate of this
-plan needs. Then record the result with
-`spyglass --run <run-id> result --file <result-file> --json`. The CLI checks
-step IDs and evidence; fix a missing proof by running the required check. The
+Link each step to its claim while you drive. Add `--claim <id>` to `check`,
+`exec`, `ui`, `api`, `db` or `evidence add`; add `--independent-read` to the
+read that follows a side effect; add `--control <id>:failed` and
+`--control <id>:restored` to the two attempts of a negative control; add
+`--gate <name>` to a gate step. A passing step then adds its step ID and its
+artifact paths to the pending result that `up` wrote, so you copy no ID or
+path. A failed step is not cited. Spyglass never writes your judgement: state
+it with `spyglass --run <run-id> result set --claim <id> --outcome passed
+--observed "<what you saw>"`. For a screenshot, look at it first, then add
+`--inspect <viewport>:<artifact> --expected "<text>" --observed "<text>"`.
+The output of `up` and `status` (not the template) lists `resultRules`: what
+each claim, control and gate of this plan needs. Check the file with
+`spyglass --run <run-id> result --check --json`. It returns every finding at
+once in `data.findings`, each with a `repair`; apply them all, then run
+`spyglass --run <run-id> result --json`, which reads the pending result when
+you give no `--file`. Fix a missing proof by running the required check. The
 report uses only a recorded result: an edited file that you did not submit
 through `result` leaves the report incomplete with `RESULT_MISSING`.
-Copy each returned artifact `path` exactly into the result. It is relative to
-the run's evidence folder under `spyglass/`; do not add the repository path.
+When you edit the file by hand, copy each returned artifact `path` exactly into
+the result. It is relative to the run's evidence folder under `spyglass/`; do
+not add the repository path.
 Use `completedChecks.spyglassExitCode` and the recorded status to judge a check;
 `childExitCode` describes only the child process, and a zero child exit code
 can still accompany failed assertions. Control templates include

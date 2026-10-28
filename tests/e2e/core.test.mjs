@@ -3363,3 +3363,668 @@ test("a run whose worktree was removed stays listed and can still be stopped", a
     await removeRepo(dir);
   }
 });
+
+// Slice 1 of docs/verification-speed.md: live claim linking and result repair.
+function linkProfile() {
+  return baseProfile({
+    launch: { mode: "none" },
+    web: undefined,
+    api: undefined,
+    browser: undefined,
+    checks: {
+      pass: {
+        command: ["node", "fixtures/demo-app/check.mjs", "pass"],
+        result: "json",
+      },
+      fail: {
+        command: ["node", "fixtures/demo-app/check.mjs", "fail"],
+        result: "json",
+      },
+      shot: {
+        command: [
+          "node",
+          "-e",
+          "require('node:fs').writeFileSync('.spyglass/runs/'+process.argv[1]+'/shot.png','x')",
+          "${run}",
+        ],
+        artifacts: [".spyglass/runs/${run}/shot.png"],
+      },
+    },
+  });
+}
+
+function linkClaim(id, kind, checks) {
+  return {
+    id,
+    behavior: `The ${id} behavior works.`,
+    entryPoint: "The demo app.",
+    precondition: "The run is ready.",
+    expected: `The ${id} result is correct.`,
+    case: "Valid input.",
+    checks,
+    evidence: ["retained output"],
+    kind,
+    required: true,
+  };
+}
+
+const linkPlan = {
+  claims: [
+    linkClaim("ready", "behavior", ["pass"]),
+    linkClaim("effect", "side-effect", ["exec"]),
+    linkClaim("shot", "visual", ["shot"]),
+  ],
+  controls: [
+    {
+      id: "ready-control",
+      claim: "ready",
+      expectation: "The demo assertion detects its deliberate failure.",
+      assertion: "demo-check",
+    },
+  ],
+  gates: ["unit"],
+  limits: [],
+};
+
+const pendingResult = async (dir, run) =>
+  JSON.parse(await readRunFile(dir, run, "spyglass/result.json"));
+const storedRun = async (dir, run) =>
+  JSON.parse(await readFile(await runRecord(dir, run), "utf8"));
+const drive = (dir, run, args, expected = { ok: true, code: 0 }) => {
+  // Arguments after -- belong to the child command.
+  const at = args.indexOf("--");
+  const full =
+    at < 0
+      ? [...args, "--run", run]
+      : [...args.slice(0, at), "--run", run, ...args.slice(at)];
+  return runCli(dir, ["--json", ...full]).then((result) =>
+    assertEnvelope(result, expected),
+  );
+};
+
+test("result and result --check report every finding with a repair, and --check records nothing", async () => {
+  const twoClaims = {
+    claims: [
+      linkClaim("ready", "behavior", ["pass"]),
+      linkClaim("shot", "visual", ["shot"]),
+    ],
+    gates: [],
+    limits: [],
+  };
+  const dir = await makeRepo({ profile: linkProfile(), plan: twoClaims });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "findings",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const pass = await drive(dir, run, ["check", "pass"]);
+    const shot = await drive(dir, run, ["check", "shot"]);
+    const png = shot.artifacts.find((a) => a.path.endsWith(".png")).path;
+    const result = {
+      operator: "agent",
+      claims: [
+        {
+          id: "ready",
+          outcome: "passed",
+          steps: [],
+          observed: "It worked.",
+          artifacts: [],
+        },
+        {
+          id: "shot",
+          outcome: "passed",
+          steps: [shot.step],
+          observed: "It looked right.",
+          artifacts: [],
+        },
+      ],
+      gates: [],
+      limits: [],
+    };
+    await writeJson(join(dir, "result.json"), result);
+
+    const checked = await drive(
+      dir,
+      run,
+      ["result", "--check", "--file", "result.json"],
+      {
+        ok: false,
+        code: 1,
+      },
+    );
+    const findings = checked.data.findings;
+    const missingStep = findings.find(
+      (f) => f.code === "MISSING_STEP" && f.claim === "ready",
+    );
+    const missingInspection = findings.find(
+      (f) => f.code === "VISUAL_INSPECTION_MISSING" && f.claim === "shot",
+    );
+    assert.ok(
+      missingStep,
+      `claim ready needs a MISSING_STEP finding: ${JSON.stringify(findings)}`,
+    );
+    assert.ok(
+      missingInspection,
+      "claim shot needs a VISUAL_INSPECTION_MISSING finding",
+    );
+    for (const finding of findings) {
+      assert.equal(
+        typeof finding.repair,
+        "string",
+        `${finding.code} has no repair`,
+      );
+      assert.ok(finding.repair.length > 10);
+    }
+    assert.match(missingStep.repair, /--claim ready/);
+    assert.ok(
+      missingInspection.repair.includes(png),
+      "repair names the screenshot",
+    );
+    assert.match(missingInspection.repair, /result set --claim shot/);
+    assert.equal(
+      (await storedRun(dir, run)).result,
+      undefined,
+      "--check must not record the result",
+    );
+
+    const submitted = await drive(
+      dir,
+      run,
+      ["result", "--file", "result.json"],
+      {
+        ok: false,
+        code: 1,
+      },
+    );
+    assert.deepEqual(
+      submitted.data.findings.map(({ code, message, repair }) => ({
+        code,
+        message,
+        repair,
+      })),
+      findings.map(({ code, message, repair }) => ({ code, message, repair })),
+      "result and result --check apply the same rules",
+    );
+    assert.equal((await storedRun(dir, run)).result, undefined);
+
+    result.claims[0].steps = [pass.step];
+    result.claims[1].inspections = [
+      {
+        viewport: "1280x800",
+        expected: "A readable page.",
+        observed: "It was readable.",
+        artifact: png,
+      },
+    ];
+    await writeJson(join(dir, "result.json"), result);
+    const valid = await drive(dir, run, [
+      "result",
+      "--check",
+      "--file",
+      "result.json",
+    ]);
+    assert.equal(valid.data.recorded, false);
+    assert.equal(valid.data.valid, true);
+    assert.equal((await storedRun(dir, run)).result, undefined);
+    const recorded = await drive(dir, run, ["result", "--file", "result.json"]);
+    assert.equal(recorded.data.recorded, true);
+    assert.ok(
+      (await storedRun(dir, run)).result,
+      "result records the valid file",
+    );
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("result without --file reads the pending result of the run", async () => {
+  const dir = await makeRepo({
+    profile: linkProfile(),
+    plan: {
+      claims: [linkClaim("ready", "behavior", ["pass"])],
+      gates: [],
+      limits: [],
+    },
+  });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "default-file",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const pass = await drive(dir, run, ["check", "pass"]);
+    const pending = await pendingResult(dir, run);
+    pending.claims[0] = {
+      ...pending.claims[0],
+      outcome: "passed",
+      observed: "Passed.",
+    };
+    await writeJson(
+      join(dir, ".spyglass/runs", run, "spyglass/result.json"),
+      pending,
+    );
+    const rejected = await drive(dir, run, ["result"], { ok: false, code: 1 });
+    assert.ok(
+      rejected.data.findings.some((f) => f.code === "MISSING_STEP"),
+      "the pending file was read and its missing step reported",
+    );
+    pending.claims[0].steps = [pass.step];
+    await writeJson(
+      join(dir, ".spyglass/runs", run, "spyglass/result.json"),
+      pending,
+    );
+    const recorded = await drive(dir, run, ["result"]);
+    assert.equal(recorded.data.recorded, true);
+    assert.match(recorded.data.resultPath, /spyglass\/result\.json$/);
+    assert.equal(
+      (await storedRun(dir, run)).result.claims[0].observed,
+      "Passed.",
+    );
+    const usage = await drive(dir, run, ["result", "--file"], {
+      ok: false,
+      code: 2,
+    });
+    assert.equal(usage.error.code, "MISSING_INPUT");
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("steps run with --claim, --control and --gate link themselves into the pending result without judgement", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: linkPlan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "linked",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const failed = await drive(
+      dir,
+      run,
+      [
+        "check",
+        "fail",
+        "--claim",
+        "ready",
+        "--control",
+        "ready-control:failed",
+      ],
+      { ok: false, code: 1 },
+    );
+    let pending = await pendingResult(dir, run);
+    const ready = () => pending.claims.find((c) => c.id === "ready");
+    assert.deepEqual(ready().steps, [], "a failed step is not cited");
+    assert.equal(ready().outcome, "not run");
+    assert.equal(pending.controls[0].failedStep, failed.step);
+    assert.equal(pending.controls[0].restoredStep, "");
+
+    const unitFailed = await drive(
+      dir,
+      run,
+      [
+        "exec",
+        "--gate",
+        "unit",
+        "--",
+        process.execPath,
+        "-e",
+        "process.exit(1)",
+      ],
+      { ok: false, code: 1 },
+    );
+    pending = await pendingResult(dir, run);
+    assert.deepEqual(pending.gates[0], {
+      name: "unit",
+      outcome: "failed",
+      steps: [],
+    });
+
+    const pass = await drive(dir, run, [
+      "check",
+      "pass",
+      "--claim",
+      "ready",
+      "--control",
+      "ready-control:restored",
+    ]);
+    const unit = await drive(dir, run, [
+      "exec",
+      "--gate",
+      "unit",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    const act = await drive(dir, run, [
+      "exec",
+      "--claim",
+      "effect",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    const read = await drive(dir, run, [
+      "exec",
+      "--claim",
+      "effect",
+      "--independent-read",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    const shot = await drive(dir, run, ["check", "shot", "--claim", "shot"]);
+    const png = shot.artifacts.find((a) => a.path.endsWith(".png")).path;
+    pending = await pendingResult(dir, run);
+
+    assert.deepEqual(ready().steps, [pass.step]);
+    assert.deepEqual(
+      ready().artifacts,
+      pass.artifacts.map((a) => a.path),
+    );
+    assert.equal(ready().observed, "", "observed stays for the operator");
+    assert.equal(ready().outcome, "not run", "outcome stays for the operator");
+    assert.equal(pending.controls[0].restoredStep, pass.step);
+    assert.equal(pending.controls[0].observedFailure, "");
+    assert.deepEqual(pending.gates[0], {
+      name: "unit",
+      outcome: "passed",
+      steps: [unit.step],
+    });
+    const effect = pending.claims.find((c) => c.id === "effect");
+    assert.deepEqual(effect.steps, [act.step, read.step]);
+    assert.equal(effect.independentRead, read.step);
+    const visual = pending.claims.find((c) => c.id === "shot");
+    assert.deepEqual(visual.steps, [shot.step]);
+    assert.ok(visual.artifacts.includes(png));
+    assert.deepEqual(
+      visual.inspections,
+      [],
+      "an inspection needs the operator's own words",
+    );
+    assert.ok(unitFailed.step, "the failed gate attempt stays in the log");
+    const log = await readRunFile(dir, run, "spyglass/log.jsonl");
+    for (const id of [failed.step, unitFailed.step])
+      assert.ok(log.includes(id), `step ${id} stays in log.jsonl`);
+
+    // The operator now writes only what a person must judge.
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The check passed after it failed.",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "effect",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The read showed the completed state.",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "shot",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The screenshot was inspected.",
+      "--inspect",
+      `1280x800:${png}`,
+      "--expected",
+      "A readable page.",
+      "--observed",
+      "The page was readable.",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--control",
+      "ready-control",
+      "--observed-failure",
+      "The assertion failed.",
+      "--observed-pass",
+      "The assertion passed.",
+    ]);
+    await drive(dir, run, ["result", "--check"]);
+    await drive(dir, run, ["result"]);
+    await drive(dir, run, ["down"]);
+    const report = await drive(dir, run, ["report"]);
+    assert.equal(
+      report.data.status,
+      "passed",
+      JSON.stringify(report.data.findings),
+    );
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("a failed claim step cannot support a passed claim", async () => {
+  const dir = await makeRepo({
+    profile: linkProfile(),
+    plan: {
+      claims: [linkClaim("ready", "behavior", ["pass"])],
+      gates: [],
+      limits: [],
+    },
+  });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "failed-link",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const failed = await drive(
+      dir,
+      run,
+      ["check", "fail", "--claim", "ready"],
+      { ok: false, code: 1 },
+    );
+    const pending = await pendingResult(dir, run);
+    assert.deepEqual(pending.claims[0].steps, []);
+    assert.equal(pending.claims[0].outcome, "not run");
+
+    const missing = await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Looked fine.",
+    ]);
+    assert.equal(missing.data.recorded, false);
+    const noStep = await drive(dir, run, ["result", "--check"], {
+      ok: false,
+      code: 1,
+    });
+    assert.ok(
+      noStep.data.findings.some(
+        (f) => f.code === "MISSING_STEP" && f.claim === "ready",
+      ),
+    );
+
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--step",
+      failed.step,
+    ]);
+    const rejected = await drive(dir, run, ["result"], { ok: false, code: 1 });
+    assert.ok(
+      rejected.data.findings.some(
+        (f) => f.code === "FAILED_STEP" && f.claim === "ready",
+      ),
+      JSON.stringify(rejected.data.findings),
+    );
+    assert.equal((await storedRun(dir, run)).result, undefined);
+    assert.ok(
+      (await readRunFile(dir, run, "spyglass/log.jsonl")).includes(failed.step),
+    );
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("step-linking flags are checked before the step runs", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: linkPlan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "link-usage",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const marker = join(dir, ".spyglass/ran.txt");
+    const unknownClaim = await drive(
+      dir,
+      run,
+      [
+        "exec",
+        "--claim",
+        "nope",
+        "--",
+        process.execPath,
+        "-e",
+        `require('node:fs').writeFileSync(${JSON.stringify(marker)},'x')`,
+      ],
+      { ok: false, code: 2 },
+    );
+    assert.equal(unknownClaim.error.code, "UNKNOWN_CLAIM");
+    assert.match(
+      unknownClaim.error.message,
+      /ready/,
+      "names the valid claim IDs",
+    );
+    assert.ok(!existsSync(marker), "the step did not run");
+    const unknownGate = await drive(
+      dir,
+      run,
+      ["check", "pass", "--gate", "nope"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(unknownGate.error.code, "UNKNOWN_GATE");
+    const unknownControl = await drive(
+      dir,
+      run,
+      ["check", "pass", "--control", "nope:failed"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(unknownControl.error.code, "UNKNOWN_CONTROL");
+    const badState = await drive(
+      dir,
+      run,
+      ["check", "pass", "--control", "ready-control:later"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(badState.error.code, "INVALID_USAGE");
+    const orphan = await drive(
+      dir,
+      run,
+      ["check", "pass", "--independent-read"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(orphan.error.code, "INVALID_USAGE");
+    const wrongCommand = await drive(dir, run, ["status", "--claim", "ready"], {
+      ok: false,
+      code: 2,
+    });
+    assert.equal(wrongCommand.error.code, "UNKNOWN_OPTION");
+    const pending = await pendingResult(dir, run);
+    assert.deepEqual(pending.claims.find((c) => c.id === "ready").steps, []);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("result set rejects unknown IDs and leaves the pending result unchanged", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: linkPlan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "set-usage",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const file = join(dir, ".spyglass/runs", run, "spyglass/result.json");
+    const before = await readFile(file, "utf8");
+    for (const [args, code] of [
+      [["--claim", "nope", "--outcome", "passed"], "UNKNOWN_CLAIM"],
+      [["--gate", "nope", "--outcome", "passed"], "UNKNOWN_GATE"],
+      [["--control", "nope", "--observed-failure", "x"], "UNKNOWN_CONTROL"],
+      [["--claim", "ready", "--outcome", "great"], "INVALID_USAGE"],
+      [["--claim", "ready", "--inspect", "no-colon"], "INVALID_USAGE"],
+      [[], "INVALID_USAGE"],
+    ]) {
+      const rejected = await drive(dir, run, ["result", "set", ...args], {
+        ok: false,
+        code: 2,
+      });
+      assert.equal(rejected.error.code, code, `result set ${args.join(" ")}`);
+    }
+    assert.equal(await readFile(file, "utf8"), before);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});

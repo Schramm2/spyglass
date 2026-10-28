@@ -86,8 +86,10 @@ In your own repository, the workflow is:
 ```sh
 spyglass init                                   # write spyglass.json; review it
 spyglass up --run my-change --plan verification-plan.json --json
-spyglass check verify --run my-change --json    # run a named check
-spyglass result --run my-change --file PATH     # record claim results
+spyglass check verify --run my-change --claim CLAIM_ID --json   # run a check; link it to a claim
+spyglass result set --run my-change --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass result --check --run my-change         # validate; record nothing
+spyglass result --run my-change                 # record claim results
 spyglass doctor --run my-change --json
 spyglass down --run my-change --json            # clean up owned resources
 spyglass report --run my-change --json          # write the offline report
@@ -95,10 +97,15 @@ spyglass report --run my-change --json          # write the offline report
 
 Add `.spyglass/` to your `.gitignore`. It holds the evidence folder.
 
-`up --plan` writes a pending result file and prints its path. Put the step IDs,
-artifact paths and observations from your checks into that file. Then record it
-with `spyglass result`. If a check fails, keep the original expectation. Repair
-the source and start a new run.
+`up --plan` writes a pending result file and prints its path. Run each step
+with `--claim ID`: when the step passes, Spyglass adds its step ID and its
+artifact paths to that claim in the pending file. You write only what a person
+must judge: what you observed and the outcome of each claim, with
+`spyglass result set`. Check the file with `spyglass result --check`. It lists
+every finding at once in `data.findings`, and each finding has a `repair`. Then
+record it with `spyglass result`, which reads the pending file when you give no
+`--file`. If a check fails, keep the original expectation. Repair the source
+and start a new run.
 
 ## Usage
 
@@ -116,6 +123,34 @@ the source and start a new run.
 
 Run `spyglass --help` for all commands, and `spyglass COMMAND --help` for the
 arguments of one command.
+
+### Link steps to claims
+
+A driving command (`ui`, `api`, `db`, `check`, `exec`, `evidence add`) can link
+its step to the pending result while it runs:
+
+| Flag | When the step passes |
+| --- | --- |
+| `--claim ID` | Adds the step ID and the artifacts of the step to claim `ID`. Repeat it for more claims. |
+| `--independent-read` | With `--claim`, sets `independentRead` of the claim to this step. Use it on the read that follows a side effect. |
+| `--control ID:failed` | Sets `failedStep` of control `ID`. The step fails on purpose, so Spyglass links it when it fails. |
+| `--control ID:restored` | Sets `restoredStep` of control `ID` and cites it in the claim of the control. |
+| `--gate NAME` | Adds the step to gate `NAME` and sets its outcome to `passed`. A failed step sets `failed`. |
+
+A failed step is not cited by a claim; it stays in the step log. Spyglass never
+writes `observed`, the `observed` text of an inspection or the `outcome` of a
+claim. You write them with `result set`:
+
+```sh
+spyglass result set --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass result set --claim CLAIM_ID --inspect 1280x800:ARTIFACT.png \
+  --expected "WHAT SHOULD SHOW" --observed "WHAT THE IMAGE SHOWS"
+spyglass result set --control CONTROL_ID --observed-failure "..." --observed-pass "..."
+spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID
+```
+
+An `--observed` after `--inspect` belongs to that inspection. `result set`
+refuses an unknown claim, gate, control or step before it changes the file.
 
 ### Output and exit codes
 
