@@ -85,5 +85,8 @@ Read the relevant documents before you start work:
 - `docs/browser-benchmark.md`: the 150 ms budget for each `ui` command and the
   build choices that meet it. Read before you change `ui`, the browser proxy
   or the build script.
+- `docs/verification-speed.md`: the ideas, targets and proof plan for a faster
+  verification. Read before you add or change a command that drives a tool,
+  records evidence or validates a result.
 - `CONTRIBUTING.md`: the contributor workflow for people. `README.md` and
   `docs/quickstart.md`: the user-facing contract for commands and output.
