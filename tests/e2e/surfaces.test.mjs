@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { connect } from "node:net";
 import { existsSync } from "node:fs";
-import { readFile, readdir, rm, stat } from "node:fs/promises";
+import { readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -1299,8 +1299,17 @@ surfaceTest(
         },
       );
 
+      // The container health check can lag pg_isready; ps waits for it.
       const ps = assertEnvelope(
-        await runCli(dir, ["--json", "--run", run, "ps"]),
+        await runCli(dir, [
+          "--json",
+          "--run",
+          run,
+          "ps",
+          "--wait",
+          "--timeout-ms",
+          "30000",
+        ]),
         { ok: true, code: 0 },
       );
       assert.match(JSON.stringify(ps.data), new RegExp(project));
@@ -2273,6 +2282,262 @@ surfaceTest(
       await ui(dir, run, ["get", "title"]);
     } finally {
       await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+// Slice 4 of docs/verification-speed.md: db assertions, role cache and ps --wait.
+async function startDemoDatabase(dir, project) {
+  const composeArgs = [
+    "compose",
+    "-p",
+    project,
+    "-f",
+    "fixtures/demo-app/compose.yaml",
+  ];
+  const started = await spawnCapture(
+    "docker",
+    [...composeArgs, "up", "-d", "--wait"],
+    { cwd: dir, timeoutMs: 120000 },
+  );
+  assert.equal(
+    started.code,
+    0,
+    `demo PostgreSQL did not start: ${started.stderr}`,
+  );
+  const mapped = await spawnCapture(
+    "docker",
+    [...composeArgs, "port", "db", "5432"],
+    { cwd: dir },
+  );
+  assert.equal(mapped.code, 0, mapped.stderr);
+  const port = Number(mapped.stdout.trim().split(":").at(-1));
+  return {
+    composeArgs,
+    env: {
+      SPYGLASS_TEST_DATABASE_URL: `postgres://spyglass:spyglass-demo-only@127.0.0.1:${port}/spyglass_demo`,
+    },
+  };
+}
+
+surfaceTest(
+  "db --expect-col and --expect-empty record assertions, and the role inspection is read once per run",
+  async () => {
+    const project = `spyglass-e2e-${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      compose: {
+        project,
+        files: ["fixtures/demo-app/compose.yaml"],
+        required: ["db"],
+      },
+      db: { connection: "env:SPYGLASS_TEST_DATABASE_URL" },
+    });
+    const dir = await makeRepo({ profile });
+    let run;
+    let compose;
+    try {
+      compose = await startDemoDatabase(dir, project);
+      const { env } = compose;
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "db-assert"], { env }),
+        { ok: true, code: 0 },
+      ).run;
+      const db = (args, expected = { ok: true, code: 0 }) =>
+        runCli(dir, ["--json", "--run", run, "db", ...args], { env }).then(
+          (result) => assertEnvelope(result, expected),
+        );
+      const stored = async () =>
+        JSON.parse(await readFile(await runRecord(dir, run), "utf8"));
+
+      const ok = await db([
+        "SELECT 'alpha' AS name, 3 AS n, '{\"k\": {\"v\": 7}}'::jsonb AS doc",
+        "--expect-rows",
+        "1",
+        "--expect-col",
+        "name=alpha",
+        "--expect-col",
+        "n=3",
+        "--expect-col",
+        "doc.k.v=7",
+        "--expect-col",
+        "name!=beta",
+      ]);
+      assert.ok(ok.data.claims.every((claim) => claim.ok === true));
+      assert.equal(ok.data.claims.length, 5);
+
+      const wrong = await db(
+        [
+          "SELECT 'alpha' AS name",
+          "--expect-rows",
+          "1",
+          "--expect-col",
+          "name=beta",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(wrong.error.code, "DATABASE_EXPECTATION_FAILED");
+      assert.equal(wrong.data.rowCount, 1, "the row count matched");
+      const result = wrong.artifacts.find((a) => a.kind === "database");
+      assert.ok(result, "the bounded query result stays");
+      const record = JSON.parse(
+        await readRunFile(dir, run, `spyglass/${result.path}`),
+      );
+      assert.equal(record.rows[0].name, "alpha");
+      assert.equal(record.assertions.at(-1).ok, false);
+      await db(["SELECT 'alpha' AS name", "--expect-col", "missing=1"], {
+        ok: false,
+        code: 1,
+      });
+
+      await db(["SELECT 1 WHERE false", "--expect-empty"]);
+      const notEmpty = await db(["SELECT 1 AS one", "--expect-empty"], {
+        ok: false,
+        code: 1,
+      });
+      assert.equal(notEmpty.error.code, "DATABASE_ROW_COUNT");
+      await db(["SELECT 1", "--expect-empty", "--expect-rows", "1"], {
+        ok: false,
+        code: 2,
+      });
+
+      // doctor read the role at up; db reuses it and doctor reads it again.
+      const cached = (await stored()).databaseRole;
+      assert.match(cached.connection, /^[0-9a-f]{64}$/, "keyed by a hash");
+      assert.ok(
+        !JSON.stringify(cached).includes("spyglass-demo-only"),
+        "the cache holds no connection string",
+      );
+      assert.equal(cached.role.name, "spyglass");
+      const record2 = await runRecord(dir, run);
+      const tampered = await stored();
+      tampered.databaseRole.role.name = "from-the-cache";
+      await writeFile(record2, JSON.stringify(tampered));
+      const reused = await db(["SELECT 1 AS one"]);
+      assert.equal(
+        reused.data.role.name,
+        "from-the-cache",
+        "the cache is used",
+      );
+      assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "doctor"], { env }),
+        {
+          ok: true,
+          code: 0,
+        },
+      );
+      assert.equal(
+        (await stored()).databaseRole.role.name,
+        "spyglass",
+        "doctor refreshes it",
+      );
+      // A cached role never lets a write through.
+      await db(["CREATE TABLE spyglass_cache_guard(id integer)"], {
+        ok: false,
+        code: 1,
+      });
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], {
+          env: compose?.env,
+        });
+      if (compose)
+        await spawnCapture("docker", [...compose.composeArgs, "down", "-v"], {
+          cwd: dir,
+          timeoutMs: 60000,
+        });
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ps --wait polls a required container to healthy and fails at its deadline while it is starting",
+  async () => {
+    const project = `spyglass-e2e-${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+    const composeFile = [
+      "services:",
+      "  slow:",
+      "    image: postgres:17-alpine",
+      '    entrypoint: ["sh", "-c", "sleep 600"]',
+      "    healthcheck:",
+      '      test: ["CMD-SHELL", "test -f /tmp/ready"]',
+      "      interval: 1s",
+      "      timeout: 2s",
+      "      retries: 100",
+      "",
+    ].join("\n");
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: undefined,
+      api: undefined,
+      browser: undefined,
+      compose: { project, files: ["compose-slow.yaml"], required: ["slow"] },
+    });
+    const dir = await makeRepo({
+      profile,
+      files: { "compose-slow.yaml": composeFile },
+    });
+    const compose = ["compose", "-p", project, "-f", "compose-slow.yaml"];
+    let run;
+    try {
+      const started = await spawnCapture("docker", [...compose, "up", "-d"], {
+        cwd: dir,
+        timeoutMs: 120000,
+      });
+      assert.equal(started.code, 0, started.stderr);
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "ps-wait"]),
+        {
+          ok: true,
+          code: 0,
+        },
+      ).run;
+      const ps = (args, expected = { ok: true, code: 0 }) =>
+        runCli(dir, ["--json", "--run", run, "ps", ...args], {
+          timeoutMs: 60000,
+        }).then((result) => assertEnvelope(result, expected));
+
+      const now = await ps([], { ok: false, code: 1 });
+      assert.equal(now.error.code, "REQUIRED_CONTAINER_STOPPED");
+      assert.match(
+        JSON.stringify(now.data.containers),
+        /starting|unhealthy/,
+        "a running container that is not healthy is not ready",
+      );
+      const waited = await ps(["--wait", "--timeout-ms", "1500"], {
+        ok: false,
+        code: 1,
+      });
+      assert.equal(waited.error.code, "REQUIRED_CONTAINER_STOPPED");
+      assert.ok(waited.data.polls >= 2, "it polled");
+      assert.ok(waited.data.elapsedMs >= 1000);
+      assert.ok(
+        waited.artifacts.some((a) => a.kind === "container"),
+        "the last list stays",
+      );
+
+      const ready = await spawnCapture(
+        "docker",
+        [...compose, "exec", "-T", "slow", "touch", "/tmp/ready"],
+        {
+          cwd: dir,
+          timeoutMs: 30000,
+        },
+      );
+      assert.equal(ready.code, 0, ready.stderr);
+      const healthy = await ps(["--wait", "--timeout-ms", "30000"]);
+      assert.deepEqual(healthy.data.missing, []);
+      assert.match(JSON.stringify(healthy.data.containers), /healthy/);
+      assert.equal((await ps([])).data.missing.length, 0);
+      await ps(["--timeout-ms", "100"], { ok: false, code: 2 });
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await spawnCapture("docker", [...compose, "down", "-v"], {
+        cwd: dir,
+        timeoutMs: 60000,
+      });
       await removeRepo(dir);
     }
   },

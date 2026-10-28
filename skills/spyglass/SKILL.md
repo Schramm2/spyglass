@@ -101,6 +101,16 @@ read-only PostgreSQL query, and `spyglass ps` or `spyglass logs` for the
 profile's Compose project. A successful request alone does not prove the
 stored effect.
 
+Check the response and the stored data in the same call. Add `--expect-json
+status=ok` or `--expect-body-contains TEXT` to `api`; add `--expect-col
+name=value` or `--expect-empty` to `db`. For an asynchronous job, poll inside
+one call: `spyglass api GET /jobs/<id> --wait-until status=complete --fail-on
+status=failed --timeout-ms 15000 --claim <id> --independent-read`. A poll that
+times out fails the step and cannot be the independent read. Use `spyglass ps
+--wait` to wait for the required containers to be healthy, and `spyglass logs
+app --since-step <step-id> --forbid-text "ERROR"` to read the log from an
+earlier step without a `mark`.
+
 For UI work, use the run's own browser session. Spyglass drives `agent-browser`
 with a separate Chrome or Chromium session. Read its help before driving:
 

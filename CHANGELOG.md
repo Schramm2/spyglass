@@ -50,8 +50,28 @@ This file records the notable changes to Spyglass. The format follows
   `ACTION_FAILED` and `ACTION_NOT_RUN` when a claim cites a batch step with a
   failed or skipped sub-step.
 
+- `api --expect-json PATH=VALUE` (or `PATH!=VALUE`) and
+  `--expect-body-contains TEXT` check the response and record each check as an
+  assertion of the step.
+- `api GET --wait-until PATH=VALUE` polls inside one call, with `--fail-on`,
+  `--timeout-ms` and `--interval-ms`. It keeps the poll count, the elapsed time
+  and the final response. A poll that times out or reaches a fail state fails
+  the step and cannot be an independent read.
+- `db --expect-col COLUMN=VALUE` and `--expect-empty` record assertions and
+  fail with `DATABASE_EXPECTATION_FAILED` when a value differs.
+- `logs --since-step STEP_ID` and `--since-last` read the log with no `mark`;
+  `--grep`, `--expect-text` and `--forbid-text` filter and check it. A failed
+  check exits 1 with `LOG_EXPECTATION_FAILED`; an unknown step fails with
+  `UNKNOWN_STEP`.
+- `ps --wait [--timeout-ms MS]` polls until each required service is ready.
+
 ### Changed
 
+- A container with a health check that is `starting` or `unhealthy` is no
+  longer ready: `ps` fails with `REQUIRED_CONTAINER_STOPPED`, as for a stopped
+  container.
+- `db` reads the role privileges once per run, at `doctor` or on the first
+  query, and reuses them for the same connection; `doctor` reads them again.
 - `ui` reports the last URL of a command batch as `currentUrl`, not the first.
 
 ### Fixed

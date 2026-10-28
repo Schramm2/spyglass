@@ -368,9 +368,27 @@ try {
           : ["--file", "--check"],
       evidence: ["--step", "--file"],
       artifact: ["--step", "--file"],
-      api: ["--seat", "--data", "--expect"],
-      db: ["--expect-rows"],
-      logs: ["--since"],
+      api: [
+        "--seat",
+        "--data",
+        "--expect",
+        "--expect-json",
+        "--expect-body-contains",
+        "--wait-until",
+        "--fail-on",
+        "--timeout-ms",
+        "--interval-ms",
+      ],
+      db: ["--expect-rows", "--expect-empty", "--expect-col"],
+      ps: ["--wait", "--timeout-ms"],
+      logs: [
+        "--since",
+        "--since-step",
+        "--since-last",
+        "--grep",
+        "--expect-text",
+        "--forbid-text",
+      ],
     };
     let links: StepLinks | undefined;
     if (linkCommands.includes(command)) {

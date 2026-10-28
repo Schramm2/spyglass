@@ -39,10 +39,15 @@ results and retained evidence.
 | Browser | A browser resets a connection to the run's proxy, for example when it starts or closes a page. | The proxy process stays up and later browser commands work. A proxy that is gone still fails the command with `BROWSER_PROXY_UNAVAILABLE`. |
 | Browser | A claim needs to know which element has focus. | `ui focused` records the focused element's role, label and type without its value. `--expect LABEL` fails when the label differs. |
 | HTTP | A request returns an unexpected status or an asynchronous submission is checked before completion. | The expected-status check fails, or the workflow waits for completion before an independent read. |
+| HTTP | `api --wait-until` times out while the job remains `pending`, or reaches a `--fail-on` state. | The command exits 1 with `API_EXPECTATION_FAILED`. It retains the poll count and the final response artifact, and the step cannot satisfy an independent read. |
+| HTTP | `api --expect-json` sees a different field value, or a missing path, despite HTTP 200. | The command exits 1 with `API_EXPECTATION_FAILED`, records the failed assertion on the step, and retains the masked response. |
 | Database | A query attempts to write data. | Spyglass rejects it before execution. |
 | Database | A query contains multiple statements, attempts to escape its transaction, or contains a psql meta-command. | PostgreSQL's extended protocol rejects multiple statements. Client meta-commands never run. No side effect occurs. |
 | Database | A query returns more rows or encoded output than the supported bound. | The query fails with a clear limit and does not retain an unbounded result. |
 | Database | A query returns a different row count than `--expect-rows`. | The command fails and retains the observed count and bounded result. |
+| Database | `db --expect-col` sees a different column value despite a matching row count. | The command exits 1 with `DATABASE_EXPECTATION_FAILED` and retains the bounded query result. |
+| Containers | `ps --wait` reaches its deadline while a required container is `starting` or `unhealthy`. | The command exits 1 with `REQUIRED_CONTAINER_STOPPED`, and retains the last container list, the poll count and the elapsed time. |
+| Logs | `logs --since-step` names an unknown step, or `--forbid-text` matches a log line, or `--expect-text` matches none. | An unknown step fails with `UNKNOWN_STEP`. A forbidden or missing text exits 1 with `LOG_EXPECTATION_FAILED` and retains the log artifact. |
 | Containers | A run stops. | Spyglass stops its own processes and browser. The repository owner cleans its containers; shared services and evidence remain. |
 | Report | The operator edits the result file but does not record it with `result`. | The report ignores the unrecorded file, stays incomplete with `RESULT_MISSING`, and `status` names `result` as the next command until a result is recorded. |
 | Report | Required work or owner cleanup is missing. | The report files are still produced, but the run is incomplete and exits with failed-check status. |

@@ -896,7 +896,7 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>api</code></h3>
             <pre
               class="usage"
-            ><code>spyglass api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--claim ID] [--independent-read]</code></pre>
+            ><code>spyglass api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--expect-json PATH=VALUE] [--expect-body-contains TEXT] [--wait-until PATH=VALUE [--fail-on PATH=VALUE] [--timeout-ms MS] [--interval-ms MS]] [--claim ID] [--independent-read]</code></pre>
             <p>
               Request a path relative to profile.api. A named seat resolves its
               token reference privately. Requests stay on the configured origin;
@@ -904,9 +904,21 @@ spyglass report --run my-change --json          # write the offline report</code
               before sending. Save the masked request and response, print a
               short body, and compare --expect when given. HTTP 202 means
               accepted, not completed: wait for completion and then make a
-              separate read. Keep raw credentials out of argv. --claim ID,
-              --independent-read, --control ID:failed|restored and --gate NAME
-              link a step into the pending result; see result.
+              separate read. --expect-json PATH=VALUE (or PATH!=VALUE) checks a
+              field of the JSON body; a dotted PATH reaches objects, array
+              indexes and length, for example items.length=3, and a path that is
+              not in the body fails both forms. --expect-body-contains TEXT
+              checks the raw body. Each check is an assertion of the step; a
+              failed one exits 1 with API_EXPECTATION_FAILED and keeps the
+              masked response. --wait-until PATH=VALUE polls a GET or HEAD until
+              the field has the value; --fail-on PATH=VALUE stops the poll at a
+              failed state; --timeout-ms (default 15000, up to 120000) and
+              --interval-ms (default 250, from 50) bound it. The poll count, the
+              elapsed time and the final response stay in api-response.json. A
+              poll that times out or reaches a fail state fails the step, so it
+              cannot be an independent read. Keep raw credentials out of argv.
+              --claim ID, --independent-read, --control ID:failed|restored and
+              --gate NAME link a step into the pending result; see result.
             </p>
             <div class="call">
               <pre><code>spyglass api GET /jobs/123 --run change-42 --seat member --expect 200 --json</code></pre>
@@ -921,14 +933,21 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>db</code></h3>
             <pre
               class="usage"
-            ><code>spyglass db SQL --run ID [--expect-rows N] [--claim ID] [--independent-read]</code></pre>
+            ><code>spyglass db SQL --run ID [--expect-rows N | --expect-empty] [--expect-col COLUMN=VALUE] [--claim ID] [--independent-read]</code></pre>
             <p>
               Run one PostgreSQL statement through the extended protocol in a
               read-only transaction. profile.db.connection must be a secret
               reference. Retained results are bounded to 1,000 rows and 1 MiB;
-              overflow is a failed check. No psql meta-commands. Role warnings
-              describe remaining function-side-effect limits. Use the owner
-              database; this command creates no server. --claim ID,
+              overflow is a failed check. No psql meta-commands. --expect-col
+              COLUMN=VALUE (or COLUMN!=VALUE, repeatable) checks a value in the
+              first row; a dotted name reaches into a JSON column.
+              --expect-empty is --expect-rows 0. Each check is an assertion in
+              database-result.json; a failed column check exits 1 with
+              DATABASE_EXPECTATION_FAILED and keeps the bounded result. The role
+              inspection is read once per run, by doctor or the first query, and
+              reused for the same connection; doctor reads it again. Role
+              warnings describe remaining function-side-effect limits. Use the
+              owner database; this command creates no server. --claim ID,
               --independent-read, --control ID:failed|restored and --gate NAME
               link a step into the pending result; see result.
             </p>
@@ -943,11 +962,18 @@ spyglass report --run my-change --json          # write the offline report</code
             data-keys="ps compose containers health"
           >
             <h3><code>ps</code></h3>
-            <pre class="usage"><code>spyglass ps --run ID</code></pre>
+            <pre
+              class="usage"
+            ><code>spyglass ps --run ID [--wait [--timeout-ms MS]]</code></pre>
             <p>
               Inspect only profile.compose.project with its declared files.
               Print container state and health. A required service that is not
-              running fails; this command changes no container.
+              running fails; a container with a health check is ready only when
+              it is healthy, so starting and unhealthy fail too. --wait polls
+              every 500 ms until each required service is ready or --timeout-ms
+              (default 30000, up to 600000) ends, and keeps the last list, the
+              poll count and the elapsed time. This command changes no
+              container.
             </p>
             <div class="call">
               <pre><code>spyglass ps --run change-42 --json</code></pre>
@@ -978,11 +1004,17 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>logs</code></h3>
             <pre
               class="usage"
-            ><code>spyglass logs [SERVICE] --since MARK --run ID</code></pre>
+            ><code>spyglass logs [SERVICE] (--since MARK | --since-step STEP_ID | --since-last) [--grep PATTERN] [--expect-text TEXT] [--forbid-text TEXT] --run ID</code></pre>
             <p>
               Read retained app logs or the declared Compose project since an
               existing mark. Save masked evidence. Missing marks fail and list
-              the known marks. Diagnostics remain available after a drive fails.
+              the known marks. --since-step STEP_ID starts at that step's start
+              time and needs no mark; an unknown step fails with UNKNOWN_STEP.
+              --since-last starts at the previous step. --grep PATTERN keeps the
+              lines that match a regular expression. --expect-text TEXT and
+              --forbid-text TEXT (repeatable) check the kept log; a failed one
+              exits 1 with LOG_EXPECTATION_FAILED and keeps the log artifact.
+              Diagnostics remain available after a drive fails.
             </p>
             <div class="call">
               <pre><code>spyglass logs app --since before-action --run change-42 --json</code></pre>
@@ -1217,9 +1249,15 @@ spyglass report --run my-change --json          # write the offline report</code
                 </tr>
                 <tr>
                   <td>HTTP</td>
-                  <td><code>api GET /path --expect 200</code></td>
                   <td>
-                    Masked request and response; redirects are not followed
+                    <code
+                      >api GET /path --expect 200 --expect-json status=ok
+                      --wait-until status=complete</code
+                    >
+                  </td>
+                  <td>
+                    Masked request and response, assertions and poll record;
+                    redirects are not followed
                   </td>
                 </tr>
                 <tr>
@@ -1345,6 +1383,103 @@ spyglass report --run my-change --json          # write the offline report</code
             <pre><code>spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID</code></pre>
             <button class="copy" type="button" data-copy>Copy</button>
           </div>
+          <h3>Check data and wait for jobs in one call</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Command</th>
+                  <th scope="col">Option</th>
+                  <th scope="col">Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>api</code></td>
+                  <td>
+                    <code>--expect-json PATH=VALUE</code> or
+                    <code>PATH!=VALUE</code>
+                  </td>
+                  <td>
+                    Check a field of the JSON body. A dotted
+                    <code>PATH</code> reaches objects, array indexes and
+                    <code>length</code>, for example
+                    <code>items.length=3</code>. A path that is not in the body
+                    fails both forms.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>api</code></td>
+                  <td><code>--expect-body-contains TEXT</code></td>
+                  <td>The raw body contains <code>TEXT</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>api GET</code></td>
+                  <td><code>--wait-until PATH=VALUE</code></td>
+                  <td>
+                    Poll until the field has the value. Add
+                    <code>--fail-on PATH=VALUE</code> to stop at a failed state,
+                    <code>--timeout-ms</code> (default 15000) and
+                    <code>--interval-ms</code> (default 250).
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>db</code></td>
+                  <td><code>--expect-col COLUMN=VALUE</code></td>
+                  <td>
+                    The first row has the value. A dotted name reaches into a
+                    JSON column. Repeat the flag for more columns.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>db</code></td>
+                  <td><code>--expect-empty</code></td>
+                  <td>
+                    The query returns no row (<code>--expect-rows 0</code>).
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>ps</code></td>
+                  <td><code>--wait</code>, <code>--timeout-ms MS</code></td>
+                  <td>
+                    Poll every 500 ms until each required service is running
+                    and, with a health check, healthy.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>logs</code></td>
+                  <td>
+                    <code>--since-step ID</code>, <code>--since-last</code>
+                  </td>
+                  <td>
+                    Start at a step's start time, or the previous step, with no
+                    <code>mark</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>logs</code></td>
+                  <td>
+                    <code>--grep PATTERN</code>,
+                    <code>--expect-text TEXT</code>,
+                    <code>--forbid-text TEXT</code>
+                  </td>
+                  <td>Keep matching lines, then require or refuse text.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Each check is an assertion of the step in <code>data.claims</code>.
+            A failed check exits 1 and keeps the response, the bounded query
+            result or the log. A poll keeps its poll count and elapsed time in
+            <code>api-response.json</code>. A poll that times out or reaches a
+            <code>--fail-on</code> state fails the step, so it cannot be an
+            independent read; a poll that reaches its value can be.
+            <code>db</code> reads the privileges of its role once per run, at
+            <code>doctor</code> or on the first query, and reuses them for the
+            same connection; <code>doctor</code> reads them again. Every query
+            still runs in a read-only transaction.
+          </p>
           <h3>Verify one claim in one call</h3>
           <p>
             <code>ui verify</code> runs the actions, the expectations and the
@@ -2116,6 +2251,32 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   </td>
                 </tr>
                 <tr>
+                  <td>HTTP</td>
+                  <td>
+                    <code>api --wait-until</code> times out while the job
+                    remains <code>pending</code>, or reaches a
+                    <code>--fail-on</code> state.
+                  </td>
+                  <td>
+                    The command exits 1 with
+                    <code>API_EXPECTATION_FAILED</code>. It retains the poll
+                    count and the final response artifact, and the step cannot
+                    satisfy an independent read.
+                  </td>
+                </tr>
+                <tr>
+                  <td>HTTP</td>
+                  <td>
+                    <code>api --expect-json</code> sees a different field value,
+                    or a missing path, despite HTTP 200.
+                  </td>
+                  <td>
+                    The command exits 1 with
+                    <code>API_EXPECTATION_FAILED</code>, records the failed
+                    assertion on the step, and retains the masked response.
+                  </td>
+                </tr>
+                <tr>
                   <td>Database</td>
                   <td>A query attempts to write data.</td>
                   <td>Spyglass rejects it before execution.</td>
@@ -2151,6 +2312,45 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   <td>
                     The command fails and retains the observed count and bounded
                     result.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Database</td>
+                  <td>
+                    <code>db --expect-col</code> sees a different column value
+                    despite a matching row count.
+                  </td>
+                  <td>
+                    The command exits 1 with
+                    <code>DATABASE_EXPECTATION_FAILED</code> and retains the
+                    bounded query result.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Containers</td>
+                  <td>
+                    <code>ps --wait</code> reaches its deadline while a required
+                    container is <code>starting</code> or
+                    <code>unhealthy</code>.
+                  </td>
+                  <td>
+                    The command exits 1 with
+                    <code>REQUIRED_CONTAINER_STOPPED</code>, and retains the
+                    last container list, the poll count and the elapsed time.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Logs</td>
+                  <td>
+                    <code>logs --since-step</code> names an unknown step, or
+                    <code>--forbid-text</code> matches a log line, or
+                    <code>--expect-text</code> matches none.
+                  </td>
+                  <td>
+                    An unknown step fails with <code>UNKNOWN_STEP</code>. A
+                    forbidden or missing text exits 1 with
+                    <code>LOG_EXPECTATION_FAILED</code> and retains the log
+                    artifact.
                   </td>
                 </tr>
                 <tr>

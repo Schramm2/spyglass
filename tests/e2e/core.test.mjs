@@ -4028,3 +4028,401 @@ test("result set rejects unknown IDs and leaves the pending result unchanged", a
     await removeRepo(dir);
   }
 });
+
+// Slice 4 of docs/verification-speed.md: api and logs speedups.
+function apiProfile() {
+  return baseProfile({
+    web: undefined,
+    browser: undefined,
+    seats: { agent: { token: "env:SPYGLASS_TEST_API_TOKEN" } },
+  });
+}
+const apiEnv = (token) => ({
+  env: { DEMO_TOKEN: token, SPYGLASS_TEST_API_TOKEN: token },
+});
+const asyncPlan = {
+  claims: [
+    {
+      id: "question-completed",
+      behavior: "An accepted question completes.",
+      entryPoint: "POST /questions",
+      precondition: "The API seat is available.",
+      expected: "A later read returns the completed question.",
+      case: "Valid question.",
+      checks: ["api"],
+      evidence: ["completed read"],
+      kind: "side-effect",
+      required: true,
+    },
+  ],
+  gates: [],
+  limits: [],
+};
+const apiCall = (dir, run, token, args, expected = { ok: true, code: 0 }) =>
+  runCli(dir, ["--json", "--run", run, "api", ...args], apiEnv(token)).then(
+    (result) => assertEnvelope(result, expected),
+  );
+const submitQuestion = (dir, run, token) =>
+  apiCall(dir, run, token, [
+    "POST",
+    "/questions",
+    "--seat",
+    "agent",
+    "--data",
+    JSON.stringify({ question: "How long does it take?" }),
+    "--expect",
+    "202",
+  ]);
+
+test("api --wait-until polls one job to completion and satisfies the independent read", async () => {
+  const token = `wait-token-${randomUUID()}`;
+  const dir = await makeRepo({ profile: apiProfile(), plan: asyncPlan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-wait", "--plan", "plan.json"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    ).run;
+    const post = await submitQuestion(dir, run, token);
+    const id = post.data.body.id;
+    const read = await apiCall(dir, run, token, [
+      "GET",
+      `/questions/${id}`,
+      "--seat",
+      "agent",
+      "--wait-until",
+      "status=complete",
+      "--fail-on",
+      "status=failed",
+      "--timeout-ms",
+      "5000",
+      "--interval-ms",
+      "50",
+      "--expect",
+      "200",
+      "--expect-json",
+      "answer=Thanks. We received your question.",
+      "--expect-json",
+      "status!=pending",
+      "--expect-body-contains",
+      "received",
+    ]);
+    assert.ok(read.data.polls >= 2, "the job was pending on the first poll");
+    assert.equal(read.data.body.status, "complete");
+    assert.ok(read.data.claims.every((claim) => claim.ok === true));
+    const record = JSON.parse(
+      await readRunFile(
+        dir,
+        run,
+        `spyglass/${read.artifacts.find((a) => a.kind === "api").path}`,
+      ),
+    );
+    assert.equal(record.polling.polls, read.data.polls);
+    assert.ok(record.polling.elapsedMs >= 0);
+    assert.equal(record.response.body.status, "complete");
+
+    await runCli(dir, [
+      "--json",
+      "--run",
+      run,
+      "result",
+      "set",
+      "--claim",
+      "question-completed",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The poll showed the completed question.",
+      "--step",
+      post.step,
+      "--step",
+      read.step,
+      "--independent-read",
+      read.step,
+    ]);
+    assertEnvelope(
+      await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+      { ok: true, code: 0 },
+    );
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("api --wait-until that times out or reaches a --fail-on state cannot satisfy an independent read", async () => {
+  const token = `wait-token-${randomUUID()}`;
+  const dir = await makeRepo({ profile: apiProfile(), plan: asyncPlan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-wait-fail", "--plan", "plan.json"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    ).run;
+    const post = await submitQuestion(dir, run, token);
+    const id = post.data.body.id;
+    const timedOut = await apiCall(
+      dir,
+      run,
+      token,
+      [
+        "GET",
+        `/questions/${id}`,
+        "--seat",
+        "agent",
+        "--wait-until",
+        "status=never",
+        "--timeout-ms",
+        "400",
+        "--interval-ms",
+        "50",
+      ],
+      { ok: false, code: 1 },
+    );
+    assert.equal(timedOut.error.code, "API_EXPECTATION_FAILED");
+    assert.ok(timedOut.data.polls >= 2);
+    assert.ok(timedOut.data.elapsedMs >= 350);
+    assert.ok(
+      timedOut.artifacts.some((a) => a.kind === "api"),
+      "the final response stays",
+    );
+    const failedOn = await apiCall(
+      dir,
+      run,
+      token,
+      [
+        "GET",
+        `/questions/${id}`,
+        "--seat",
+        "agent",
+        "--wait-until",
+        "status=never",
+        "--fail-on",
+        "status=complete",
+        "--timeout-ms",
+        "3000",
+        "--interval-ms",
+        "50",
+      ],
+      { ok: false, code: 1 },
+    );
+    assert.equal(failedOn.error.code, "API_EXPECTATION_FAILED");
+    assert.match(failedOn.error.message, /status=complete/);
+    assert.ok(failedOn.data.elapsedMs < 3000, "it stopped at the fail state");
+
+    await runCli(dir, [
+      "--json",
+      "--run",
+      run,
+      "result",
+      "set",
+      "--claim",
+      "question-completed",
+      "--outcome",
+      "passed",
+      "--observed",
+      "x",
+      "--step",
+      post.step,
+      "--step",
+      timedOut.step,
+      "--independent-read",
+      timedOut.step,
+    ]);
+    const rejected = assertEnvelope(
+      await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+      { ok: false, code: 1 },
+    );
+    assert.ok(
+      rejected.data.findings.some((f) => f.code === "INDEPENDENT_READ_MISSING"),
+    );
+    // A POST would repeat its side effect on each poll.
+    const post2 = await apiCall(
+      dir,
+      run,
+      token,
+      [
+        "POST",
+        "/reflect",
+        "--seat",
+        "agent",
+        "--data",
+        "{}",
+        "--wait-until",
+        "reflected=x",
+      ],
+      { ok: false, code: 2 },
+    );
+    assert.equal(post2.error.code, "INVALID_ARGUMENT");
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("api --expect-json and --expect-body-contains fail on a wrong or missing value despite HTTP 200 and keep the masked response", async () => {
+  const token = `json-token-${randomUUID()}`;
+  const dir = await makeRepo({ profile: apiProfile() });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "api-json"], apiEnv(token)),
+      { ok: true, code: 0 },
+    ).run;
+    const reflect = (...extra) => [
+      "POST",
+      "/reflect",
+      "--seat",
+      "agent",
+      "--data",
+      JSON.stringify({ value: "alpha" }),
+      "--expect",
+      "200",
+      ...extra,
+    ];
+    const ok = await apiCall(
+      dir,
+      run,
+      token,
+      reflect(
+        "--expect-json",
+        "reflected=alpha",
+        "--expect-json",
+        "reflected!=beta",
+        "--expect-body-contains",
+        "alpha",
+      ),
+    );
+    assert.deepEqual(
+      ok.data.claims.map((claim) => claim.ok),
+      [true, true, true, true],
+      "the status and each expectation are structured assertions",
+    );
+    const wrong = await apiCall(
+      dir,
+      run,
+      token,
+      reflect("--expect-json", "reflected=beta"),
+      { ok: false, code: 1 },
+    );
+    assert.equal(wrong.error.code, "API_EXPECTATION_FAILED");
+    assert.equal(wrong.data.status, 200);
+    assert.equal(wrong.data.claims.at(-1).ok, false);
+    assert.ok(wrong.artifacts.some((a) => a.kind === "api"));
+    const missing = await apiCall(
+      dir,
+      run,
+      token,
+      reflect("--expect-json", "no.such.path=1"),
+      { ok: false, code: 1 },
+    );
+    assert.equal(missing.error.code, "API_EXPECTATION_FAILED");
+    await apiCall(
+      dir,
+      run,
+      token,
+      reflect("--expect-body-contains", "never in body"),
+      { ok: false, code: 1 },
+    );
+    await apiCall(
+      dir,
+      run,
+      token,
+      reflect("--expect-json", "reflected!=alpha"),
+      { ok: false, code: 1 },
+    );
+    const text = JSON.stringify(wrong);
+    assert.ok(!text.includes(token), "the token is masked");
+    const list = await apiCall(dir, run, token, [
+      "GET",
+      "/questions",
+      "--seat",
+      "agent",
+      "--expect-json",
+      "length=0",
+    ]);
+    assert.equal(list.data.claims.at(-1).ok, true);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("logs --since-step, --since-last, --grep, --expect-text and --forbid-text read the app log without a mark", async () => {
+  const token = `logs-token-${randomUUID()}`;
+  const dir = await makeRepo({ profile: apiProfile() });
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "logs-steps"], apiEnv(token)),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    const logs = (args, expected = { ok: true, code: 0 }) =>
+      runCli(dir, ["--json", "--run", run, "logs", "app", ...args]).then(
+        (result) => assertEnvelope(result, expected),
+      );
+    const found = await logs([
+      "--since-step",
+      up.step,
+      "--expect-text",
+      "listening",
+    ]);
+    assert.match(found.data.logs, /listening/);
+    assert.equal(found.data.claims[0].ok, true);
+    const grep = await logs([
+      "--since-step",
+      up.step,
+      "--grep",
+      "^[^ ]+ demo app",
+    ]);
+    assert.ok(
+      grep.data.logs.split("\n").every((line) => /demo app/.test(line)),
+    );
+    const none = await logs([
+      "--since-step",
+      up.step,
+      "--grep",
+      "no such line",
+    ]);
+    assert.equal(none.data.logs, "");
+    const forbidden = await logs(
+      ["--since-step", up.step, "--forbid-text", "listening"],
+      { ok: false, code: 1 },
+    );
+    assert.equal(forbidden.error.code, "LOG_EXPECTATION_FAILED");
+    assert.ok(
+      forbidden.artifacts.some((a) => a.kind === "process-log"),
+      "the log artifact stays",
+    );
+    const missing = await logs(
+      ["--since-step", up.step, "--expect-text", "never logged"],
+      { ok: false, code: 1 },
+    );
+    assert.equal(missing.error.code, "LOG_EXPECTATION_FAILED");
+    const unknown = await logs(["--since-step", "000000000000"], {
+      ok: false,
+      code: 2,
+    });
+    assert.equal(unknown.error.code, "UNKNOWN_STEP");
+    const last = await logs(["--since-last", "--forbid-text", "listening"]);
+    assert.equal(
+      last.data.claims[0].ok,
+      true,
+      "the app logged nothing since the previous step",
+    );
+    const noWindow = await logs([], { ok: false, code: 2 });
+    assert.equal(noWindow.error.code, "INVALID_ARGUMENT");
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});

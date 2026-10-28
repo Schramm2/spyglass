@@ -114,6 +114,11 @@ export interface Run {
   ownerCleaned: boolean;
   cleanup: boolean;
   lastDoctor?: string;
+  /**
+   * The database role privileges that doctor or the first db call read, for
+   * the connection with this hash. A db call reuses them; doctor refreshes.
+   */
+  databaseRole?: { connection: string; role: Record<string, unknown> };
 }
 function stateDirectory(key: string): string {
   return join(

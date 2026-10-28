@@ -1417,7 +1417,7 @@ function addRepairs(
         const candidates = reads(f.claim);
         return candidates.length
           ? `Cite the action step and a later read, and set independentRead to the read: spyglass result set --claim ${c} --independent-read STEP_ID --step STEP_ID ${where}. Candidate reads: ${candidates.join(", ")}.`
-          : `No read exists yet that follows the action. After the action completes, run spyglass api GET PATH ${where} --claim ${c} --independent-read, or spyglass db "SELECT ..." ${where} --claim ${c} --independent-read.`;
+          : `No read exists yet that follows the action. After the action completes, run spyglass api GET PATH ${where} --claim ${c} --independent-read; for an asynchronous job add --wait-until status=complete --fail-on status=failed. Or run spyglass db "SELECT ..." ${where} --claim ${c} --independent-read.`;
       }
       case "EXPECTATION_FAILED":
       case "EXPECTATION_NOT_RUN":

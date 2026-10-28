@@ -50,24 +50,24 @@ const details: Record<
   },
   api: {
     usage:
-      "api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--claim ID] [--independent-read]",
+      "api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--expect-json PATH=VALUE] [--expect-body-contains TEXT] [--wait-until PATH=VALUE [--fail-on PATH=VALUE] [--timeout-ms MS] [--interval-ms MS]] [--claim ID] [--independent-read]",
     description:
-      "Request a path relative to profile.api. A named seat resolves its token reference privately. Requests stay on the configured origin; redirects are retained but not followed. Invalid JSON is rejected before sending. Save the masked request and response, print a short body, and compare --expect when given. HTTP 202 means accepted, not completed: wait for completion and then make a separate read. Keep raw credentials out of argv. --claim ID, --independent-read, --control ID:failed|restored and --gate NAME link a step into the pending result; see result.",
+      "Request a path relative to profile.api. A named seat resolves its token reference privately. Requests stay on the configured origin; redirects are retained but not followed. Invalid JSON is rejected before sending. Save the masked request and response, print a short body, and compare --expect when given. HTTP 202 means accepted, not completed: wait for completion and then make a separate read. --expect-json PATH=VALUE (or PATH!=VALUE) checks a field of the JSON body; a dotted PATH reaches objects, array indexes and length, for example items.length=3, and a path that is not in the body fails both forms. --expect-body-contains TEXT checks the raw body. Each check is an assertion of the step; a failed one exits 1 with API_EXPECTATION_FAILED and keeps the masked response. --wait-until PATH=VALUE polls a GET or HEAD until the field has the value; --fail-on PATH=VALUE stops the poll at a failed state; --timeout-ms (default 15000, up to 120000) and --interval-ms (default 250, from 50) bound it. The poll count, the elapsed time and the final response stay in api-response.json. A poll that times out or reaches a fail state fails the step, so it cannot be an independent read. Keep raw credentials out of argv. --claim ID, --independent-read, --control ID:failed|restored and --gate NAME link a step into the pending result; see result.",
     example:
       "spyglass api GET /jobs/123 --run change-42 --seat member --expect 200 --json",
   },
   db: {
     usage:
-      "db SQL --run ID [--expect-rows N] [--claim ID] [--independent-read]",
+      "db SQL --run ID [--expect-rows N | --expect-empty] [--expect-col COLUMN=VALUE] [--claim ID] [--independent-read]",
     description:
-      "Run one PostgreSQL statement through the extended protocol in a read-only transaction. profile.db.connection must be a secret reference. Retained results are bounded to 1,000 rows and 1 MiB; overflow is a failed check. No psql meta-commands. Role warnings describe remaining function-side-effect limits. Use the owner database; this command creates no server. --claim ID, --independent-read, --control ID:failed|restored and --gate NAME link a step into the pending result; see result.",
+      "Run one PostgreSQL statement through the extended protocol in a read-only transaction. profile.db.connection must be a secret reference. Retained results are bounded to 1,000 rows and 1 MiB; overflow is a failed check. No psql meta-commands. --expect-col COLUMN=VALUE (or COLUMN!=VALUE, repeatable) checks a value in the first row; a dotted name reaches into a JSON column. --expect-empty is --expect-rows 0. Each check is an assertion in database-result.json; a failed column check exits 1 with DATABASE_EXPECTATION_FAILED and keeps the bounded result. The role inspection is read once per run, by doctor or the first query, and reused for the same connection; doctor reads it again. Role warnings describe remaining function-side-effect limits. Use the owner database; this command creates no server. --claim ID, --independent-read, --control ID:failed|restored and --gate NAME link a step into the pending result; see result.",
     example:
       'spyglass db "SELECT 42 AS answer" --run change-42 --expect-rows 1 --json',
   },
   ps: {
-    usage: "ps --run ID",
+    usage: "ps --run ID [--wait [--timeout-ms MS]]",
     description:
-      "Inspect only profile.compose.project with its declared files. Print container state and health. A required service that is not running fails; this command changes no container.",
+      "Inspect only profile.compose.project with its declared files. Print container state and health. A required service that is not running fails; a container with a health check is ready only when it is healthy, so starting and unhealthy fail too. --wait polls every 500 ms until each required service is ready or --timeout-ms (default 30000, up to 600000) ends, and keeps the last list, the poll count and the elapsed time. This command changes no container.",
     example: "spyglass ps --run change-42 --json",
   },
   mark: {
@@ -77,9 +77,10 @@ const details: Record<
     example: "spyglass mark before-action --run change-42 --json",
   },
   logs: {
-    usage: "logs [SERVICE] --since MARK --run ID",
+    usage:
+      "logs [SERVICE] (--since MARK | --since-step STEP_ID | --since-last) [--grep PATTERN] [--expect-text TEXT] [--forbid-text TEXT] --run ID",
     description:
-      "Read retained app logs or the declared Compose project since an existing mark. Save masked evidence. Missing marks fail and list the known marks. Diagnostics remain available after a drive fails.",
+      "Read retained app logs or the declared Compose project since an existing mark. Save masked evidence. Missing marks fail and list the known marks. --since-step STEP_ID starts at that step's start time and needs no mark; an unknown step fails with UNKNOWN_STEP. --since-last starts at the previous step. --grep PATTERN keeps the lines that match a regular expression. --expect-text TEXT and --forbid-text TEXT (repeatable) check the kept log; a failed one exits 1 with LOG_EXPECTATION_FAILED and keeps the log artifact. Diagnostics remain available after a drive fails.",
     example: "spyglass logs app --since before-action --run change-42 --json",
   },
   evidence: {

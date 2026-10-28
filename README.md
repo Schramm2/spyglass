@@ -116,9 +116,9 @@ and start a new run.
 | Existing tests and journeys | `check NAME` | Exit status, assertions, declared artifacts |
 | Other commands | `exec -- COMMAND ARGS` | Bounded stdout and stderr, real exit status |
 | Web browser | `ui open /`, `ui snapshot`, `ui expect`, `ui proof LABEL`, `ui focused` | Isolated session, screenshot, DOM, errors and requests |
-| HTTP | `api GET /path --expect 200` | Masked request and response; redirects are not followed |
-| PostgreSQL | `db 'SELECT ...' --expect-rows 1` | One statement in a read-only transaction, with rows and role limits |
-| Docker Compose | `ps`, `mark LABEL`, `logs SERVICE --since LABEL` | Project-scoped status and timestamped logs |
+| HTTP | `api GET /path --expect 200 --expect-json status=ok --wait-until status=complete` | Masked request and response, assertions and poll record; redirects are not followed |
+| PostgreSQL | `db 'SELECT ...' --expect-rows 1 --expect-col name=alpha` | One statement in a read-only transaction, with rows, assertions and role limits |
+| Docker Compose | `ps --wait`, `mark LABEL`, `logs SERVICE --since-step ID --grep PATTERN` | Project-scoped status and timestamped logs |
 | Other evidence | `evidence add --step ID --file PATH` | Checked copy from a declared import root |
 
 Run `spyglass --help` for all commands, and `spyglass COMMAND --help` for the
@@ -147,6 +147,28 @@ condition never holds. It never reads an input value: `--attr value` is refused.
 ```sh
 spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID
 ```
+
+### Check data and wait for jobs in one call
+
+| Command | Option | Meaning |
+| --- | --- | --- |
+| `api` | `--expect-json PATH=VALUE` or `PATH!=VALUE` | Check a field of the JSON body. A dotted `PATH` reaches objects, array indexes and `length`, for example `items.length=3`. A path that is not in the body fails both forms. |
+| `api` | `--expect-body-contains TEXT` | The raw body contains `TEXT`. |
+| `api GET` | `--wait-until PATH=VALUE` | Poll until the field has the value. Add `--fail-on PATH=VALUE` to stop at a failed state, `--timeout-ms` (default 15000) and `--interval-ms` (default 250). |
+| `db` | `--expect-col COLUMN=VALUE` | The first row has the value. A dotted name reaches into a JSON column. Repeat the flag for more columns. |
+| `db` | `--expect-empty` | The query returns no row (`--expect-rows 0`). |
+| `ps` | `--wait`, `--timeout-ms MS` | Poll every 500 ms until each required service is running and, with a health check, healthy. |
+| `logs` | `--since-step ID`, `--since-last` | Start at a step's start time, or the previous step, with no `mark`. |
+| `logs` | `--grep PATTERN`, `--expect-text TEXT`, `--forbid-text TEXT` | Keep matching lines, then require or refuse text. |
+
+Each check is an assertion of the step in `data.claims`. A failed check exits 1
+and keeps the response, the bounded query result or the log. A poll keeps its
+poll count and elapsed time in `api-response.json`. A poll that times out or
+reaches a `--fail-on` state fails the step, so it cannot be an independent read;
+a poll that reaches its value can be. `db` reads the privileges of its role once
+per run, at `doctor` or on the first query, and reuses them for the same
+connection; `doctor` reads them again. Every query still runs in a read-only
+transaction.
 
 ### Verify one claim in one call
 
