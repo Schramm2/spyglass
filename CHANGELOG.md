@@ -24,6 +24,13 @@ This file records the notable changes to Spyglass. The format follows
 - `result set` edits the pending result with flags: claim outcome and
   observation, inspections, steps, gates, controls, operator and limits.
 
+### Fixed
+
+- A browser command no longer fails with `BROWSER_PROXY_UNAVAILABLE` when one
+  health reply of the run's proxy is slow, for example while a browser starts.
+  The check tries three times. A reply from another process, or no reply
+  after three tries, still fails it.
+
 ## [1.2.0] - 2026-10-24
 
 ### Added

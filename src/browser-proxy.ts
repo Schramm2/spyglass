@@ -943,7 +943,14 @@ export async function browserProxyEvents(
       3,
     );
   }
-  const state = await healthRequest(saved.port, config.nonce, after);
+  // One slow reply is not a dead proxy: a browser that starts can keep the
+  // machine busy for longer than one reply may take. A reply from another
+  // process, or no reply after three tries, fails the check.
+  let state = await healthRequest(saved.port, config.nonce, after);
+  for (let attempt = 1; !state && attempt < 3; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    state = await healthRequest(saved.port, config.nonce, after);
+  }
   if (
     !state ||
     state.pid !== saved.pid ||
