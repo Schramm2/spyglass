@@ -224,6 +224,22 @@ When a selector action matches no element, the error has `data.nearest`: up to
 The page snapshot stays in the evidence folder. Use it to tell a stale
 selector from a product defect.
 
+### Shorter runs
+
+| Command | What it saves |
+| --- | --- |
+| `up --warm [--seat SEAT]` | Starts the exact-origin proxy and the headless browser of a seat while the app starts. With `--seat`, it signs the seat in once the app is ready, if the seat has a login. `data.warm` shows it. If `up` fails, the warm browser and proxy close. |
+| `check a,b`, `check --gates [--concurrency N]` | Runs checks at the same time (default 4, up to 8). Each check is its own step and keeps its artifacts; the run lock and the log stay whole. The checks must not change the source. `--gates` runs the profile checks named like the planned gates and links each to its gate. |
+| `ui ... --relogin` | When the seat's browser expired and the seat has a login, signs the seat in again, then runs the command. The step keeps the expiry in `data.relogin`. |
+| `finish` | Runs `result`, `doctor`, `down` and `report`. |
+
+`check`, `exec`, `api` and `db` read again only the source files whose size,
+modification time, change time, inode or mode changed since the last full check,
+and every new file. `data.sourceCheck` counts the files that they read again.
+`doctor` and `report` hash every file. `doctor` also runs its independent probes
+at the same time. `bench/overhead.mjs` measures the time that Spyglass adds to a
+browser command; see [browser-benchmark.md](docs/browser-benchmark.md).
+
 ### Link steps to claims
 
 A driving command (`ui`, `api`, `db`, `check`, `exec`, `evidence add`) can link

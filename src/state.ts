@@ -3,6 +3,7 @@ import {
   existsSync,
   globSync,
   lstatSync,
+  type Stats,
   mkdirSync,
   readFileSync,
   readlinkSync,
@@ -245,7 +246,92 @@ export function assertWorktree(run: Run, repo: string, command: string): void {
     `Run this command from ${run.repo}. Run down there before you remove that worktree.`,
   );
 }
-export function source(repo: string, profile: Profile): Source {
+/**
+ * What a file looked like when it was last hashed: the modification and
+ * change times, the size, the inode and the mode. A change time cannot be set
+ * back, so a rewrite that keeps the size and restores the modification time
+ * still shows.
+ */
+export interface FileStat {
+  m: number;
+  c: number;
+  s: number;
+  i: number;
+  f: number;
+}
+interface StatTable {
+  version: 1;
+  cachedAt: number;
+  entries: Record<string, FileStat>;
+}
+export interface SourceCheck {
+  mode: "fast" | "full";
+  files: number;
+  rehashed: number;
+}
+const STAT_TABLE = "source-stat.json";
+let lastSourceCheck: SourceCheck | undefined;
+const statOf = (s: Stats): FileStat => ({
+  m: s.mtimeMs,
+  c: s.ctimeMs,
+  s: s.size,
+  i: s.ino,
+  f: s.mode,
+});
+const sameStat = (a: FileStat, b: FileStat): boolean =>
+  a.m === b.m && a.c === b.c && a.s === b.s && a.i === b.i && a.f === b.f;
+/**
+ * A clock that counts whole seconds can give a second write in the same
+ * second the same times. Read such a file again while it is that recent.
+ */
+const racy = (stat: FileStat, cachedAt: number): boolean =>
+  (stat.m % 1000 === 0 || stat.c % 1000 === 0) &&
+  Math.max(stat.m, stat.c) > cachedAt - 2000;
+function readStatTable(run: Run): StatTable | undefined {
+  try {
+    const table = JSON.parse(
+      readFileSync(join(runHome(run), STAT_TABLE), "utf8"),
+    ) as StatTable;
+    return table.version === 1 && table.entries ? table : undefined;
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * Keep the stat of each file whose hash is the baseline hash, never of a
+ * changed one: a later fast check trusts the table for the files it lists.
+ */
+export function writeStatTable(
+  run: Run,
+  record: Record<string, FileStat>,
+  current: Record<string, string>,
+): void {
+  const entries: Record<string, FileStat> = {};
+  for (const [name, stat] of Object.entries(record))
+    if (current[name] === run.source.files[name]) entries[name] = stat;
+  try {
+    const file = join(runHome(run), STAT_TABLE);
+    mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+    writeFileSync(
+      file,
+      JSON.stringify({ version: 1, cachedAt: Date.now(), entries }),
+      { mode: 0o600 },
+    );
+  } catch {
+    /* The table only saves time. */
+  }
+}
+interface SourceOptions {
+  /** Reuse the baseline hash of a file whose stat the table still holds. */
+  reuse?: { files: Record<string, string>; table: StatTable };
+  record?: Record<string, FileStat>;
+  counts?: { files: number; rehashed: number };
+}
+export function source(
+  repo: string,
+  profile: Profile,
+  options: SourceOptions = {},
+): Source {
   const r = spawnSync(
     "git",
     ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
@@ -303,7 +389,25 @@ export function source(repo: string, profile: Profile): Source {
       }
       const s = lstatSync(p);
       if (s.isSymbolicLink()) files[name] = hash(`link:${readlinkSync(p)}`);
-      else if (s.isFile()) files[name] = hash(readFileSync(p));
+      else if (s.isFile()) {
+        const stat = statOf(s);
+        if (options.record) options.record[name] = stat;
+        const prior = options.reuse?.table.entries[name];
+        const known = options.reuse?.files[name];
+        if (options.counts) options.counts.files++;
+        if (
+          prior &&
+          known &&
+          known !== "missing" &&
+          sameStat(prior, stat) &&
+          !racy(stat, options.reuse!.table.cachedAt)
+        )
+          files[name] = known;
+        else {
+          files[name] = hash(readFileSync(p));
+          if (options.counts) options.counts.rehashed++;
+        }
+      }
     } catch (e) {
       if (e && typeof e === "object" && "code" in e && e.code === "ENOENT")
         files[name] = "missing";
@@ -323,17 +427,36 @@ export function source(repo: string, profile: Profile): Source {
   }).stdout.trim();
   return { commit, hash: hash(JSON.stringify(files)), files };
 }
-export function sourceChanges(run: Run): string[] {
-  const now = source(run.repo, run.profile);
-  return [
+/**
+ * The inputs that differ from the baseline of `up`. The fast check reads again
+ * only the files whose stat changed since the last full check, and every file
+ * that is new. A full check hashes every file: doctor and report use it.
+ */
+export function sourceChanges(
+  run: Run,
+  mode: "fast" | "full" = "fast",
+): string[] {
+  const counts = { files: 0, rehashed: 0 };
+  const table = mode === "fast" ? readStatTable(run) : undefined;
+  const record: Record<string, FileStat> = {};
+  const now = source(run.repo, run.profile, {
+    reuse: table ? { files: run.source.files, table } : undefined,
+    record,
+    counts,
+  });
+  lastSourceCheck = { mode: table ? "fast" : "full", ...counts };
+  const changes = [
     ...(now.commit !== run.source.commit ? ["Git commit changed"] : []),
     ...[
       ...new Set([...Object.keys(now.files), ...Object.keys(run.source.files)]),
     ].filter((k) => now.files[k] !== run.source.files[k]),
   ];
+  // A full pass verified every file, so it renews the table.
+  if (mode === "full" || !table) writeStatTable(run, record, now.files);
+  return changes;
 }
-export function assertSource(run: Run): void {
-  const changes = sourceChanges(run);
+export function assertSource(run: Run, mode: "fast" | "full" = "fast"): void {
+  const changes = sourceChanges(run, mode);
   if (changes.length)
     throw new Fault(
       "STALE_SOURCE",
@@ -551,8 +674,11 @@ export class Context {
   run: Run;
   links?: StepLinks;
   linked?: LinkSummary;
+  /** up --warm: start the seat's browser while the app starts. */
+  warm?: { seat?: string };
   constructor(run: Run, command: string, args: string[]) {
     this.run = run;
+    lastSourceCheck = undefined;
     this.vault = new Secrets(run.repo);
     this.vault.collect(run.profile);
     this.step = {
@@ -663,6 +789,8 @@ export class Context {
     this.step.durationMs = Date.now() - Date.parse(this.step.startedAt);
     this.step.data = this.vault.clean(data);
     this.step.args = this.vault.clean(this.step.args);
+    if (lastSourceCheck)
+      this.step.data = { ...this.step.data, sourceCheck: lastSourceCheck };
     // A removed worktree took the pending result with it.
     if (this.links && !worktreeRemoved(this.run)) {
       this.linked = linkPendingResult(this.run, this.step, this.links);

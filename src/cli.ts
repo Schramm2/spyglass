@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import module from "node:module";
 import { commandHelp } from "./help.js";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -14,6 +15,9 @@ import {
   saveRun,
 } from "./state.js";
 import type { Run, StepLinks } from "./state.js";
+// Node keeps the compiled code of the modules that a command loads, so the
+// next process starts faster. Older Node versions have no such cache.
+module.enableCompileCache?.();
 const help = `Spyglass — verify a change and retain its evidence.
 
 Commands:
@@ -137,6 +141,7 @@ const bindings: Record<string, string> = {};
 let directCmd: string | undefined;
 let ready: string | undefined;
 let citeGatesFrom: string | undefined;
+let warm: { seat?: string } | undefined;
 const args: string[] = [];
 let ctx: Context | undefined;
 let run: Run | undefined;
@@ -349,7 +354,9 @@ try {
       );
     const allowed: Record<string, string[]> = {
       init: ["--force"],
+      up: ["--warm", "--seat"],
       status: ["--work"],
+      check: ["--gates", "--concurrency"],
       finish: ["--file", "--cleanup"],
       result:
         args[1] === "set"
@@ -447,6 +454,16 @@ try {
     } else {
       if (command === "up") {
         const m = await import("./lifecycle.js");
+        const at = args.indexOf("--seat");
+        const warmSeat =
+          at < 0 ? undefined : requireValue(args[at + 1], "--seat");
+        if (warmSeat && !args.includes("--warm"))
+          throw new Fault(
+            "INVALID_USAGE",
+            "--seat needs --warm: it names the seat whose browser starts.",
+            "Run spyglass up --warm --seat demo.",
+          );
+        warm = args.includes("--warm") ? { seat: warmSeat } : undefined;
         run = await m.allocate(repo, {
           id: selected,
           profile,
@@ -455,6 +472,7 @@ try {
           cmd: directCmd,
           ready,
           citeGatesFrom,
+          warm,
         });
       } else {
         run = loadRun(repo, requireValue(selected, "--run ID"));
@@ -477,8 +495,59 @@ try {
           },
         );
         emit(outcome.data, outcome.fault);
+      } else if (
+        command === "check" &&
+        (args.includes("--gates") || (args[1] ?? "").includes(","))
+      ) {
+        // Several checks at once: each is its own step, written one at a time.
+        const checks = await import("./checks.js");
+        const at = args.indexOf("--concurrency");
+        const raw = at < 0 ? "4" : requireValue(args[at + 1], "--concurrency");
+        const concurrency = Number(raw);
+        if (
+          !/^\d+$/.test(raw) ||
+          concurrency < 1 ||
+          concurrency > checks.MAX_CONCURRENCY
+        )
+          throw new Fault(
+            "INVALID_USAGE",
+            `--concurrency needs an integer from 1 to ${checks.MAX_CONCURRENCY}.`,
+            "Run spyglass check a,b --concurrency 2.",
+          );
+        const gates = args.includes("--gates");
+        const list = gates ? undefined : (args[1] ?? "").split(",");
+        if (gates && args[1] && !args[1].startsWith("--"))
+          throw new Fault(
+            "INVALID_USAGE",
+            "--gates takes no check name.",
+            "Run spyglass check --gates, or name the checks: spyglass check a,b.",
+          );
+        if (list?.some((name) => !name))
+          throw new Fault(
+            "INVALID_USAGE",
+            "A check name is empty in the list.",
+            "Run spyglass check a,b with no empty name.",
+          );
+        if (links) {
+          checkLinks(run, links);
+          if (links.gates.length)
+            throw new Fault(
+              "INVALID_USAGE",
+              "--gate names one gate; several checks need --gates or no gate link.",
+              "Run spyglass check --gates, or link one check: spyglass check NAME --gate NAME.",
+            );
+        }
+        const outcome = await checks.parallelChecks(
+          run,
+          { names: list, gates, concurrency, links },
+          (stage) => {
+            ctx = stage;
+          },
+        );
+        emit(outcome.data, outcome.fault);
       } else {
         ctx = new Context(run, command, args.slice(1));
+        if (command === "up" && warm) ctx.warm = warm;
         if (links && linked(links)) {
           checkLinks(run, links);
           ctx.links = links;

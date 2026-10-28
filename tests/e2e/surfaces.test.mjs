@@ -2542,3 +2542,235 @@ surfaceTest(
     }
   },
 );
+
+// Slice 6 of docs/verification-speed.md: up --warm and ui --relogin.
+const loginSeats = {
+  demo: {
+    login: {
+      path: "/login",
+      steps: [
+        { fill: { label: "Email" }, value: "agent@example.test" },
+        { fill: { label: "Password" }, secret: "env:DEMO_PASSWORD" },
+        { click: { role: "button", name: "Sign in" } },
+      ],
+      done: { urlContains: "/dashboard" },
+    },
+  },
+  plain: {},
+};
+const seatEnv = { DEMO_PASSWORD: "warm-demo-password" };
+
+surfaceTest(
+  "up --warm starts the browser and signs the seat in while the app starts, and cleans up when the app never becomes ready",
+  async () => {
+    const dir = await makeRepo({ profile: baseProfile({ seats: loginSeats }) });
+    let run;
+    try {
+      const up = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "warm", "--warm", "--seat", "demo"],
+          { env: seatEnv, timeoutMs: 60000 },
+        ),
+        { ok: true, code: 0 },
+      );
+      run = up.run;
+      assert.deepEqual(up.data.warm, {
+        seat: "demo",
+        browser: true,
+        loggedIn: true,
+      });
+      const doctor = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "doctor"], { env: seatEnv }),
+        { ok: true, code: 0 },
+      );
+      assert.equal(doctor.data.browser.proxy.healthy, true);
+      assert.deepEqual(
+        doctor.data.browser.sessions.map(({ seat, active }) => ({
+          seat,
+          active,
+        })),
+        [{ seat: "demo", active: true }],
+      );
+      const url = await ui(dir, run, ["get", "url"]);
+      assert.match(
+        JSON.stringify(url.data.results),
+        /\/dashboard/,
+        "already signed in",
+      );
+      await runCli(dir, ["--json", "--run", run, "down"], { env: seatEnv });
+      run = undefined;
+      assert.deepEqual(await proxyPids(dir), []);
+
+      // --seat needs --warm, and --warm needs a web address.
+      assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "up",
+          "--run",
+          "seat-only",
+          "--seat",
+          "demo",
+        ]),
+        { ok: false, code: 2 },
+      );
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], { env: seatEnv });
+      await removeRepo(dir);
+    }
+
+    // The app never listens: up fails and the warm browser and proxy end.
+    const broken = await makeRepo({
+      profile: baseProfile({
+        launch: {
+          mode: "owned",
+          command: [process.execPath, "-e", "setTimeout(() => {}, 60000)"],
+          ready: {
+            url: "http://127.0.0.1:${port}/health",
+            status: 200,
+            timeoutMs: 1500,
+          },
+        },
+      }),
+    });
+    try {
+      const failed = await runCli(
+        broken,
+        ["--json", "up", "--run", "warm-broken", "--warm"],
+        { timeoutMs: 60000 },
+      );
+      assertEnvelope(failed, { ok: false, code: 3 });
+      await waitFor(async () => !(await proxyPids(broken)).length, {
+        message: "the warm proxy must end when up fails",
+      });
+      const status = assertEnvelope(
+        await runCli(broken, ["--json", "status", "--run", "warm-broken"]),
+        { ok: true, code: 0 },
+      );
+      assert.equal(status.data.state, "failed");
+      assertEnvelope(
+        await runCli(broken, ["--json", "--run", "warm-broken", "down"]),
+        {
+          ok: true,
+          code: 0,
+        },
+      );
+    } finally {
+      await runCli(broken, ["--json", "--run", "warm-broken", "down"]);
+      await removeRepo(broken);
+    }
+  },
+);
+
+surfaceTest(
+  "ui --relogin signs a seat in again after its browser expired, and keeps the expiry in the step",
+  async () => {
+    const profile = baseProfile({
+      seats: loginSeats,
+      browser: {
+        allowedOrigins: ["http://127.0.0.1:${port}"],
+        idleTimeoutMs: 3000,
+      },
+    });
+    const dir = await makeRepo({ profile });
+    const runs = [];
+    try {
+      const started = [];
+      for (const name of ["relogin-plain", "relogin-demo"]) {
+        const up = assertEnvelope(
+          await runCli(dir, ["--json", "up", "--run", name], { env: seatEnv }),
+          { ok: true, code: 0 },
+        );
+        runs.push(up.run);
+        started.push(up.run);
+      }
+      const [plain, demo] = started;
+      const open = await runCli(
+        dir,
+        ["--json", "--run", plain, "ui", "--seat", "plain", "open", "/"],
+        { env: seatEnv },
+      );
+      const plainSession = assertEnvelope(open, { ok: true, code: 0 }).data
+        .session;
+      const login = await runCli(
+        dir,
+        ["--json", "--run", demo, "ui", "login", "demo"],
+        { env: seatEnv },
+      );
+      const demoSession = assertEnvelope(login, { ok: true, code: 0 }).data
+        .session;
+      await waitFor(
+        async () =>
+          !(await browserRunning(plainSession)) &&
+          !(await browserRunning(demoSession)) &&
+          !(await proxyPids(dir)).length,
+        {
+          timeoutMs: 40000,
+          intervalMs: 500,
+          message: "the idle browsers must shut down",
+        },
+      );
+
+      const kept = assertEnvelope(
+        await runCli(
+          dir,
+          [
+            "--json",
+            "--run",
+            plain,
+            "ui",
+            "--seat",
+            "plain",
+            "get",
+            "url",
+            "--relogin",
+          ],
+          { env: seatEnv },
+        ),
+        { ok: false, code: 3 },
+      );
+      assert.equal(
+        kept.error.code,
+        "BROWSER_EXPIRED",
+        "a seat without a login stays expired",
+      );
+
+      const again = await runCli(
+        dir,
+        [
+          "--json",
+          "--run",
+          demo,
+          "ui",
+          "--seat",
+          "demo",
+          "get",
+          "url",
+          "--relogin",
+        ],
+        { env: seatEnv, timeoutMs: 60000 },
+      );
+      const relogged = assertEnvelope(again, { ok: true, code: 0 });
+      assert.deepEqual(relogged.data.relogin.expired, ["demo"]);
+      assert.deepEqual(relogged.data.relogin.loggedIn, ["demo"]);
+      assert.match(relogged.data.relogin.message, /shut down/);
+      assert.match(JSON.stringify(relogged.data.results), /\/dashboard/);
+      const entries = (await readRunFile(dir, demo, "spyglass/log.jsonl"))
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      assert.deepEqual(
+        entries.find((entry) => entry.id === relogged.step).data.relogin
+          .expired,
+        ["demo"],
+        "the expiry stays in the step record",
+      );
+      assert.ok(!JSON.stringify(relogged).includes(seatEnv.DEMO_PASSWORD));
+    } finally {
+      for (const name of runs)
+        await runCli(dir, ["--json", "--run", name, "down"], { env: seatEnv });
+      await removeRepo(dir);
+    }
+  },
+);

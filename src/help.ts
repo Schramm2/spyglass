@@ -10,9 +10,9 @@ const details: Record<
   },
   up: {
     usage:
-      "up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE] [--cite-gates-from RUN]",
+      "up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE] [--cite-gates-from RUN] [--warm [--seat SEAT]]",
     description:
-      'Create a run with a fixed source baseline and a pending result template; its output lists resultRules for that template. Evidence must be Git-ignored and unique to the run. owned starts an app; external calls its owner doctor without starting owner resources; none runs checks without a server. Bind only non-secret values. Secret fields use env:, file:, dotenv:path#KEY or op:// references. Direct launch: up --cmd "npm run dev" --ready http://127.0.0.1:3000. Gates: when an earlier run of this repository passed a planned gate on the same source and profile, with kept evidence and the same binding values, up writes that gate into the pending result with its run and steps, and lists it in citedGates. --cite-gates-from RUN cites only that run, and fails with GATE_CITATION_REJECTED when it cannot cite any gate. Explore without a plan; a complete report requires claims.',
+      'Create a run with a fixed source baseline and a pending result template; its output lists resultRules for that template. Evidence must be Git-ignored and unique to the run. owned starts an app; external calls its owner doctor without starting owner resources; none runs checks without a server. Bind only non-secret values. Secret fields use env:, file:, dotenv:path#KEY or op:// references. Direct launch: up --cmd "npm run dev" --ready http://127.0.0.1:3000. Gates: when an earlier run of this repository passed a planned gate on the same source and profile, with kept evidence and the same binding values, up writes that gate into the pending result with its run and steps, and lists it in citedGates. --cite-gates-from RUN cites only that run, and fails with GATE_CITATION_REJECTED when it cannot cite any gate. --warm starts the exact-origin browser proxy and the headless browser of a seat while the app starts; --seat SEAT names the seat, and when it has a login, up signs it in once the app is ready. The output has data.warm. A run without web, or an unknown seat, fails with exit status 2 before the run is created. When up fails, the warm browser and proxy close. Explore without a plan; a complete report requires claims.',
     example:
       "spyglass up --run change-42 --profile spyglass.json --plan verification-plan.json --binding ownerRun=example --json",
   },
@@ -25,7 +25,7 @@ const details: Record<
   doctor: {
     usage: "doctor --run ID",
     description:
-      "Check immutable source, readiness and the configured owner doctor. Database profiles report role permissions when credentials are available. A writable role is a limit: read-only transactions cannot prevent every function side effect. Diagnostics retain their evidence; a source mismatch never resets the baseline.",
+      "Check immutable source, readiness and the configured owner doctor. Database profiles report role permissions when credentials are available. A writable role is a limit: read-only transactions cannot prevent every function side effect. Diagnostics retain their evidence; a source mismatch never resets the baseline. The tool probes, the owner doctor with the readiness check, the database role and the browser sessions run at the same time; the first failure in that order is reported. doctor hashes every source file, as report does. check, exec, api and db read again only the files whose size, times or inode changed since the last full check, and every new file; data.sourceCheck counts them.",
     example: "spyglass doctor --run change-42 --json",
   },
   down: {
@@ -36,9 +36,9 @@ const details: Record<
   },
   check: {
     usage:
-      "check NAME --run ID [--claim ID] [--independent-read] [--control ID:failed|restored] [--gate NAME]",
+      "check NAME|NAME,NAME... --run ID [--claim ID] [--independent-read] [--control ID:failed|restored] [--gate NAME]\n       spyglass check --gates [--concurrency N] --run ID",
     description:
-      "Run a profile command with its bindings, environment and deadline. result:exit checks the child exit; result:json requires nonempty valid assertions; result:engine imports the owner journey result. Failed assertions, skips and artifact errors remain failures even when the child exits zero. Declared artifacts must be in allowed import roots. cleanup:true records successful owner cleanup. --claim ID, --independent-read, --control ID:failed|restored and --gate NAME link a step into the pending result; see result.",
+      "Run a profile command with its bindings, environment and deadline. result:exit checks the child exit; result:json requires nonempty valid assertions; result:engine imports the owner journey result. Failed assertions, skips and artifact errors remain failures even when the child exits zero. Declared artifacts must be in allowed import roots. cleanup:true records successful owner cleanup. check a,b and check --gates run several checks at the same time (--concurrency N, default 4, up to 8). This process holds the run lock and writes each finished step to the log one at a time, so every check is its own step with its own artifacts and the log stays whole. The checks must not change the source: a change stops each check that ends after it. --gates runs the profile checks named like the planned gates and links each to its gate; the other gates are in data.skippedGates. If any check fails, the call exits 1 with CHECK_FAILED and data.checks gives the result of each. --claim and --control links apply to every check; --gate names one check only. --claim ID, --independent-read, --control ID:failed|restored and --gate NAME link a step into the pending result; see result.",
     example: "spyglass check verify --run change-42 --json",
   },
   exec: {

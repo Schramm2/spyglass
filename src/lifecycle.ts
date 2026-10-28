@@ -30,8 +30,9 @@ import {
   source,
   sourceChanges,
   steps,
+  writeStatTable,
 } from "./state.js";
-import type { Run } from "./state.js";
+import type { FileStat, Run } from "./state.js";
 import type { GateCitation } from "./report.js";
 import {
   isSameProcess,
@@ -47,6 +48,8 @@ export interface UpOptions {
   ready?: string;
   /** A run whose passed gates this run cites; else any run of the same source. */
   citeGatesFrom?: string;
+  /** Start this seat's browser while the app starts. */
+  warm?: { seat?: string };
 }
 async function freePort(): Promise<number> {
   return await new Promise((ok, no) => {
@@ -114,6 +117,20 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     { ...raw, bindings: { ...raw.bindings, ...opts.bindings } },
     vars,
   );
+  if (opts.warm) {
+    if (!profile.web)
+      throw new Fault(
+        "WARM_UNAVAILABLE",
+        "up --warm needs profile.web: there is no browser to start.",
+        "Set web in spyglass.json, or leave out --warm.",
+      );
+    if (opts.warm.seat && !profile.seats[opts.warm.seat])
+      throw new Fault(
+        "UNKNOWN_SEAT",
+        `Unknown seat ${opts.warm.seat}. Seats: ${Object.keys(profile.seats).join(", ") || "none"}.`,
+        "Choose a seat from spyglass.json.",
+      );
+  }
   const evidence = vars.evidence;
   if (!ignored(repo, evidence))
     throw new Fault(
@@ -125,6 +142,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
   const plan = opts.plan
     ? validate(planSchema, readJson(resolve(repo, opts.plan)), "plan")
     : validate(planSchema, { claims: [] }, "plan");
+  const baseline: Record<string, FileStat> = {};
   const run: Run = {
     id,
     repo,
@@ -135,7 +153,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     profileHash: hash(JSON.stringify(raw)),
     rawProfile: raw,
     bindingOverrides: opts.bindings,
-    source: source(repo, profile),
+    source: source(repo, profile, { record: baseline }),
     port,
     web: profile.web,
     api: profile.api,
@@ -204,6 +222,7 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
         "Use a distinct evidence folder for each run, such as .spyglass/runs/${run}.",
       );
     }
+    writeStatTable(run, baseline, run.source.files);
     writeJson(run.resultPath, {
       operator: "agent",
       controls: plan.controls.map(({ id }) => ({
@@ -489,7 +508,7 @@ async function ready(ctx: Context): Promise<void> {
   );
 }
 export async function doctor(ctx: Context): Promise<Record<string, unknown>> {
-  assertSource(ctx.run);
+  assertSource(ctx.run, "full");
   if (!ignored(ctx.run.repo, ctx.run.evidence))
     throw new Fault(
       "EVIDENCE_NOT_IGNORED",
@@ -502,58 +521,83 @@ export async function doctor(ctx: Context): Promise<Record<string, unknown>> {
     node: process.version,
     spyglass: "1.2.0",
   };
-  for (const [name, args] of [
+  const probes = [
     ...(ctx.run.web ? [["browser", ["agent-browser", "--version"]]] : []),
     ...(ctx.run.profile.compose
       ? [["compose", ["docker", "compose", "version", "--short"]]]
       : []),
-  ] as [string, string[]][]) {
-    const result = await ctx.execute(args, { timeoutMs: 10000 });
-    if (result.exitCode !== 0)
-      throw new Fault(
-        "TOOL_UNAVAILABLE",
-        `${name} is required by this profile but is unavailable.`,
-        `Install the configured ${name} tool and retry doctor.`,
-        3,
-      );
-    tools[name] = result.stdout.trim();
-  }
-  const environment = { evidenceIgnored: true, tools };
+  ] as [string, string[]][];
+  // The tool probes and the owner's doctor with the readiness check do not
+  // depend on each other. Run them together; report the first failure in the
+  // order of the checks, not the order in which they finish.
+  const toolProbes = Promise.all(
+    probes.map(async ([name, args]) => {
+      const result = await ctx.execute(args, { timeoutMs: 10000 });
+      if (result.exitCode !== 0)
+        throw new Fault(
+          "TOOL_UNAVAILABLE",
+          `${name} is required by this profile but is unavailable.`,
+          `Install the configured ${name} tool and retry doctor.`,
+          3,
+        );
+      tools[name] = result.stdout.trim();
+    }),
+  );
   const command = ctx.run.profile.launch.doctor;
-  if (command) {
-    const r = await ctx.execute(command, {
-      env: ctx.vault.environment(process.env, ctx.run.profile.launch.env),
-      timeoutMs: 120000,
-    });
-    ctx.artifact("doctor-output.json", r);
-    let body: unknown;
-    try {
-      body = JSON.parse(r.stdout);
-    } catch {}
-    if (
-      r.exitCode !== 0 ||
-      (body && typeof body === "object" && "ok" in body && body.ok === false)
-    )
-      throw new Fault(
-        "OWNER_DOCTOR_FAILED",
-        "The repository owner doctor failed.",
-        "Inspect doctor output and repair through the owner tool.",
-        1,
-        { exitCode: r.exitCode, doctor: body ?? r.stdout },
-      );
-  }
-  await ready(ctx);
-  assertSource(ctx.run);
-  let database: unknown;
-  if (ctx.run.profile.db) {
-    ctx.vault.resolve(ctx.run.profile.db.connection);
-    const m = await import("./surfaces.js");
-    database = await m.readDatabaseRole(ctx);
-  }
-
-  let browser: Record<string, unknown> | undefined;
-  if (Object.keys(ctx.run.sessions).length || ctx.run.browserProxy)
-    browser = await (await import("./browser.js")).browserDoctor(ctx);
+  const ownerAndReady = (async () => {
+    if (command) {
+      const r = await ctx.execute(command, {
+        env: ctx.vault.environment(process.env, ctx.run.profile.launch.env),
+        timeoutMs: 120000,
+      });
+      ctx.artifact("doctor-output.json", r);
+      let body: unknown;
+      try {
+        body = JSON.parse(r.stdout);
+      } catch {}
+      if (
+        r.exitCode !== 0 ||
+        (body && typeof body === "object" && "ok" in body && body.ok === false)
+      )
+        throw new Fault(
+          "OWNER_DOCTOR_FAILED",
+          "The repository owner doctor failed.",
+          "Inspect doctor output and repair through the owner tool.",
+          1,
+          { exitCode: r.exitCode, doctor: body ?? r.stdout },
+        );
+    }
+    await ready(ctx);
+  })();
+  const first = await Promise.allSettled([toolProbes, ownerAndReady]);
+  for (const outcome of first)
+    if (outcome.status === "rejected") throw outcome.reason;
+  const environment = { evidenceIgnored: true, tools };
+  assertSource(ctx.run, "full");
+  // The database role and the browser sessions are also independent.
+  const second = await Promise.allSettled([
+    (async () => {
+      if (!ctx.run.profile.db) return undefined;
+      ctx.vault.resolve(ctx.run.profile.db.connection);
+      const m = await import("./surfaces.js");
+      return m.readDatabaseRole(ctx);
+    })(),
+    (async () => {
+      // up --warm checks the browser itself once it has started it.
+      if (
+        ctx.warm ||
+        !(Object.keys(ctx.run.sessions).length || ctx.run.browserProxy)
+      )
+        return undefined;
+      return (await import("./browser.js")).browserDoctor(ctx);
+    })(),
+  ]);
+  for (const outcome of second)
+    if (outcome.status === "rejected") throw outcome.reason;
+  const database =
+    second[0].status === "fulfilled" ? second[0].value : undefined;
+  const browser =
+    second[1].status === "fulfilled" ? second[1].value : undefined;
   ctx.run.lastDoctor = ctx.step.id;
   const { resultRules: _rules, ...state } = status(ctx.run);
   return {
@@ -804,6 +848,7 @@ export async function launch(ctx: Context): Promise<Record<string, unknown>> {
   const { run } = ctx;
   ctx.artifact("profile.json", run.profile, "configuration");
   ctx.artifact("plan.json", run.plan, "configuration");
+  let warming: Promise<void> | undefined;
   try {
     if (run.profile.launch.mode === "owned") {
       if (!processIdentity(process.pid))
@@ -906,12 +951,33 @@ export async function launch(ctx: Context): Promise<Record<string, unknown>> {
       child.unref();
       saveRun(run);
     }
+    // The browser and its proxy start while the app becomes ready.
+    if (ctx.warm) {
+      warming = (await import("./browser.js")).startWarm(ctx, ctx.warm.seat);
+      warming.catch(() => undefined);
+    }
     await doctor(ctx);
+    let warm: Record<string, unknown> | undefined;
+    if (warming) {
+      await warming;
+      const browser = await import("./browser.js");
+      warm = await browser.finishWarm(ctx, ctx.warm?.seat);
+      await browser.browserDoctor(ctx);
+    }
     run.state = "ready";
-    return status(run);
+    return { ...status(run), ...(warm ? { warm } : {}) };
   } catch (e) {
     run.state = "failed";
     await stopOwned(ctx);
+    if (warming) {
+      // Close what the warm start opened; the original failure stands.
+      await warming.catch(() => undefined);
+      await (
+        await import("./browser.js")
+      )
+        .closeBrowsers(ctx)
+        .catch(() => undefined);
+    }
     const log = join(run.evidence, "spyglass/launch.log");
     if (existsSync(log)) ctx.artifact("startup.log", readFileSync(log, "utf8"));
     throw e;

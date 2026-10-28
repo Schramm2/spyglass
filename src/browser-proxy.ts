@@ -11,19 +11,22 @@ import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { connect as netConnect } from "node:net";
-import {
-  createServer,
-  request as httpRequest,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from "node:http";
-import { request as httpsRequest } from "node:https";
+import { createRequire } from "node:module";
+import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Fault } from "./errors.js";
 import { processIdentity } from "./process.js";
 import { BROWSER_IDLE_TIMEOUT_MS, runHome, saveRun } from "./state.js";
 import type { Run } from "./state.js";
+
+// An import of node:http reads every export of it, and one export loads undici,
+// which costs about 25 ms in each ui command. require gives the same functions
+// without that read.
+const require = createRequire(import.meta.url);
+const { createServer, request: httpRequest } =
+  require("node:http") as typeof import("node:http");
+const { request: httpsRequest } =
+  require("node:https") as typeof import("node:https");
 
 const HEADER_LIMIT = 16 * 1024;
 const BODY_LIMIT = 10 * 1024 * 1024;

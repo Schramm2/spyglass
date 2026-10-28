@@ -90,6 +90,12 @@ spyglass --run <run-id> exec -- <command> [arguments]
 For a gate longer than five minutes, select a bounded deadline before `--`,
 for example `spyglass exec --timeout-ms 900000 --run <run-id> -- make check`.
 
+To save time, start the browser with the app: `spyglass up --warm --seat <seat>`
+signs that seat in once the app is ready. Run independent gate checks at the
+same time with `spyglass check --gates` or `spyglass check lint,types,unit`; they
+must not change the source. When a long pause expired a seat's browser, end the
+command with `--relogin` to sign the seat in again; the step keeps the expiry.
+
 Wait for every command and asynchronous action to finish. Record the final
 state, not only an accepted request or a running process. Keep each failed
 attempt; after a repair, run the affected proof again.

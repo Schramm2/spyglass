@@ -5008,3 +5008,232 @@ test("status --work lists what each claim, control and gate still needs", async 
     await removeRepo(dir);
   }
 });
+
+// Slice 6 of docs/verification-speed.md: fast source check and parallel checks.
+const statTable = async (dir, run) =>
+  join(await runRecord(dir, run), "..", "source-stat.json");
+
+test("a changed file is found by the fast source check, and doctor and report hash every file", async () => {
+  const dir = await makeRepo({
+    profile: baseProfile({
+      launch: { mode: "none" },
+      web: undefined,
+      api: undefined,
+      browser: undefined,
+    }),
+  });
+  const readme = join(dir, "README.md");
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "fast-source"]),
+      {
+        ok: true,
+        code: 0,
+      },
+    ).run;
+    const { stat } = await import("node:fs/promises");
+    const before = await stat(readme);
+    const first = await drive(dir, run, [
+      "exec",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    const check = (await logged(dir, run)).find(
+      (entry) => entry.id === first.step,
+    ).data.sourceCheck;
+    assert.equal(check.mode, "fast");
+    assert.ok(check.files > 0);
+    if (before.mtimeMs % 1000 !== 0)
+      assert.equal(check.rehashed, 0, "an unchanged file is not read again");
+
+    // The same size and the same modification time: only ctime shows it.
+    const text = await readFile(readme, "utf8");
+    await writeFile(readme, text.replace("fixture", "fixtur3"));
+    const { utimes } = await import("node:fs/promises");
+    await utimes(readme, before.atime, before.mtime);
+    const stale = await drive(
+      dir,
+      run,
+      ["exec", "--", process.execPath, "-e", "0"],
+      {
+        ok: false,
+        code: 1,
+      },
+    );
+    assert.equal(stale.error.code, "STALE_SOURCE");
+    assert.match(stale.error.message, /README\.md/);
+
+    // Even a stat table that hides the change cannot hide it from doctor and report.
+    const table = JSON.parse(await readFile(await statTable(dir, run), "utf8"));
+    const now = await stat(readme);
+    table.entries["README.md"] = {
+      m: now.mtimeMs,
+      c: now.ctimeMs,
+      s: now.size,
+      i: now.ino,
+      f: now.mode,
+    };
+    await writeFile(await statTable(dir, run), JSON.stringify(table));
+    const doctor = await drive(dir, run, ["doctor"], { ok: false, code: 1 });
+    assert.equal(doctor.error.code, "STALE_SOURCE");
+    const report = await runCli(dir, ["--json", "--run", run, "report"]);
+    assert.ok(
+      report.json.data.findings.some(
+        (finding) => finding.code === "STALE_SOURCE",
+      ),
+      "the report hashes every file",
+    );
+  } finally {
+    await writeFile(readme, "# Isolated Spyglass fixture\n");
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+const sleepCheck = (code, ms, artifact) => ({
+  command: [
+    "node",
+    "-e",
+    `setTimeout(() => { console.log(${JSON.stringify(artifact)}); process.exit(${code}); }, ${ms})`,
+  ],
+});
+
+test("check a,b runs checks in parallel and keeps both steps when one fails", async () => {
+  const profile = baseProfile({
+    launch: { mode: "none" },
+    web: undefined,
+    api: undefined,
+    browser: undefined,
+    checks: {
+      first: sleepCheck(0, 700, "first done"),
+      second: sleepCheck(1, 700, "second failed"),
+      third: sleepCheck(0, 700, "third done"),
+    },
+  });
+  const plan = {
+    claims: [linkClaim("ready", "behavior", ["first"])],
+    gates: ["first", "third", "outside"],
+    limits: [],
+  };
+  const dir = await makeRepo({ profile, plan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "parallel",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const both = await drive(dir, run, ["check", "first,second"], {
+      ok: false,
+      code: 1,
+    });
+    assert.equal(both.error.code, "CHECK_FAILED");
+    assert.match(both.error.message, /second/);
+    assert.doesNotMatch(both.error.message, /first/);
+    assert.deepEqual(
+      both.data.checks.map(({ name, status }) => `${name}:${status}`),
+      ["first:passed", "second:failed"],
+    );
+    const entries = await logged(dir, run); // every line is valid JSON
+    const steps = both.data.checks.map((item) =>
+      entries.find((entry) => entry.id === item.step),
+    );
+    assert.ok(steps.every(Boolean), "both steps are in the log");
+    assert.deepEqual(
+      steps.map((entry) => entry.status),
+      ["passed", "failed"],
+    );
+    assert.ok(
+      steps.every((entry) => entry.artifacts.length > 0),
+      "both keep their artifacts",
+    );
+    const [a, b] = steps.map((entry) => [
+      Date.parse(entry.startedAt),
+      Date.parse(entry.startedAt) + entry.durationMs,
+    ]);
+    assert.ok(a[0] < b[1] && b[0] < a[1], `the attempts overlap: ${a} ${b}`);
+    assert.equal((await storedRun(dir, run)).id, run, "run.json is intact");
+    assert.ok(
+      new Set(entries.map((entry) => entry.id)).size === entries.length,
+    );
+
+    // --gates runs the checks that carry the planned gate names.
+    const gates = await drive(dir, run, [
+      "check",
+      "--gates",
+      "--concurrency",
+      "2",
+    ]);
+    assert.deepEqual(gates.data.checks.map(({ name }) => name).sort(), [
+      "first",
+      "third",
+    ]);
+    assert.deepEqual(gates.data.skippedGates, ["outside"]);
+    const pending = await pendingResult(dir, run);
+    assert.deepEqual(
+      pending.gates
+        .filter((gate) => gate.outcome === "passed")
+        .map((gate) => gate.name)
+        .sort(),
+      ["first", "third"],
+      "each gate check links itself to its gate",
+    );
+    const usage = await drive(
+      dir,
+      run,
+      ["check", "first,second", "--gate", "first"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(usage.error.code, "INVALID_USAGE");
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("up --warm needs a web address and a known seat, and creates no run without them", async () => {
+  const dir = await makeRepo({
+    profile: baseProfile({
+      launch: { mode: "none" },
+      web: undefined,
+      api: undefined,
+      browser: undefined,
+    }),
+  });
+  try {
+    const noWeb = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "warm-no-web", "--warm"]),
+      { ok: false, code: 2 },
+    );
+    assert.equal(noWeb.error.code, "WARM_UNAVAILABLE");
+    const seat = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "warm-seat",
+        "--warm",
+        "--seat",
+        "nobody",
+      ]),
+      { ok: false, code: 2 },
+    );
+    assert.ok(["WARM_UNAVAILABLE", "UNKNOWN_SEAT"].includes(seat.error.code));
+    const status = assertEnvelope(await runCli(dir, ["--json", "status"]), {
+      ok: true,
+      code: 0,
+    });
+    assert.deepEqual(status.data.runs, [], "no run was created");
+  } finally {
+    await removeRepo(dir);
+  }
+});

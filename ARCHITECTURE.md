@@ -25,19 +25,20 @@ All runtime code is in `src/`. Each command loads only the module it needs.
 | `src/schema.ts` | The version 1 profile, plan and result schemas (zod) | `profileSchema`, `planSchema`, `resultSchema`, `validate` |
 | `src/export-schemas.ts` | Build step that writes `schemas/*.schema.json` | |
 | `src/profile.ts` | Profile discovery (`init`), location, loading and `${...}` templates | `init`, `locateProfile`, `loadProfile`, `template` |
-| `src/state.ts` | Run and step records, source identity, the lock and the per-command `Context` | `Run`, `Step`, `Artifact`, `Context`, `source`, `assertSource`, `lock`, `stateRoot` |
-| `src/lifecycle.ts` | `up`, `status`, `doctor` and the owned-process stop | `allocate`, `launch`, `doctor`, `status`, `capabilities`, `stopOwned` |
+| `src/state.ts` | Run and step records, source identity and its stat table, the lock, the per-command `Context` and the links from a step into the pending result | `Run`, `Step`, `Artifact`, `Context`, `source`, `sourceChanges`, `assertSource`, `linkPendingResult`, `lock`, `stateRoot` |
+| `src/lifecycle.ts` | `up` (with gate citation and `--warm`), `status`, `doctor`, `down` and `finish`, and the owned-process stop | `allocate`, `launch`, `doctor`, `down`, `finishRun`, `status`, `capabilities`, `stopOwned` |
 | `src/supervisor.ts` | Separate process that holds the owned app's process group and writes its masked log | |
 | `src/process.ts` | Child commands with bounds, and process identity checks | `runCommand`, `processIdentity`, `processGroupMembers` |
-| `src/checks.ts` | `check`, `exec`, `evidence add` and assertion parsing | `checks` |
-| `src/browser.ts` | `ui`: calls `agent-browser`, seats and sign-in, screenshots | `browser`, `browserDoctor`, `closeBrowsers` |
+| `src/checks.ts` | `check` (also several at once), `exec`, `evidence add` and assertion parsing | `checks`, `parallelChecks` |
+| `src/browser.ts` | `ui`: calls `agent-browser`, seats and sign-in, expectations, `verify` and `proof`, screenshots | `browser`, `pollConditions`, `runVerify`, `browserDoctor`, `closeBrowsers` |
 | `src/browser-proxy.ts` | Separate process: an exact-origin HTTP proxy for the run browser | `ensureBrowserProxy`, `stopBrowserProxy` |
-| `src/surfaces.ts` | `api`, `db`, `ps`, `logs` and `mark` | `surfaces`, `readDatabaseRole` |
-| `src/report.ts` | `result` validation and `report` (JSON summary and HTML page) | `report` |
+| `src/surfaces.ts` | `api` (with expectations and polling), `db`, `ps`, `logs` and `mark` | `surfaces`, `readDatabaseRole` |
+| `src/report.ts` | `result` validation with a repair for each finding, `result set`, `status --work`, gate citation, and `report` (JSON summary and HTML page) | `report`, `workFor`, `citeGates` |
 | `src/secrets.ts` | Secret reference resolution and masking | `Secrets` |
 | `src/files.ts` | Safe paths, hashing and JSON I/O | `safePath`, `beneath`, `hash` |
 | `src/errors.ts` | The `Fault` error with code, next action and exit code | `Fault`, `fault` |
 | `skills/` | The agent skills that teach operators to use the CLI | |
+| `bench/` | The overhead gate and the scripted journey, which write to `bench/results/` | |
 | `tests/e2e/`, `fixtures/demo-app/` | E2E tests and the app they drive | |
 
 ## Main flow
@@ -51,8 +52,10 @@ All runtime code is in `src/`. Each command loads only the module it needs.
    or runs the owner's readiness check (`external`), and waits for readiness.
    The run becomes `ready` or `failed`.
 3. **Drive.** Each later command takes the run lock, creates a `Context` with
-   a new step, checks the source identity (except for `ui`) and calls its
-   module. Modules write artifacts through `Context.artifact`. `Context.finish`
+   a new step, checks the source identity (except for `ui`; the fast check
+   reads again only the files whose stat changed) and calls its module. The
+   commands `finish` and `check a,b` create several `Context`s, one for each
+   step, under the one lock. Modules write artifacts through `Context.artifact`. `Context.finish`
    appends the step to `spyglass/log.jsonl` in the evidence folder, also when
    the command fails.
 4. **Result.** The operator fills the pending result file that `up` wrote,
@@ -86,6 +89,7 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 
 | Fact | Owner and location |
 | --- | --- |
+| Source stat table (`source-stat.json`), written at `up` and at each full source check | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/`, beside the run record. It lists the stat of the files that matched the baseline |
 | Run record, lock, browser proxy config | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/` (default `~/.local/state`), outside the repository. The hash is of the main worktree path, so all worktrees of a repository share one run store; only a run's own worktree changes it. The run record keeps the profile twice: after templates (`profile`) and as hashed, before templates (`rawProfile`, from 1.2.0) |
 | Step log, artifacts, result, report, app log | The evidence folder in the target repository, default `.spyglass/runs/${run}`, which must be Git-ignored |
 | Profile, checks, containers, databases | The target repository |
@@ -98,6 +102,10 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 | A command that changes a run runs from the run's own worktree; `down` of a run whose worktree was removed runs from any worktree | `assertWorktree` in `src/state.ts`, E2E tests |
 | Every mutating command holds the run lock; a second one fails with `RUN_BUSY` and `status` stays available | `lock` in `src/state.ts`, E2E tests |
 | Evidence from changed source cannot pass for the recorded source | `assertSource`, `report` checks, E2E tests |
+| The fast source check trusts the stat table only for files that matched the baseline at the last full check; `doctor` and `report` hash every file | `sourceChanges` in `src/state.ts`, E2E tests |
+| A step links itself into the pending result without writing an observation, an inspection text or a claim outcome | `linkPendingResult` in `src/state.ts`, E2E tests |
+| A batch step (`ui verify`) lists its sub-steps; a claim cannot cite one that failed or did not run | `validateClaimProof` in `src/report.ts`, surface tests |
+| A socket error in the browser proxy never ends the proxy process | `serve` in `src/browser-proxy.ts`, surface tests |
 | A gate cited from another run needs the same source and profile, and fails when one of its steps used a binding override with another value | `validateGates` and `readBindings` in `src/report.ts`, E2E tests |
 | A failed step stays in the log; nothing removes log entries | `Context.finish` appends only; not otherwise enforced |
 | Text and JSON written through `Context` are masked; images are not | `Secrets`, `Context.artifact`, E2E tests |

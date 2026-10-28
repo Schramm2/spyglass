@@ -949,6 +949,7 @@ export function browserHelp(): Record<string, unknown> {
     ],
     policy: [
       "Each run and seat gets a new headless browser session.",
+      "A command can end with --relogin. When the seat's browser expired and the seat has a login, the step keeps the expiry as data.relogin, signs the seat in again and then runs the command. Without a login for the seat, the command fails with BROWSER_EXPIRED.",
       "Spyglass uses an explicit config and allowed run origins.",
       "Page output is marked as untrusted content.",
       "Use spyglass down to close run-owned sessions.",
@@ -2583,19 +2584,41 @@ export async function browser(
     seat = picked.seat,
     action = picked.args;
   if (!action.length) return browserHelp();
+  // --relogin is one of the two flags that end a command; --settle is the other.
+  const reloginAt = action.indexOf("--relogin");
+  const relogin = reloginAt > 0 && reloginAt >= action.length - 2;
+  if (relogin) action.splice(reloginAt, 1);
   const policy = origins(ctx),
     id = identity(ctx, seat);
-  await expireIdleBrowsers(
-    ctx,
-    action[0] === "login" && action[1] ? action[1] : seat,
-    policy.domains,
-  );
+  const used = action[0] === "login" && action[1] ? action[1] : seat;
+  // The browser of a seat can shut down while it is idle. With --relogin and a
+  // login for the seat, the expiry is kept in the step and the seat signs in
+  // again before the command runs; otherwise the command fails.
+  let relogged:
+    { expired: string[]; message: string; loggedIn: string[] } | undefined;
+  try {
+    await expireIdleBrowsers(ctx, used, policy.domains);
+  } catch (error) {
+    if (
+      relogin &&
+      error instanceof Fault &&
+      error.code === "BROWSER_EXPIRED" &&
+      action[0] !== "login" &&
+      ctx.run.profile.seats[used]?.login
+    )
+      relogged = {
+        expired: (error.data.expiredSeats as string[] | undefined) ?? [used],
+        message: error.message,
+        loggedIn: [],
+      };
+    else throw error;
+  }
   const startedProxy = await ensureBrowserProxy(
     ctx.run,
     policy.exact,
     idleTimeoutMs(ctx),
   );
-  try {
+  const dispatch = async (): Promise<Record<string, unknown>> => {
     if (action[0] === "login") {
       const name = action[1];
       if (!name)
@@ -2765,11 +2788,54 @@ export async function browser(
         isolatedSeat: seat,
       },
     };
+  };
+  try {
+    if (relogged) {
+      const loginId = identity(ctx, used);
+      if (await ensure(ctx, loginId, policy.domains)) {
+        ctx.run.sessions[used] = loginId.session;
+        saveRun(ctx.run);
+      }
+      await login(ctx, used, loginId, [...policy.domains.split(",")]);
+      relogged.loggedIn.push(used);
+    }
+    const out = await dispatch();
+    return relogged ? { ...out, relogin: relogged } : out;
   } catch (error) {
+    if (relogged && error instanceof Fault)
+      error.data = { ...error.data, relogin: relogged };
     if (startedProxy && !Object.keys(ctx.run.sessions).length)
       await stopBrowserProxy(ctx.run).catch(() => undefined);
     throw error;
   }
+}
+/**
+ * Start the browser of a seat and its proxy, while the app starts. `get url`
+ * launches a browser on an empty page and reaches no network address.
+ */
+export async function startWarm(ctx: Context, seat?: string): Promise<void> {
+  const name = seat ?? "default";
+  const policy = origins(ctx);
+  const id = identity(ctx, name);
+  await ensureBrowserProxy(ctx.run, policy.exact, idleTimeoutMs(ctx));
+  if (await ensure(ctx, id, policy.domains)) {
+    ctx.run.sessions[name] = id.session;
+    saveRun(ctx.run);
+  }
+  await run(ctx, id, policy.domains, [["get", "url"]]);
+}
+/** Sign the warm seat in once the app is ready, when the seat has a login. */
+export async function finishWarm(
+  ctx: Context,
+  seat?: string,
+): Promise<{ seat: string; browser: boolean; loggedIn: boolean }> {
+  const info = { seat: seat ?? "default", browser: true, loggedIn: false };
+  if (seat && ctx.run.profile.seats[seat]?.login) {
+    const policy = origins(ctx);
+    await login(ctx, seat, identity(ctx, seat), [...policy.domains.split(",")]);
+    info.loggedIn = true;
+  }
+  return info;
 }
 export async function browserDoctor(
   ctx: Context,

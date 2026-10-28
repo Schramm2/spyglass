@@ -497,6 +497,72 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
             give no <code>--file</code>. If a check fails, keep the original
             expectation. Repair the source and start a new run.
           </p>
+          <h3>Shorter runs</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Command</th>
+                  <th scope="col">What it saves</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>up --warm [--seat SEAT]</code></td>
+                  <td>
+                    Starts the exact-origin proxy and the headless browser of a
+                    seat while the app starts. With <code>--seat</code>, it
+                    signs the seat in once the app is ready, if the seat has a
+                    login. <code>data.warm</code> shows it. If
+                    <code>up</code> fails, the warm browser and proxy close.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>check a,b</code>,
+                    <code>check --gates [--concurrency N]</code>
+                  </td>
+                  <td>
+                    Runs checks at the same time (default 4, up to 8). Each
+                    check is its own step and keeps its artifacts; the run lock
+                    and the log stay whole. The checks must not change the
+                    source. <code>--gates</code> runs the profile checks named
+                    like the planned gates and links each to its gate.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>ui ... --relogin</code></td>
+                  <td>
+                    When the seat's browser expired and the seat has a login,
+                    signs the seat in again, then runs the command. The step
+                    keeps the expiry in <code>data.relogin</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>finish</code></td>
+                  <td>
+                    Runs <code>result</code>, <code>doctor</code>,
+                    <code>down</code> and <code>report</code>.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <code>check</code>, <code>exec</code>, <code>api</code> and
+            <code>db</code> read again only the source files whose size,
+            modification time, change time, inode or mode changed since the last
+            full check, and every new file. <code>data.sourceCheck</code> counts
+            the files that they read again. <code>doctor</code> and
+            <code>report</code> hash every file. <code>doctor</code> also runs
+            its independent probes at the same time.
+            <code>bench/overhead.mjs</code> measures the time that Spyglass adds
+            to a browser command; see
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/browser-benchmark.md"
+              >browser-benchmark.md</a
+            >.
+          </p>
         </section>
 
         <section class="doc" id="concepts" aria-labelledby="concepts-title">
@@ -780,7 +846,7 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
             <h3><code>up</code></h3>
             <pre
               class="usage"
-            ><code>spyglass up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE] [--cite-gates-from RUN]</code></pre>
+            ><code>spyglass up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE] [--cite-gates-from RUN] [--warm [--seat SEAT]]</code></pre>
             <p>
               Create a run with a fixed source baseline and a pending result
               template; its output lists resultRules for that template. Evidence
@@ -795,7 +861,13 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
               gate into the pending result with its run and steps, and lists it
               in citedGates. --cite-gates-from RUN cites only that run, and
               fails with GATE_CITATION_REJECTED when it cannot cite any gate.
-              Explore without a plan; a complete report requires claims.
+              --warm starts the exact-origin browser proxy and the headless
+              browser of a seat while the app starts; --seat SEAT names the
+              seat, and when it has a login, up signs it in once the app is
+              ready. The output has data.warm. A run without web, or an unknown
+              seat, fails with exit status 2 before the run is created. When up
+              fails, the warm browser and proxy close. Explore without a plan; a
+              complete report requires claims.
             </p>
             <div class="call">
               <pre><code>spyglass up --run change-42 --profile spyglass.json --plan verification-plan.json --binding ownerRun=example --json</code></pre>
@@ -844,7 +916,13 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
               Database profiles report role permissions when credentials are
               available. A writable role is a limit: read-only transactions
               cannot prevent every function side effect. Diagnostics retain
-              their evidence; a source mismatch never resets the baseline.
+              their evidence; a source mismatch never resets the baseline. The
+              tool probes, the owner doctor with the readiness check, the
+              database role and the browser sessions run at the same time; the
+              first failure in that order is reported. doctor hashes every
+              source file, as report does. check, exec, api and db read again
+              only the files whose size, times or inode changed since the last
+              full check, and every new file; data.sourceCheck counts them.
             </p>
             <div class="call">
               <pre><code>spyglass doctor --run change-42 --json</code></pre>
@@ -873,16 +951,28 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
             <h3><code>check</code></h3>
             <pre
               class="usage"
-            ><code>spyglass check NAME --run ID [--claim ID] [--independent-read] [--control ID:failed|restored] [--gate NAME]</code></pre>
+            ><code>spyglass check NAME|NAME,NAME... --run ID [--claim ID] [--independent-read] [--control ID:failed|restored] [--gate NAME]
+       spyglass check --gates [--concurrency N] --run ID</code></pre>
             <p>
               Run a profile command with its bindings, environment and deadline.
               result:exit checks the child exit; result:json requires nonempty
               valid assertions; result:engine imports the owner journey result.
               Failed assertions, skips and artifact errors remain failures even
               when the child exits zero. Declared artifacts must be in allowed
-              import roots. cleanup:true records successful owner cleanup.
-              --claim ID, --independent-read, --control ID:failed|restored and
-              --gate NAME link a step into the pending result; see result.
+              import roots. cleanup:true records successful owner cleanup. check
+              a,b and check --gates run several checks at the same time
+              (--concurrency N, default 4, up to 8). This process holds the run
+              lock and writes each finished step to the log one at a time, so
+              every check is its own step with its own artifacts and the log
+              stays whole. The checks must not change the source: a change stops
+              each check that ends after it. --gates runs the profile checks
+              named like the planned gates and links each to its gate; the other
+              gates are in data.skippedGates. If any check fails, the call exits
+              1 with CHECK_FAILED and data.checks gives the result of each.
+              --claim and --control links apply to every check; --gate names one
+              check only. --claim ID, --independent-read, --control
+              ID:failed|restored and --gate NAME link a step into the pending
+              result; see result.
             </p>
             <div class="call">
               <pre><code>spyglass check verify --run change-42 --json</code></pre>
@@ -2029,6 +2119,16 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                 </tr>
                 <tr>
                   <td>Run</td>
+                  <td>
+                    The app does not become ready during <code>up --warm</code>.
+                  </td>
+                  <td>
+                    The run is recorded as failed, the warm browser and its
+                    proxy are closed, and status and cleanup remain available.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Run</td>
                   <td>Two operators try to change one run at once.</td>
                   <td>
                     One mutation owns the lock. Status can inspect the active
@@ -2045,6 +2145,20 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   </td>
                 </tr>
                 <tr>
+                  <td>Source</td>
+                  <td>
+                    A source file is modified between commands while its size or
+                    timestamp is checked by the fast source check.
+                  </td>
+                  <td>
+                    <code>assertSource</code> detects the change at once, also
+                    when the size and the modification time are unchanged, and
+                    refuses the command with <code>STALE_SOURCE</code>.
+                    <code>doctor</code> and <code>report</code> still verify the
+                    full content hashes.
+                  </td>
+                </tr>
+                <tr>
                   <td>Check</td>
                   <td>
                     A check exits zero but reports a failed assertion or skipped
@@ -2053,6 +2167,19 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   <td>
                     The check fails and retains the command result, assertion
                     details, skips, and artifacts.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Check</td>
+                  <td>
+                    <code>check a,b</code> runs two checks in parallel and one
+                    fails.
+                  </td>
+                  <td>
+                    Both steps and their artifacts are retained in
+                    <code>log.jsonl</code> without corrupting
+                    <code>run.json</code> or the log. The command exits 1 and
+                    names the failed check.
                   </td>
                 </tr>
                 <tr>
@@ -2329,6 +2456,19 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                     The proxy process stays up and later browser commands work.
                     A proxy that is gone still fails the command with
                     <code>BROWSER_PROXY_UNAVAILABLE</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A seat's browser expired and the command has
+                    <code>--relogin</code>.
+                  </td>
+                  <td>
+                    For a seat with a login, the step keeps the expiry and the
+                    login as <code>data.relogin</code>, signs in again and then
+                    runs the command. For a seat without a login, the command
+                    fails with <code>BROWSER_EXPIRED</code>.
                   </td>
                 </tr>
                 <tr>

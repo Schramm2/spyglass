@@ -77,8 +77,27 @@ This file records the notable changes to Spyglass. The format follows
   cleanup check, `down` and `report` in order. Each stage is its own step. The
   first failed stage stops it, writes no report and names the repair.
 
+- `up --warm [--seat SEAT]` starts the exact-origin browser proxy and the
+  headless browser of a seat while the app starts, and signs the seat in when
+  it has a login and the app is ready. When `up` fails, the warm browser and
+  proxy close.
+- `check a,b` and `check --gates [--concurrency N]` run checks at the same
+  time. Each check is its own step. A failed check fails the call with
+  `CHECK_FAILED` and `data.checks` names every result.
+- `--relogin` on `ui` signs a seat in again when its browser expired and the
+  seat has a login. The step keeps the expiry as `data.relogin`.
+- `module.enableCompileCache` in the CLI. `check`, `exec`, `api` and `db` read
+  again only the source files whose stat changed since the last full check, and
+  `data.sourceCheck` counts them; `doctor` and `report` hash every file.
+  `bench/overhead.mjs` and `bench/journey.mjs` measure the added time and a
+  12-claim journey.
+
 ### Changed
 
+- `doctor` runs its independent probes at the same time.
+- A `ui` command no longer loads the HTTP client library (about 25 ms); the
+  added time of `ui get title` fell from about 105 ms to about 85 ms at the
+  median on the test machine.
 - A container with a health check that is `starting` or `unhealthy` is no
   longer ready: `ps` fails with `REQUIRED_CONTAINER_STOPPED`, as for a stopped
   container.

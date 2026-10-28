@@ -11,9 +11,12 @@ results and retained evidence.
 | Setup | A CLI binding overrides a profile default. | Execution and retained binding records use the same resolved override. |
 | Command | A command exceeds its selected deadline. | The attempt retains timeout status and output; an invalid deadline is rejected before execution. |
 | Run | The app exits before its readiness check succeeds. | The run remains recorded as failed, its ID is returned, and status and cleanup remain available. |
+| Run | The app does not become ready during `up --warm`. | The run is recorded as failed, the warm browser and its proxy are closed, and status and cleanup remain available. |
 | Run | Two operators try to change one run at once. | One mutation owns the lock. Status can inspect the active command. The second mutation fails with a recovery action. |
 | Source | Source changes after the run starts. | Later evidence cannot be presented as proof for the original source. The run records both source identities or rejects the stale result. |
+| Source | A source file is modified between commands while its size or timestamp is checked by the fast source check. | `assertSource` detects the change at once, also when the size and the modification time are unchanged, and refuses the command with `STALE_SOURCE`. `doctor` and `report` still verify the full content hashes. |
 | Check | A check exits zero but reports a failed assertion or skipped required assertion. | The check fails and retains the command result, assertion details, skips, and artifacts. |
+| Check | `check a,b` runs two checks in parallel and one fails. | Both steps and their artifacts are retained in `log.jsonl` without corrupting `run.json` or the log. The command exits 1 and names the failed check. |
 | Claim | A required claim has no completed step or required evidence. | The claim cannot pass. The report stays incomplete and names the missing proof. |
 | Claim | A side-effect claim has no independent read after the action completes. | The claim cannot pass. |
 | Evidence | An imported artifact is missing, outside an approved root, or changes during import. | The import fails and does not claim the artifact as evidence. |
@@ -39,6 +42,7 @@ results and retained evidence.
 | Claim | A claim cites a batch step that has an expectation that did not run or did not pass. | The claim cannot pass. The result names the expectation. |
 | Browser | A screenshot is taken of a page that has not drawn a frame yet, and the headless browser waits about 10 seconds for the first frame. | A proof right after `ui open` returns in under 5 seconds. Spyglass makes the page draw before each screenshot. |
 | Browser | A browser resets a connection to the run's proxy, for example when it starts or closes a page. | The proxy process stays up and later browser commands work. A proxy that is gone still fails the command with `BROWSER_PROXY_UNAVAILABLE`. |
+| Browser | A seat's browser expired and the command has `--relogin`. | For a seat with a login, the step keeps the expiry and the login as `data.relogin`, signs in again and then runs the command. For a seat without a login, the command fails with `BROWSER_EXPIRED`. |
 | Browser | A claim needs to know which element has focus. | `ui focused` records the focused element's role, label and type without its value. `--expect LABEL` fails when the label differs. |
 | HTTP | A request returns an unexpected status or an asynchronous submission is checked before completion. | The expected-status check fails, or the workflow waits for completion before an independent read. |
 | HTTP | `api --wait-until` times out while the job remains `pending`, or reaches a `--fail-on` state. | The command exits 1 with `API_EXPECTATION_FAILED`. It retains the poll count and the final response artifact, and the step cannot satisfy an independent read. |
