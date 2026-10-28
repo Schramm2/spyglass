@@ -34,8 +34,8 @@
     "build": "tsc --noEmit && esbuild src/*.ts --bundle --splitting --format=esm --platform=node --packages=external --external:./browser-proxy.js --outdir=dist --entry-names='[name]' --chunk-names='chunks/[name]-[hash]' && esbuild src/browser.ts --bundle --format=esm --platform=node --external:./browser-proxy.js --external:./state.js --external:./errors.js --outfile=dist/browser.js && node dist/export-schemas.js",
     "test": "npm run build && node --test --test-concurrency=1 tests/e2e/*.test.mjs",
     "check": "npm run build && npm test",
-    "format": "prettier --write src tests fixtures examples landing",
-    "format:check": "prettier --check src tests fixtures examples landing"
+    "format": "prettier --write src tests fixtures examples landing bench",
+    "format:check": "prettier --check src tests fixtures examples landing bench"
   },
   "dependencies": {
     "pg": "^8.16.3",

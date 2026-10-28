@@ -28,6 +28,9 @@ and `zod` only.
 - `skills/`: the source of truth for the `spyglass`,
   `create-verification-skill` and `maintain-verification-skill` agent skills.
   Edit them here. Keep each adapted skill's `LICENSE` file.
+- `bench/`: the benchmark scripts. `overhead.mjs` is the overhead gate and
+  `journey.mjs` is the scripted 12-claim journey; both write to
+  `bench/results/`. See `docs/verification-speed.md`.
 - `docs/`: user docs and the failure cases the CLI must detect.
 - `examples/`: the example profile and plan that the README links.
 - `landing/`: the static landing page and, in `landing/docs/`, the docs

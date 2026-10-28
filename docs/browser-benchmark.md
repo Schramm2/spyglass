@@ -80,3 +80,28 @@ SPYGLASS_TEST_SURFACES=1 node --test --test-concurrency=1 \
   --test-name-pattern='agent-browser uses a fresh|browser blocks page navigation' \
   tests/e2e/surfaces.test.mjs
 ```
+
+## Overhead gate
+
+`bench/overhead.mjs` repeats this method as a gate. It needs `agent-browser`,
+Chromium and a build (`npm run build`).
+
+```sh
+node bench/overhead.mjs
+node bench/overhead.mjs --pairs 20 --gate-cold --label after-fastpath
+```
+
+The script starts the demo app in a temporary Git repository. It measures:
+
+- the cold start: a new `spyglass --version` process, 20 times;
+- each scenario: 20 pairs of the direct `agent-browser batch --bail --json`
+  command, then the Spyglass command, on the same run, session, proxy and
+  browser. The scenarios are `ui get title` and `ui expect --title`. A scenario
+  that this build does not support shows as skipped.
+
+It prints the median (p50) and p95 of the added time for each scenario and
+writes `bench/results/overhead-DATE[-LABEL].json`. It exits with status 1 when
+the p50 added time is more than 120 ms or the p95 is more than 150 ms. With
+`--gate-cold`, it also exits with status 1 when the cold start p50 is more than
+100 ms. It exits with status 2 when the measurement itself fails.
+
