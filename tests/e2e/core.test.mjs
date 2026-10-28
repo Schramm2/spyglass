@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
@@ -4423,6 +4424,587 @@ test("logs --since-step, --since-last, --grep, --expect-text and --forbid-text r
     assert.equal(noWindow.error.code, "INVALID_ARGUMENT");
   } finally {
     if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+// Slice 5 of docs/verification-speed.md: status --work, cited gates, finish.
+const finishPlan = {
+  claims: [linkClaim("ready", "behavior", ["pass"])],
+  gates: [],
+  limits: [],
+};
+const stageList = (envelope) =>
+  envelope.data.stages.map(({ stage, status }) => `${stage}:${status}`);
+const logged = async (dir, run) =>
+  (await readRunFile(dir, run, "spyglass/log.jsonl"))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+
+async function readyToFinish(name, plan = finishPlan, profile = linkProfile()) {
+  const dir = await makeRepo({ profile, plan });
+  const run = assertEnvelope(
+    await runCli(dir, ["--json", "up", "--run", name, "--plan", "plan.json"]),
+    { ok: true, code: 0 },
+  ).run;
+  return { dir, run };
+}
+
+test("finish records the result, checks, stops and reports in one call", async () => {
+  const { dir, run } = await readyToFinish("finish-pass");
+  try {
+    await drive(dir, run, ["check", "pass", "--claim", "ready"]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The check passed.",
+    ]);
+    const before = (await logged(dir, run)).length;
+    const finished = await drive(dir, run, ["finish"]);
+    assert.deepEqual(stageList(finished), [
+      "result:passed",
+      "doctor:passed",
+      "down:passed",
+      "report:passed",
+    ]);
+    assert.equal(finished.data.finished, true);
+    assert.equal(finished.data.report.status, "passed");
+    const added = (await logged(dir, run)).slice(before);
+    assert.deepEqual(
+      added.map((entry) => entry.command),
+      ["result", "doctor", "down", "report"],
+      "each stage keeps its own step record",
+    );
+    assert.equal((await storedRun(dir, run)).state, "stopped");
+    assert.ok((await storedRun(dir, run)).result, "the result is recorded");
+  } finally {
+    await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("finish stops at a result that is refused and writes no report", async () => {
+  const { dir, run } = await readyToFinish("finish-result");
+  try {
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "I did not run a check.",
+    ]);
+    const failed = await drive(dir, run, ["finish"], { ok: false, code: 1 });
+    assert.equal(failed.error.code, "PROOF_INCOMPLETE");
+    assert.deepEqual(stageList(failed), [
+      "result:failed",
+      "doctor:not run",
+      "down:not run",
+      "report:not run",
+    ]);
+    assert.match(failed.error.next, /result --check/);
+    assert.match(failed.error.next, /finish/);
+    const entries = await logged(dir, run);
+    assert.equal(entries.at(-1).command, "result", "the failed step stays");
+    assert.equal(entries.at(-1).exitCode, 1);
+    assert.ok(
+      !(await readdir(join(dir, ".spyglass/runs", run, "spyglass"))).some(
+        (name) => name.endsWith("index.html"),
+      ),
+      "no report page",
+    );
+    assert.equal(
+      (await storedRun(dir, run)).state,
+      "ready",
+      "the run is not stopped",
+    );
+  } finally {
+    await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("finish stops at doctor when the source changed, and at down when cleanup fails", async () => {
+  const first = await readyToFinish("finish-doctor");
+  try {
+    await drive(first.dir, first.run, ["check", "pass", "--claim", "ready"]);
+    await drive(first.dir, first.run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Passed.",
+    ]);
+    await writeFile(
+      join(first.dir, "README.md"),
+      "# Changed after the run started\n",
+    );
+    const failed = await drive(first.dir, first.run, ["finish"], {
+      ok: false,
+      code: 1,
+    });
+    assert.equal(failed.error.code, "STALE_SOURCE");
+    assert.deepEqual(stageList(failed), [
+      "result:passed",
+      "doctor:failed",
+      "down:not run",
+      "report:not run",
+    ]);
+    assert.ok(
+      (await storedRun(first.dir, first.run)).result,
+      "the earlier stage stays recorded",
+    );
+    assert.equal((await storedRun(first.dir, first.run)).state, "ready");
+  } finally {
+    await writeFile(
+      join(first.dir, "README.md"),
+      "# Isolated Spyglass fixture\n",
+    );
+    await runCli(first.dir, ["--json", "--run", first.run, "down"]);
+    await removeRepo(first.dir);
+  }
+
+  // down fails when the recorded process group has another owner.
+  const second = await readyToFinish("finish-down");
+  const sleeper = spawn(
+    process.execPath,
+    ["-e", "setTimeout(() => {}, 60000)"],
+    { detached: true, stdio: "ignore" },
+  );
+  try {
+    await drive(second.dir, second.run, ["check", "pass", "--claim", "ready"]);
+    await drive(second.dir, second.run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Passed.",
+    ]);
+    const record = await runRecord(second.dir, second.run);
+    const stored = JSON.parse(await readFile(record, "utf8"));
+    stored.process = { pid: sleeper.pid, identity: "another owner" };
+    await writeFile(record, JSON.stringify(stored));
+    const failed = await drive(second.dir, second.run, ["finish"], {
+      ok: false,
+      code: 3,
+    });
+    assert.equal(failed.error.code, "PROCESS_OWNER_LOST");
+    assert.deepEqual(stageList(failed), [
+      "result:passed",
+      "doctor:passed",
+      "down:failed",
+      "report:not run",
+    ]);
+    assert.match(failed.error.next, /finish/);
+  } finally {
+    process.kill(-sleeper.pid, "SIGKILL");
+    const record = await runRecord(second.dir, second.run);
+    const stored = JSON.parse(await readFile(record, "utf8"));
+    delete stored.process;
+    await writeFile(record, JSON.stringify(stored));
+    await runCli(second.dir, ["--json", "--run", second.run, "down"]);
+    await removeRepo(second.dir);
+  }
+});
+
+test("finish --cleanup runs the owner cleanup check before down", async () => {
+  const profile = baseProfile({
+    launch: { mode: "none" },
+    web: undefined,
+    api: undefined,
+    browser: undefined,
+    checks: {
+      pass: {
+        command: ["node", "fixtures/demo-app/check.mjs", "pass"],
+        result: "json",
+      },
+      cleanup: { command: ["node", "-e", "0"], cleanup: true },
+    },
+  });
+  const { dir, run } = await readyToFinish(
+    "finish-cleanup",
+    finishPlan,
+    profile,
+  );
+  try {
+    await drive(dir, run, ["check", "pass", "--claim", "ready"]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Passed.",
+    ]);
+    const before = (await logged(dir, run)).length;
+    const unknown = await drive(dir, run, ["finish", "--cleanup", "pass"], {
+      ok: false,
+      code: 2,
+    });
+    assert.equal(
+      unknown.error.code,
+      "INVALID_USAGE",
+      "a check without cleanup:true is refused before any stage",
+    );
+    assert.equal((await logged(dir, run)).length, before, "no stage ran");
+    const finished = await drive(dir, run, ["finish", "--cleanup", "cleanup"]);
+    assert.deepEqual(stageList(finished), [
+      "result:passed",
+      "doctor:passed",
+      "cleanup:passed",
+      "down:passed",
+      "report:passed",
+    ]);
+  } finally {
+    await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+const gatePlan = {
+  claims: [linkClaim("ready", "behavior", ["pass"])],
+  gates: ["unit"],
+  limits: [],
+};
+async function passedRun(dir, name) {
+  const run = assertEnvelope(
+    await runCli(dir, ["--json", "up", "--run", name, "--plan", "plan.json"]),
+    { ok: true, code: 0 },
+  ).run;
+  await drive(dir, run, [
+    "exec",
+    "--gate",
+    "unit",
+    "--",
+    process.execPath,
+    "-e",
+    "0",
+  ]);
+  await drive(dir, run, ["check", "pass", "--claim", "ready"]);
+  await drive(dir, run, [
+    "result",
+    "set",
+    "--claim",
+    "ready",
+    "--outcome",
+    "passed",
+    "--observed",
+    "Passed.",
+  ]);
+  await drive(dir, run, ["result"]);
+  await drive(dir, run, ["down"]);
+  return run;
+}
+
+test("up cites a gate that an earlier run passed on the same source, and refuses other source", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: gatePlan });
+  try {
+    const earlier = await passedRun(dir, "gate-earlier");
+    const recorded = (await storedRun(dir, earlier)).result.gates[0];
+    const second = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "gate-later",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    const pending = await pendingResult(dir, "gate-later");
+    assert.deepEqual(pending.gates[0], {
+      name: "unit",
+      outcome: "passed",
+      run: earlier,
+      steps: recorded.steps,
+    });
+    assert.deepEqual(second.data.citedGates, [
+      { gate: "unit", run: earlier, steps: recorded.steps },
+    ]);
+    await drive(dir, "gate-later", ["check", "pass", "--claim", "ready"]);
+    await drive(dir, "gate-later", [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Passed.",
+    ]);
+    assertEnvelope(
+      await runCli(dir, ["--json", "--run", "gate-later", "result", "--check"]),
+      { ok: true, code: 0 },
+    );
+    await drive(dir, "gate-later", ["down"]);
+
+    // Other source: no citation, an explicit request names the problem.
+    await writeFile(join(dir, "README.md"), "# Changed\n");
+    await git(dir, ["commit", "-qam", "change the source"]);
+    const third = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "gate-changed",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(third.data.citedGates, undefined);
+    assert.equal(
+      (await pendingResult(dir, "gate-changed")).gates[0].outcome,
+      "not run",
+    );
+    await drive(dir, "gate-changed", ["down"]);
+    const refused = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "gate-explicit",
+        "--plan",
+        "plan.json",
+        "--cite-gates-from",
+        earlier,
+      ]),
+      { ok: false, code: 2 },
+    );
+    assert.equal(refused.error.code, "GATE_CITATION_REJECTED");
+    assert.match(refused.error.message, /unit/);
+    assert.match(refused.error.message, /source identity/);
+    assert.ok(
+      !(await readdir(join(dir, ".spyglass/runs"))).includes("gate-explicit"),
+      "no run was created",
+    );
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
+test("up --cite-gates-from and result set --gate-run cite the gates of a named run", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: gatePlan });
+  try {
+    const earlier = await passedRun(dir, "gate-source");
+    // An automatic citation is off for this run: another run is newer and broken.
+    const explicit = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "gate-named",
+        "--plan",
+        "plan.json",
+        "--cite-gates-from",
+        earlier,
+      ]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(explicit.data.citedGates[0].run, earlier);
+    // result set --gate-run fills the gates again after they were cleared.
+    const file = join(dir, ".spyglass/runs/gate-named/spyglass/result.json");
+    const cleared = JSON.parse(await readFile(file, "utf8"));
+    cleared.gates = [{ name: "unit", outcome: "not run", steps: [] }];
+    await writeFile(file, JSON.stringify(cleared));
+    const filled = await drive(dir, "gate-named", [
+      "result",
+      "set",
+      "--gate-run",
+      earlier,
+    ]);
+    assert.match(filled.data.updated, /unit/);
+    assert.deepEqual(
+      (await pendingResult(dir, "gate-named")).gates[0],
+      explicit.data.citedGates.map(({ gate, run, steps }) => ({
+        name: gate,
+        outcome: "passed",
+        run,
+        steps,
+      }))[0],
+    );
+    await drive(dir, "gate-named", ["down"]);
+
+    const fresh = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "gate-set"]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(fresh.run, "gate-set");
+    // A run with no plan has no gates, so there is nothing to cite.
+    const none = await drive(
+      dir,
+      "gate-set",
+      ["result", "set", "--gate-run", earlier],
+      { ok: false, code: 2 },
+    );
+    assert.equal(none.error.code, "GATE_CITATION_REJECTED");
+    await drive(dir, "gate-set", ["down"]);
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
+test("status --work lists what each claim, control and gate still needs", async () => {
+  const { dir, run } = await readyToFinish("work", linkPlan);
+  try {
+    const needs = async () => {
+      const status = await drive(dir, run, ["status", "--work"]);
+      return Object.fromEntries(
+        [
+          ...status.data.work.claims,
+          ...status.data.work.controls,
+          ...status.data.work.gates,
+        ].map((item) => [item.id ?? item.name, item.needs.join(" | ")]),
+      );
+    };
+    const start = await needs();
+    assert.match(start.ready, /passing step/);
+    assert.match(start.ready, /observed text/);
+    assert.match(start.effect, /independentRead/);
+    assert.match(start.shot, /screenshot/);
+    assert.match(start["ready-control"], /failedStep/);
+    assert.match(start["ready-control"], /restoredStep/);
+    assert.match(start.unit, /passing step/);
+
+    const failed = await drive(
+      dir,
+      run,
+      ["check", "fail", "--control", "ready-control:failed"],
+      { ok: false, code: 1 },
+    );
+    const pass = await drive(dir, run, [
+      "check",
+      "pass",
+      "--claim",
+      "ready",
+      "--control",
+      "ready-control:restored",
+    ]);
+    await drive(dir, run, [
+      "exec",
+      "--gate",
+      "unit",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    const act = await drive(dir, run, [
+      "exec",
+      "--claim",
+      "effect",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    const shot = await drive(dir, run, ["check", "shot", "--claim", "shot"]);
+    const png = shot.artifacts.find((a) => a.path.endsWith(".png")).path;
+    const next = await needs();
+    assert.doesNotMatch(next.ready, /passing step/);
+    assert.match(
+      next.ready,
+      /observed text/,
+      "the words stay for the operator",
+    );
+    assert.match(
+      next.effect,
+      new RegExp(`independentRead.*${act.step}`),
+      "names the action step to read after",
+    );
+    assert.match(
+      next.shot,
+      new RegExp(png.replace(/[.]/g, "\\.")),
+      "names the screenshot",
+    );
+    assert.doesNotMatch(next["ready-control"], /failedStep|restoredStep/);
+    assert.match(next["ready-control"], /observed text/);
+    assert.equal(next.unit, "", "the gate step is linked and passed");
+    assert.ok(failed.step && pass.step);
+
+    // Every need cleared means result --check accepts the file.
+    const read = await drive(dir, run, [
+      "exec",
+      "--claim",
+      "effect",
+      "--independent-read",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Passed.",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "effect",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Read it.",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "shot",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Looked.",
+      "--inspect",
+      `1280x800:${png}`,
+      "--expected",
+      "A page.",
+      "--observed",
+      "A page.",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--control",
+      "ready-control",
+      "--observed-failure",
+      "Failed.",
+      "--observed-pass",
+      "Passed.",
+    ]);
+    const done = await drive(dir, run, ["status", "--work"]);
+    assert.equal(done.data.work.complete, true, JSON.stringify(done.data.work));
+    assertEnvelope(
+      await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+      { ok: true, code: 0 },
+    );
+    assert.ok(read.step);
+  } finally {
+    await runCli(dir, ["--json", "--run", run, "down"]);
     await removeRepo(dir);
   }
 });

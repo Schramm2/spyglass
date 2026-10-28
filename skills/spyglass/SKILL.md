@@ -211,9 +211,25 @@ external installation ports. A gate fails when the source or profile changed,
 or when its step used a binding with another value, including a binding of a
 launch that Spyglass owns.
 
+Ask what is missing with `spyglass --run <run-id> status --work --json`: for each
+claim, control and gate it lists the exact steps, reads, inspections and texts
+that the result still needs, by the rules of `result --check`. A gate that an
+earlier run passed on this source and profile is already cited in the pending
+result when `up` found it (`citedGates` in the output of `up` and `status`);
+`result set --gate-run <run-id>` cites an earlier run's gates later.
+
 Use the repository owner's cleanup command for its resources. Record owner
-cleanup through the profile's cleanup check so the report can verify it. Then stop the
-Spyglass run and write the report:
+cleanup through the profile's cleanup check so the report can verify it. Then
+end the run in one call:
+
+```sh
+spyglass --run <run-id> finish [--cleanup <cleanup-check>]
+```
+
+`finish` runs `result`, `doctor`, the cleanup check, `down` and `report` in order,
+and records each as its own step. The first failed stage stops it, writes no
+report and names the repair; fix it and run `finish` again. You can still run
+`result`, `doctor`, `down` and `report` one by one:
 
 ```sh
 spyglass --run <run-id> down

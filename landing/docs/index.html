@@ -137,6 +137,9 @@
                   <a href="#cmd-result"><code>result</code></a>
                 </li>
                 <li>
+                  <a href="#cmd-finish"><code>finish</code></a>
+                </li>
+                <li>
                   <a href="#cmd-report"><code>report</code></a>
                 </li>
                 <li>
@@ -460,13 +463,22 @@ spyglass report --run terminal-trial --json</code></pre>
 spyglass up --run my-change --plan verification-plan.json --json
 spyglass check verify --run my-change --claim CLAIM_ID --json   # run a check; link it to a claim
 spyglass result set --run my-change --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass status --work --run my-change          # what each claim still needs
 spyglass result --check --run my-change         # validate; record nothing
-spyglass result --run my-change                 # record claim results
-spyglass doctor --run my-change --json
-spyglass down --run my-change --json            # clean up owned resources
-spyglass report --run my-change --json          # write the offline report</code></pre>
+spyglass finish --run my-change --json          # result, doctor, down and report</code></pre>
             <button class="copy" type="button" data-copy>Copy</button>
           </div>
+          <p>
+            <code>finish</code> runs <code>result</code>, <code>doctor</code>,
+            <code>down</code> and <code>report</code> in order. You can run each
+            command alone instead. Each stage is its own step in the log. The
+            first failed stage stops <code>finish</code>, writes no report and
+            exits with that stage's status; the error says how to repair it and
+            to run <code>finish</code> again. Add <code>--cleanup CHECK</code>
+            to run the owner's cleanup check (a profile check with
+            <code>cleanup: true</code>) before <code>down</code>. A stopped run
+            skips <code>doctor</code> and <code>down</code>.
+          </p>
           <p>
             Add <code>.spyglass/</code> to your <code>.gitignore</code>. It
             holds the evidence folder.
@@ -768,16 +780,22 @@ spyglass report --run my-change --json          # write the offline report</code
             <h3><code>up</code></h3>
             <pre
               class="usage"
-            ><code>spyglass up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE]</code></pre>
+            ><code>spyglass up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE] [--cite-gates-from RUN]</code></pre>
             <p>
               Create a run with a fixed source baseline and a pending result
-              template. Evidence must be Git-ignored and unique to the run.
-              owned starts an app; external calls its owner doctor without
-              starting owner resources; none runs checks without a server. Bind
-              only non-secret values. Secret fields use env:, file:,
-              dotenv:path#KEY or op:// references. Direct launch: up --cmd "npm
-              run dev" --ready http://127.0.0.1:3000. Explore without a plan; a
-              complete report requires claims.
+              template; its output lists resultRules for that template. Evidence
+              must be Git-ignored and unique to the run. owned starts an app;
+              external calls its owner doctor without starting owner resources;
+              none runs checks without a server. Bind only non-secret values.
+              Secret fields use env:, file:, dotenv:path#KEY or op://
+              references. Direct launch: up --cmd "npm run dev" --ready
+              http://127.0.0.1:3000. Gates: when an earlier run of this
+              repository passed a planned gate on the same source and profile,
+              with kept evidence and the same binding values, up writes that
+              gate into the pending result with its run and steps, and lists it
+              in citedGates. --cite-gates-from RUN cites only that run, and
+              fails with GATE_CITATION_REJECTED when it cannot cite any gate.
+              Explore without a plan; a complete report requires claims.
             </p>
             <div class="call">
               <pre><code>spyglass up --run change-42 --profile spyglass.json --plan verification-plan.json --binding ownerRun=example --json</code></pre>
@@ -790,16 +808,24 @@ spyglass report --run my-change --json          # write the offline report</code
             data-keys="status inspect handoff runs worktree completedChecks"
           >
             <h3><code>status</code></h3>
-            <pre class="usage"><code>spyglass status [--run ID]</code></pre>
+            <pre
+              class="usage"
+            ><code>spyglass status [--run ID [--work]]</code></pre>
             <p>
               List the runs of every worktree of the repository, or inspect one
               run: source, active command, completed checks, pending claims,
-              capabilities, owner resources, cleanup and the next command.
-              Inspection works while another operator drives the run.
-              completedChecks names childExitCode (child process) and
-              spyglassExitCode (Spyglass command); exitCode and commandExitCode
-              remain aliases. A run whose worktree was removed shows
-              worktreeRemoved; stop it with down from any worktree.
+              capabilities, owner resources, cleanup, the next command and
+              resultRules, the rules that result enforces for this plan's
+              claims, controls and gates. Inspection works while another
+              operator drives the run. completedChecks names childExitCode
+              (child process) and spyglassExitCode (Spyglass command); exitCode
+              and commandExitCode remain aliases. A run whose worktree was
+              removed shows worktreeRemoved; stop it with down from any
+              worktree. status --work --run ID lists, for each claim, control
+              and gate, what is still missing (a passing step, an
+              independentRead after a named step, a visual inspection for a
+              named screenshot, observed text, an outcome), by the same rules as
+              result --check; work.complete is true when nothing is missing.
             </p>
             <div class="call">
               <pre><code>spyglass status --run change-42 --json</code></pre>
@@ -1076,19 +1102,45 @@ spyglass report --run my-change --json          # write the offline report</code
               side-effect claim. --control ID:failed sets failedStep; --control
               ID:restored sets restoredStep and cites it in the control claim.
               --gate NAME adds a passing step and sets the gate outcome to
-              passed; a failed step sets failed. A failed step is not cited by a
-              claim. Linking never writes observed, an inspection observed text
-              or a claim outcome. result set writes them from flags: --claim ID
-              --outcome passed --observed TEXT [--step ID] [--artifact PATH]
-              [--independent-read STEP] [--reason TEXT] [--inspect
-              VIEWPORT:ARTIFACT --expected TEXT --observed TEXT]; --gate NAME
-              --outcome passed [--step ID]; --control ID --observed-failure TEXT
-              --observed-pass TEXT [--failed-run RUN] [--failed-step ID]
-              [--restored-step ID]; --operator agent|human; --limit TEXT. An
-              --observed after --inspect belongs to that inspection.
+              passed; a failed step sets failed. result set --gate-run RUN cites
+              every planned gate that run RUN passed on this source. A failed
+              step is not cited by a claim. Linking never writes observed, an
+              inspection observed text or a claim outcome. result set writes
+              them from flags: --claim ID --outcome passed --observed TEXT
+              [--step ID] [--artifact PATH] [--independent-read STEP] [--reason
+              TEXT] [--inspect VIEWPORT:ARTIFACT --expected TEXT --observed
+              TEXT]; --gate NAME --outcome passed [--step ID]; --control ID
+              --observed-failure TEXT --observed-pass TEXT [--failed-run RUN]
+              [--failed-step ID] [--restored-step ID]; --operator agent|human;
+              --limit TEXT. An --observed after --inspect belongs to that
+              inspection.
             </p>
             <div class="call">
               <pre><code>spyglass result --check --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
+            id="cmd-finish"
+            data-keys="finish end result doctor down report cleanup stages"
+          >
+            <h3><code>finish</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass finish [--file PATH] [--cleanup CHECK] --run ID</code></pre>
+            <p>
+              End a run in one call: result, doctor, the owner cleanup check
+              (when --cleanup names a profile check with cleanup:true), down and
+              report, in that order. Each stage is its own step in the log, as
+              if you had run the command. The first failed stage stops the call,
+              writes no report and exits with that stage's status; the error
+              next names the repair and says to run finish again. A stopped run
+              skips doctor and down. data.stages lists each stage as passed,
+              failed, skipped or not run.
+            </p>
+            <div class="call">
+              <pre><code>spyglass finish --run change-42 --json</code></pre>
               <button class="copy" type="button" data-copy>Copy</button>
             </div>
           </article>
@@ -1789,6 +1841,29 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
             that inspection. <code>result set</code> refuses an unknown claim,
             gate, control or step before it changes the file.
           </p>
+          <h3>See what is missing, and reuse a gate</h3>
+          <p>
+            <code>spyglass status --work --run ID</code> lists, for each claim,
+            control and gate, what is still missing. It uses the rules of
+            <code>result --check</code>. A claim lists, for example,
+            <code>a passing step</code>,
+            <code>independentRead: a later read after step 8a1f...</code>,
+            <code>visual inspection for screenshot 8a1f...-1-proof.png</code>
+            and <code>observed text</code>. <code>work.complete</code> is true
+            when nothing is missing.
+          </p>
+          <p>
+            When an earlier run of the repository passed a planned gate on the
+            same source and profile, with its evidence kept and the same binding
+            values, <code>up</code> writes the gate into the pending result with
+            its <code>run</code> and <code>steps</code>, and lists it in
+            <code>citedGates</code>. <code>up --cite-gates-from RUN</code> cites
+            only that run and fails with
+            <code>GATE_CITATION_REJECTED</code> when it cannot cite a gate.
+            <code>result set --gate-run RUN</code> cites the planned gates of
+            <code>RUN</code> in a run that already exists. <code>result</code>
+            still checks the citation.
+          </p>
           <h3>Inspections</h3>
           <p>
             A visual result can use <code>inspections</code>, with one entry per
@@ -2121,6 +2196,32 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   </td>
                 </tr>
                 <tr>
+                  <td>Gate</td>
+                  <td>
+                    A run starts on the same source and profile as an earlier
+                    run that passed a planned gate.
+                  </td>
+                  <td>
+                    <code>up</code> fills the gate's <code>run</code> and
+                    <code>steps</code> in the pending result and lists them in
+                    <code>citedGates</code>. A run on other source or profile,
+                    or whose cited evidence is gone, gets no citation, and
+                    <code>up --cite-gates-from RUN</code> that cannot cite names
+                    the problem.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Result</td>
+                  <td>The operator needs to know what a run still lacks.</td>
+                  <td>
+                    <code>status --work</code> lists, for each claim, control
+                    and gate, what is still missing, from the same rules that
+                    <code>result --check</code> applies. An item that
+                    <code>result --check</code> would refuse is never shown as
+                    done.
+                  </td>
+                </tr>
+                <tr>
                   <td>Browser</td>
                   <td>
                     A <code>ui expect</code> expectation never holds, or holds
@@ -2381,6 +2482,19 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   <td>
                     The report files are still produced, but the run is
                     incomplete and exits with failed-check status.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Finish</td>
+                  <td>
+                    <code>spyglass finish</code> encounters a failed
+                    <code>result</code>, <code>doctor</code> or
+                    <code>down</code> step.
+                  </td>
+                  <td>
+                    It stops at the failing stage, retains the step in
+                    <code>log.jsonl</code>, does not write the report, and exits
+                    non-zero with the repair command.
                   </td>
                 </tr>
                 <tr>

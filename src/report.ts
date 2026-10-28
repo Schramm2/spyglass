@@ -1549,6 +1549,252 @@ async function submitResult(
   };
 }
 
+export interface GateCitation {
+  gate: string;
+  run: string;
+  steps: string[];
+}
+/** The reasons why a gate cannot be cited from a run; none means it can. */
+function gateCitationFindings(
+  run: Run,
+  name: string,
+  citedId: string,
+  citedSteps: string[],
+): Finding[] {
+  const found: Finding[] = [];
+  validateGates(
+    run,
+    { ...run.plan, gates: [name] },
+    {
+      operator: "agent",
+      claims: [],
+      controls: [],
+      gates: [{ name, outcome: "passed", run: citedId, steps: citedSteps }],
+      limits: [],
+    },
+    [],
+    found,
+  );
+  return found.filter((item) => item.code !== "GATE_INCOMPLETE");
+}
+/**
+ * The planned gates that one of the candidate runs passed and that this run
+ * can cite: the same source and profile, kept evidence and the same binding
+ * values. The first candidate that qualifies wins, so list the newest first.
+ */
+export function citeGates(
+  run: Run,
+  candidates: Run[],
+  names: string[] = run.plan.gates,
+): { cited: GateCitation[]; problems: string[] } {
+  const cited: GateCitation[] = [];
+  const problems: string[] = [];
+  for (const name of names) {
+    let reason: string | undefined = "no candidate run passed it";
+    for (const candidate of candidates) {
+      if (candidate.id === run.id) continue;
+      const row = candidate.result?.gates?.find(
+        (item) =>
+          item.name === name && item.outcome === "passed" && item.steps.length,
+      );
+      if (!row) {
+        reason = `run ${candidate.id} did not pass it`;
+        continue;
+      }
+      const findings = gateCitationFindings(run, name, candidate.id, row.steps);
+      if (!findings.length) {
+        cited.push({ gate: name, run: candidate.id, steps: row.steps });
+        reason = undefined;
+        break;
+      }
+      reason = findings.map((item) => item.message).join(" ");
+    }
+    if (reason) problems.push(`Gate ${name}: ${reason}`);
+  }
+  return { cited, problems };
+}
+
+/** What the pending result still lacks, by claim, control and gate. */
+export function workFor(run: Run): Record<string, unknown> {
+  let entries: Step[] = [];
+  try {
+    entries = steps(run);
+  } catch {
+    /* A missing log means no step yet. */
+  }
+  let raw: unknown = run.result;
+  try {
+    raw = readJson(run.resultPath);
+  } catch {
+    /* Use the recorded result. */
+  }
+  const pending = (
+    raw && typeof raw === "object" ? raw : {}
+  ) as Partial<Result>;
+  const claimRows = new Map(
+    (Array.isArray(pending.claims) ? pending.claims : []).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+  const gateRows = new Map(
+    (Array.isArray(pending.gates) ? pending.gates : []).map((row) => [
+      row.name,
+      row,
+    ]),
+  );
+  // Judge each item as if its outcome were passed, to see the proof it lacks.
+  const projected: Result = {
+    operator: "agent",
+    limits: [],
+    controls: Array.isArray(pending.controls) ? pending.controls : [],
+    claims: run.plan.claims.map((claim) => {
+      const row = claimRows.get(claim.id);
+      return {
+        id: claim.id,
+        outcome: "passed" as const,
+        steps: row?.steps ?? [],
+        observed: "pending",
+        artifacts: row?.artifacts ?? [],
+        ...(row?.inspection ? { inspection: row.inspection } : {}),
+        ...(row?.inspections ? { inspections: row.inspections } : {}),
+        ...(row?.independentRead
+          ? { independentRead: row.independentRead }
+          : {}),
+      };
+    }),
+    gates: run.plan.gates.map((name) => {
+      const row = gateRows.get(name);
+      return {
+        name,
+        outcome: "passed" as const,
+        steps: row?.steps ?? [],
+        ...(row?.run ? { run: row.run } : {}),
+      };
+    }),
+  };
+  const found: Finding[] = [];
+  const inventory = artifactInventory(run, entries, found);
+  validateClaimProof(run, run.plan, projected, entries, inventory, found);
+  validateControls(run, projected, entries, found);
+  addRepairs(run, entries, inventory, projected, found);
+
+  const stepMap = new Map(entries.map((entry) => [entry.id, entry]));
+  const imagesOf = (id: string) =>
+    (projected.claims.find((claim) => claim.id === id)?.steps ?? []).flatMap(
+      (stepId) =>
+        (stepMap.get(stepId)?.artifacts ?? [])
+          .map((artifact) => artifact.path)
+          .filter((path) => /\.(png|jpe?g)$/i.test(path)),
+    );
+  const need = (item: Finding): string => {
+    const id = item.claim ?? "ID";
+    switch (item.code) {
+      case "MISSING_STEP":
+        if (/names a step that is not/.test(item.message))
+          return "step IDs that exist in this run's log";
+        switch (run.plan.claims.find((claim) => claim.id === id)?.kind) {
+          case "side-effect":
+            return `a passing step (run it with --claim ${id}); independentRead: a later read after it (--claim ${id} --independent-read)`;
+          case "visual":
+            return `a passing step that saves a screenshot (ui proof LABEL --claim ${id}), then its visual inspection`;
+          default:
+            return `a passing step (run it with --claim ${id})`;
+        }
+      case "FAILED_STEP":
+      case "FAILED_ASSERTION":
+        return "a passing step without a failed assertion";
+      case "BEHAVIOR_PROOF_MISSING":
+        return "a behavior step (check, exec, ui, api or db)";
+      case "BEHAVIOR_EVIDENCE_MISSING":
+        return "evidence that is not an image";
+      case "NAMED_CHECK_MISSING":
+        return `an attempt of check ${item.path}`;
+      case "NAMED_CHECK_FAILED":
+        return `a passing attempt of check ${item.path}`;
+      case "VISUAL_INSPECTION_MISSING": {
+        const shots = imagesOf(id);
+        return shots.length
+          ? `visual inspection for screenshot ${shots.join(", ")} (result set --claim ${id} --inspect VIEWPORT:ARTIFACT --expected TEXT --observed TEXT)`
+          : `a screenshot (ui proof LABEL --claim ${id}), then its visual inspection`;
+      }
+      case "VISUAL_IMAGE_MISSING":
+        return item.path
+          ? `a valid screenshot from a cited step for ${item.path}`
+          : "a screenshot from a cited step";
+      case "INDEPENDENT_READ_MISSING": {
+        const cited = projected.claims.find((claim) => claim.id === id)?.steps;
+        return cited?.length
+          ? `independentRead: a later read after step ${cited.at(-1)} (--claim ${id} --independent-read)`
+          : `independentRead: an action step, then a later read (--claim ${id} --independent-read)`;
+      }
+      case "EXPECTATION_FAILED":
+      case "EXPECTATION_NOT_RUN":
+      case "ACTION_FAILED":
+      case "ACTION_NOT_RUN":
+        return `a batch step whose sub-steps all pass (${item.path} did not)`;
+      case "GATE_PROOF_MISSING":
+        return `a passing step (check or exec with --gate ${item.gate})`;
+      default:
+        return item.message;
+    }
+  };
+  const group = (key: "claim" | "gate" | "control", id: string) => [
+    ...new Set(
+      found
+        .filter((item) => item[key] === id && item.blocking)
+        .map((item) => need(item)),
+    ),
+  ];
+
+  const claims = run.plan.claims.map((claim) => {
+    const row = claimRows.get(claim.id);
+    const needs = group("claim", claim.id);
+    if (!row?.observed?.trim()) needs.push("observed text");
+    for (const inspection of row?.inspections ?? [])
+      if (!inspection.expected?.trim() || !inspection.observed?.trim())
+        needs.push(
+          `inspection text for ${inspection.viewport} screenshot ${inspection.artifact}`,
+        );
+    if (row?.outcome !== "passed")
+      needs.push(
+        `outcome: passed, failed, blocked or not run, from your judgement (currently ${row?.outcome ?? "not run"})`,
+      );
+    return { id: claim.id, outcome: row?.outcome ?? "not run", needs };
+  });
+  const controlRows = new Map(projected.controls.map((row) => [row.id, row]));
+  const controls = run.plan.controls.map((spec) => {
+    const row = controlRows.get(spec.id);
+    const needs: string[] = [];
+    if (!row?.failedStep)
+      needs.push(
+        `failedStep: run the failing attempt with --control ${spec.id}:failed`,
+      );
+    if (!row?.restoredStep)
+      needs.push(
+        `restoredStep: run the passing attempt with --control ${spec.id}:restored`,
+      );
+    if (!row?.observedFailure?.trim() || !row?.observedPass?.trim())
+      needs.push(
+        "observed text for the failed and the restored attempt (result set --control ID --observed-failure TEXT --observed-pass TEXT)",
+      );
+    if (!needs.length) needs.push(...group("control", spec.id));
+    return { id: spec.id, needs };
+  });
+  const gates = run.plan.gates.map((name) => {
+    const row = gateRows.get(name);
+    const needs = group("gate", name);
+    if (!needs.length && row?.outcome !== "passed")
+      needs.push(`outcome passed (run the gate again with --gate ${name})`);
+    return { name, outcome: row?.outcome ?? "not run", needs };
+  });
+  const remaining =
+    claims.filter((item) => item.needs.length).length +
+    controls.filter((item) => item.needs.length).length +
+    gates.filter((item) => item.needs.length).length;
+  return { complete: remaining === 0, remaining, claims, controls, gates };
+}
+
 const OUTCOMES = ["passed", "failed", "blocked", "not run"];
 
 /**
@@ -1584,6 +1830,7 @@ function setResult(ctx: Context, args: string[]): Record<string, unknown> {
     "--restored-step",
     "--operator",
     "--limit",
+    "--gate-run",
   ]);
   for (let i = 0; i < args.length; i++) {
     const flag = args[i]!;
@@ -1600,9 +1847,14 @@ function setResult(ctx: Context, args: string[]): Record<string, unknown> {
     throw usage("Name one claim, gate or control in each result set call.");
   if (
     !subjects.length &&
-    !flags.some(([f]) => ["--operator", "--limit"].includes(f))
+    !flags.some(([f]) => ["--operator", "--limit", "--gate-run"].includes(f))
   )
-    throw usage("result set needs --claim ID, --gate NAME or --control ID.");
+    throw usage(
+      "result set needs --claim ID, --gate NAME, --control ID or --gate-run RUN.",
+    );
+  const gateRun = flags.find(([f]) => f === "--gate-run")?.[1];
+  if (gateRun !== undefined && subjects.length)
+    throw usage("--gate-run stands alone: it fills every planned gate.");
   const known = (kind: string, id: string, ids: string[]) => {
     if (!ids.includes(id))
       throw new Fault(
@@ -1629,6 +1881,27 @@ function setResult(ctx: Context, args: string[]): Record<string, unknown> {
     if (!items.includes(value)) items.push(value);
   };
   let updated = "result";
+  if (gateRun !== undefined) {
+    // Cite every planned gate that the named run passed on this source.
+    const { cited, problems } = citeGates(run, [loadRun(run.repo, gateRun)]);
+    if (!cited.length)
+      throw new Fault(
+        "GATE_CITATION_REJECTED",
+        `Cannot cite gates from run ${gateRun}: ${problems.join(" ") || "the plan has no gates."}`,
+        "Cite a run on the same source and profile that passed the gates, or run the gates in this run.",
+      );
+    for (const citation of cited) {
+      let row = pending.gates.find((item) => item.name === citation.gate);
+      if (!row) {
+        row = { name: citation.gate, outcome: "not run", steps: [] };
+        pending.gates.push(row);
+      }
+      row.outcome = "passed";
+      row.run = citation.run;
+      row.steps = citation.steps;
+    }
+    updated = `gates ${cited.map((item) => item.gate).join(", ")} from run ${gateRun}`;
+  }
   const [flag, id] = subjects[0] ?? [];
   if (flag === "--claim") {
     known(

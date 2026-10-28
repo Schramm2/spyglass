@@ -20,7 +20,8 @@ Commands:
   schema profile|plan|result   Print the version 1 JSON schema
   init                         Discover a repository profile without starting it
   up [--plan FILE]             Create an isolated run and check readiness
-  status [--run ID]            Inspect runs and active commands
+                               (--cite-gates-from RUN cites its passed gates)
+  status [--run ID [--work]]   Inspect runs and active commands; --work lists what is missing
   doctor                       Check the owner, app and source baseline
   check NAME                   Run a named verification check
   exec -- COMMAND [ARGS]       Record a child command and its real exit code
@@ -33,6 +34,7 @@ Commands:
   result [--file FILE] [--check]  Validate and record claim results
   result set --claim ID ...    Edit the pending result with flags
   down                         Clean up this run's owned resources
+  finish [--cleanup CHECK]     Run result, doctor, down and report in order
   report                       Write an offline evidence report
 
 Step flags on ui, api, db, check, exec, evidence: --claim ID --independent-read
@@ -134,6 +136,7 @@ let plan: string | undefined;
 const bindings: Record<string, string> = {};
 let directCmd: string | undefined;
 let ready: string | undefined;
+let citeGatesFrom: string | undefined;
 const args: string[] = [];
 let ctx: Context | undefined;
 let run: Run | undefined;
@@ -261,6 +264,7 @@ try {
         "--binding",
         "--cmd",
         "--ready",
+        "--cite-gates-from",
       ].includes(a)
     ) {
       const v = requireValue(raw[++i], a);
@@ -269,6 +273,7 @@ try {
       else if (a === "--plan") plan = v;
       else if (a === "--cmd") directCmd = v;
       else if (a === "--ready") ready = v;
+      else if (a === "--cite-gates-from") citeGatesFrom = v;
       else {
         const at = v.indexOf("=");
         if (at < 1)
@@ -334,6 +339,7 @@ try {
       "ps",
       "logs",
       "mark",
+      "finish",
     ];
     if (!known.includes(command))
       throw new Fault(
@@ -343,6 +349,8 @@ try {
       );
     const allowed: Record<string, string[]> = {
       init: ["--force"],
+      status: ["--work"],
+      finish: ["--file", "--cleanup"],
       result:
         args[1] === "set"
           ? [
@@ -364,6 +372,7 @@ try {
               "--restored-step",
               "--operator",
               "--limit",
+              "--gate-run",
             ]
           : ["--file", "--check"],
       evidence: ["--step", "--file"],
@@ -404,6 +413,12 @@ try {
             `Unknown option ${a} for ${command}.`,
             "Run spyglass --help.",
           );
+    if (citeGatesFrom && command !== "up")
+      throw new Fault(
+        "UNKNOWN_OPTION",
+        `Unknown option --cite-gates-from for ${command}.`,
+        "Use --cite-gates-from RUN with spyglass up, or result set --gate-run RUN.",
+      );
     const repo = repository();
     if (command !== "up") selected ??= process.env.SPYGLASS_RUN;
     if (command === "init") {
@@ -413,8 +428,22 @@ try {
       const m = await import("./lifecycle.js");
       if (selected) {
         run = loadRun(repo, selected);
-        emit(m.status(run));
-      } else emit({ runs: runs(repo).map(m.status) });
+        if (args.includes("--work")) {
+          const report = await import("./report.js");
+          emit({
+            id: run.id,
+            state: run.state,
+            work: report.workFor(run),
+            next: m.status(run).next,
+          });
+        } else emit(m.status(run));
+      } else if (args.includes("--work"))
+        throw new Fault(
+          "MISSING_INPUT",
+          "status --work needs one run.",
+          "Run spyglass status --work --run ID.",
+        );
+      else emit({ runs: runs(repo).map(m.status) });
     } else {
       if (command === "up") {
         const m = await import("./lifecycle.js");
@@ -425,6 +454,7 @@ try {
           bindings,
           cmd: directCmd,
           ready,
+          citeGatesFrom,
         });
       } else {
         run = loadRun(repo, requireValue(selected, "--run ID"));
@@ -432,94 +462,98 @@ try {
       }
       release = lock(run, command);
       run = loadRun(repo, run.id);
-      ctx = new Context(run, command, args.slice(1));
-      if (links && linked(links)) {
-        checkLinks(run, links);
-        ctx.links = links;
-        // The evidence belongs to the step it attaches to as well.
-        if (command === "evidence") {
-          const at = args.indexOf("--step");
-          if (at > 0 && args[at + 1]) links.evidenceFor = args[at + 1];
-        }
-      }
-      let data: Record<string, unknown>;
-      if (["exec", "check", "ui", "api", "db"].includes(command)) {
-        if (
-          run.state !== "ready" &&
-          !(command === "check" && run.profile.checks[args[1] ?? ""]?.cleanup)
-        )
-          throw new Fault(
-            "RUN_NOT_READY",
-            `Run ${run.id} is ${run.state}.`,
-            "Create a ready run before driving the target.",
-            1,
-          );
-        if (command !== "ui") assertSource(run);
-      }
-      switch (command) {
-        case "up":
-          data = await (await import("./lifecycle.js")).launch(ctx);
-          break;
-        case "doctor":
-          data = await (await import("./lifecycle.js")).doctor(ctx);
-          break;
-        case "down": {
-          if (Object.keys(run.sessions).length || run.browserProxy) {
-            const b = await import("./browser.js");
-            await b.closeBrowsers(ctx);
+      if (command === "finish") {
+        const at = (flag: string) => {
+          const index = args.indexOf(flag);
+          return index < 0 ? undefined : requireValue(args[index + 1], flag);
+        };
+        const outcome = await (
+          await import("./lifecycle.js")
+        ).finishRun(
+          run,
+          { file: at("--file"), cleanup: at("--cleanup") },
+          (stage) => {
+            ctx = stage;
+          },
+        );
+        emit(outcome.data, outcome.fault);
+      } else {
+        ctx = new Context(run, command, args.slice(1));
+        if (links && linked(links)) {
+          checkLinks(run, links);
+          ctx.links = links;
+          // The evidence belongs to the step it attaches to as well.
+          if (command === "evidence") {
+            const at = args.indexOf("--step");
+            if (at > 0 && args[at + 1]) links.evidenceFor = args[at + 1];
           }
-          const lifecycle = await import("./lifecycle.js");
-          await lifecycle.stopOwned(ctx);
-          run.cleanup = true;
-          run.state = "stopped";
-          const log = join(run.evidence, "spyglass/launch.log");
-          if (existsSync(log))
-            ctx.artifact("launch-final.log", readFileSync(log, "utf8"));
-          const { resultRules: _rules, ...stopped } = lifecycle.status(run);
-          data = { ...stopped, ownerCleanupRequired: !run.ownerCleaned };
-          break;
         }
-        case "check":
-        case "exec":
-        case "evidence":
-        case "artifact": {
-          const m = await import("./checks.js");
-          data = await m.checks(ctx, args);
-          break;
+        let data: Record<string, unknown>;
+        if (["exec", "check", "ui", "api", "db"].includes(command)) {
+          if (
+            run.state !== "ready" &&
+            !(command === "check" && run.profile.checks[args[1] ?? ""]?.cleanup)
+          )
+            throw new Fault(
+              "RUN_NOT_READY",
+              `Run ${run.id} is ${run.state}.`,
+              "Create a ready run before driving the target.",
+              1,
+            );
+          if (command !== "ui") assertSource(run);
         }
-        case "result":
-        case "report": {
-          const m = await import("./report.js");
-          data = await m.report(ctx, args);
-          break;
+        switch (command) {
+          case "up":
+            data = await (await import("./lifecycle.js")).launch(ctx);
+            break;
+          case "doctor":
+            data = await (await import("./lifecycle.js")).doctor(ctx);
+            break;
+          case "down":
+            data = await (await import("./lifecycle.js")).down(ctx);
+            break;
+          case "check":
+          case "exec":
+          case "evidence":
+          case "artifact": {
+            const m = await import("./checks.js");
+            data = await m.checks(ctx, args);
+            break;
+          }
+          case "result":
+          case "report": {
+            const m = await import("./report.js");
+            data = await m.report(ctx, args);
+            break;
+          }
+          case "ui": {
+            const m = await import("./browser.js");
+            data = await m.browser(ctx, args.slice(1));
+            break;
+          }
+          case "api":
+          case "db":
+          case "ps":
+          case "logs":
+          case "mark": {
+            const m = await import("./surfaces.js");
+            data = await m.surfaces(ctx, args);
+            break;
+          }
+          default:
+            throw new Fault(
+              "UNKNOWN_COMMAND",
+              `Unknown command ${command}.`,
+              "Run spyglass --help.",
+            );
         }
-        case "ui": {
-          const m = await import("./browser.js");
-          data = await m.browser(ctx, args.slice(1));
-          break;
-        }
-        case "api":
-        case "db":
-        case "ps":
-        case "logs":
-        case "mark": {
-          const m = await import("./surfaces.js");
-          data = await m.surfaces(ctx, args);
-          break;
-        }
-        default:
-          throw new Fault(
-            "UNKNOWN_COMMAND",
-            `Unknown command ${command}.`,
-            "Run spyglass --help.",
-          );
+        ctx.finish(
+          typeof data.exitCode === "number" ? data.exitCode : 0,
+          data,
+          0,
+        );
+        emit(data);
       }
-      ctx.finish(
-        typeof data.exitCode === "number" ? data.exitCode : 0,
-        data,
-        0,
-      );
-      emit(data);
     }
   }
 } catch (error) {

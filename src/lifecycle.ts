@@ -21,8 +21,10 @@ import {
   blankClaim,
   ignored,
   lockInfo,
+  loadRun,
   runDirectory,
   runFile,
+  runs,
   worktreeRemoved,
   saveRun,
   source,
@@ -30,6 +32,7 @@ import {
   steps,
 } from "./state.js";
 import type { Run } from "./state.js";
+import type { GateCitation } from "./report.js";
 import {
   isSameProcess,
   processIdentity,
@@ -42,6 +45,8 @@ export interface UpOptions {
   bindings: Record<string, string>;
   cmd?: string;
   ready?: string;
+  /** A run whose passed gates this run cites; else any run of the same source. */
+  citeGatesFrom?: string;
 }
 async function freePort(): Promise<number> {
   return await new Promise((ok, no) => {
@@ -143,6 +148,34 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
     ownerCleaned: profile.launch.mode !== "external",
     cleanup: false,
   };
+  // A gate that an earlier run passed on this source and profile needs no
+  // second run of its command. Cite it in the result that this run starts.
+  let citations: GateCitation[] = [];
+  if (plan.gates.length) {
+    const report = await import("./report.js");
+    const named = opts.citeGatesFrom
+      ? [loadRun(repo, opts.citeGatesFrom)]
+      : undefined;
+    const candidates =
+      named ??
+      runs(repo)
+        .filter(
+          (other) =>
+            other.id !== id &&
+            other.profileHash === run.profileHash &&
+            other.source.hash === run.source.hash &&
+            other.source.commit === run.source.commit,
+        )
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const found = report.citeGates(run, candidates);
+    citations = found.cited;
+    if (named && !citations.length)
+      throw new Fault(
+        "GATE_CITATION_REJECTED",
+        `Cannot cite gates from run ${opts.citeGatesFrom}: ${found.problems.join(" ")}`,
+        "Start the run on the source and profile of that run, or leave out --cite-gates-from and run the gates here.",
+      );
+  }
   const directory = runDirectory(repo, id);
   mkdirSync(dirname(directory), { recursive: true, mode: 0o700 });
   try {
@@ -182,11 +215,12 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
         observedPass: "",
       })),
       claims: plan.claims.map(blankClaim),
-      gates: plan.gates.map((name) => ({
-        name,
-        outcome: "not run",
-        steps: [],
-      })),
+      gates: plan.gates.map((name) => {
+        const cited = citations.find((item) => item.gate === name);
+        return cited
+          ? { name, outcome: "passed", run: cited.run, steps: cited.steps }
+          : { name, outcome: "not run", steps: [] };
+      }),
       limits: plan.limits,
     });
     saveRun(run);
@@ -205,6 +239,20 @@ function currentSource(run: Run): Record<string, unknown> {
     return { sourceChanges: sourceChanges(run) };
   } catch (error) {
     return { sourceError: fault(error).message };
+  }
+}
+/** The gates that the pending result cites from another run. */
+function citedGates(run: Run): { citedGates?: GateCitation[] } {
+  try {
+    const pending = readJson(run.resultPath) as {
+      gates?: { name: string; run?: string; steps: string[] }[];
+    };
+    const cited = (pending.gates ?? [])
+      .filter((gate) => gate.run && gate.run !== run.id)
+      .map((gate) => ({ gate: gate.name, run: gate.run!, steps: gate.steps }));
+    return cited.length ? { citedGates: cited } : {};
+  } catch {
+    return {};
   }
 }
 export function status(run: Run): Record<string, unknown> {
@@ -246,6 +294,7 @@ export function status(run: Run): Record<string, unknown> {
           s.status ??
           (s.data.passed === false || s.exitCode !== 0 ? "failed" : "passed"),
       })),
+    ...citedGates(run),
     pendingClaims: run.plan.claims
       .filter(
         (c) =>
@@ -567,6 +616,189 @@ export async function stopOwned(ctx: Context): Promise<void> {
   }
 
   delete ctx.run.process;
+}
+/** Stop what this run owns: browsers, the owned app. Keep evidence. */
+export async function down(ctx: Context): Promise<Record<string, unknown>> {
+  const { run } = ctx;
+  if (Object.keys(run.sessions).length || run.browserProxy) {
+    const browser = await import("./browser.js");
+    await browser.closeBrowsers(ctx);
+  }
+  await stopOwned(ctx);
+  run.cleanup = true;
+  run.state = "stopped";
+  const log = join(run.evidence, "spyglass/launch.log");
+  if (existsSync(log))
+    ctx.artifact("launch-final.log", readFileSync(log, "utf8"));
+  const { resultRules: _rules, ...stopped } = status(run);
+  return { ...stopped, ownerCleanupRequired: !run.ownerCleaned };
+}
+export interface FinishOptions {
+  file?: string;
+  cleanup?: string;
+}
+interface StageRecord {
+  stage: string;
+  status: "passed" | "failed" | "skipped" | "not run";
+  step?: string;
+  code?: string;
+  message?: string;
+  reason?: string;
+}
+/**
+ * The fixed end of a run in one call: record the result, check the run,
+ * clean up, write the report. Each stage is its own step in the log, as if
+ * the operator had run the command. The first failed stage stops the rest.
+ */
+export async function finishRun(
+  run: Run,
+  options: FinishOptions,
+  track: (ctx: Context) => void,
+): Promise<{ data: Record<string, unknown>; fault?: Fault }> {
+  if (options.cleanup && !run.profile.checks[options.cleanup]?.cleanup)
+    throw new Fault(
+      "INVALID_USAGE",
+      `--cleanup needs a profile check with cleanup:true; ${options.cleanup} is not one.`,
+      "Use the name of the owner's cleanup check from spyglass.json.",
+    );
+  const stopped = run.state === "stopped";
+  const reason = "the run is stopped";
+  const report = () => import("./report.js");
+  const stages: {
+    stage: string;
+    command: string;
+    args: string[];
+    skip?: string;
+    run: (ctx: Context) => Promise<Record<string, unknown>>;
+  }[] = [
+    {
+      stage: "result",
+      command: "result",
+      args: options.file ? ["--file", options.file] : [],
+      run: async (c) =>
+        (await report()).report(c, [
+          "result",
+          ...(options.file ? ["--file", options.file] : []),
+        ]),
+    },
+    {
+      stage: "doctor",
+      command: "doctor",
+      args: [],
+      skip: stopped ? reason : undefined,
+      run: (c) => doctor(c),
+    },
+    ...(options.cleanup
+      ? [
+          {
+            stage: "cleanup",
+            command: "check",
+            args: [options.cleanup],
+            run: async (c: Context) =>
+              (await import("./checks.js")).checks(c, [
+                "check",
+                options.cleanup!,
+              ]),
+          },
+        ]
+      : []),
+    {
+      stage: "down",
+      command: "down",
+      args: [],
+      skip: stopped ? reason : undefined,
+      run: (c) => down(c),
+    },
+    {
+      stage: "report",
+      command: "report",
+      args: [],
+      run: async (c) => (await report()).report(c, ["report"]),
+    },
+  ];
+  const records: StageRecord[] = stages.map((item) => ({
+    stage: item.stage,
+    status: "not run",
+  }));
+  let reportData: Record<string, unknown> = {};
+  for (const [index, item] of stages.entries()) {
+    if (item.skip) {
+      records[index] = {
+        stage: item.stage,
+        status: "skipped",
+        reason: item.skip,
+      };
+      continue;
+    }
+    const ctx = new Context(run, item.command, item.args);
+    track(ctx);
+    try {
+      const data = await item.run(ctx);
+      ctx.finish(
+        typeof data.exitCode === "number" ? data.exitCode : 0,
+        data,
+        0,
+      );
+      records[index] = {
+        stage: item.stage,
+        status: "passed",
+        step: ctx.step.id,
+      };
+      if (item.stage === "report") reportData = data;
+    } catch (error) {
+      const failure = fault(error);
+      try {
+        ctx.finish(
+          typeof failure.data.exitCode === "number"
+            ? failure.data.exitCode
+            : failure.exit,
+          {
+            ...failure.data,
+            passed: false,
+            error: {
+              code: failure.code,
+              message: ctx.vault.text(failure.message),
+            },
+          },
+          failure.exit,
+        );
+      } catch (logError) {
+        failure.message += `; cannot retain step: ${String(logError)}`;
+      }
+      records[index] = {
+        stage: item.stage,
+        status: "failed",
+        step: ctx.step.id,
+        code: failure.code,
+        message: ctx.vault.text(failure.message),
+      };
+      const again = `Then run spyglass finish --run ${run.id} again.`;
+      const next =
+        item.stage === "result"
+          ? `Run spyglass result --check --run ${run.id} and apply the repair of each finding. ${again}`
+          : `${failure.next} ${again}`;
+      return {
+        data: {
+          finished: false,
+          failedStage: item.stage,
+          stages: records,
+          ...(failure.data.findings ? { findings: failure.data.findings } : {}),
+        },
+        fault: new Fault(failure.code, failure.message, next, failure.exit),
+      };
+    }
+  }
+  return {
+    data: {
+      finished: true,
+      stages: records,
+      report: {
+        status: reportData.status,
+        complete: reportData.complete,
+        reportPath: reportData.reportPath,
+      },
+    },
+  };
 }
 export async function launch(ctx: Context): Promise<Record<string, unknown>> {
   const { run } = ctx;

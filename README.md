@@ -88,12 +88,17 @@ spyglass init                                   # write spyglass.json; review it
 spyglass up --run my-change --plan verification-plan.json --json
 spyglass check verify --run my-change --claim CLAIM_ID --json   # run a check; link it to a claim
 spyglass result set --run my-change --claim CLAIM_ID --outcome passed --observed "WHAT YOU SAW"
+spyglass status --work --run my-change          # what each claim still needs
 spyglass result --check --run my-change         # validate; record nothing
-spyglass result --run my-change                 # record claim results
-spyglass doctor --run my-change --json
-spyglass down --run my-change --json            # clean up owned resources
-spyglass report --run my-change --json          # write the offline report
+spyglass finish --run my-change --json          # result, doctor, down and report
 ```
+
+`finish` runs `result`, `doctor`, `down` and `report` in order. You can run each
+command alone instead. Each stage is its own step in the log. The first failed
+stage stops `finish`, writes no report and exits with that stage's status; the
+error says how to repair it and to run `finish` again. Add `--cleanup CHECK` to
+run the owner's cleanup check (a profile check with `cleanup: true`) before
+`down`. A stopped run skips `doctor` and `down`.
 
 Add `.spyglass/` to your `.gitignore`. It holds the evidence folder.
 
@@ -246,6 +251,22 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID
 
 An `--observed` after `--inspect` belongs to that inspection. `result set`
 refuses an unknown claim, gate, control or step before it changes the file.
+
+### See what is missing, and reuse a gate
+
+`spyglass status --work --run ID` lists, for each claim, control and gate,
+what is still missing. It uses the rules of `result --check`. A claim lists, for
+example, `a passing step`, `independentRead: a later read after step 8a1f...`,
+`visual inspection for screenshot 8a1f...-1-proof.png` and `observed text`.
+`work.complete` is true when nothing is missing.
+
+When an earlier run of the repository passed a planned gate on the same source
+and profile, with its evidence kept and the same binding values, `up` writes
+the gate into the pending result with its `run` and `steps`, and lists it in
+`citedGates`. `up --cite-gates-from RUN` cites only that run and fails with
+`GATE_CITATION_REJECTED` when it cannot cite a gate. `result set --gate-run RUN`
+cites the planned gates of `RUN` in a run that already exists. `result` still
+checks the citation.
 
 ### Output and exit codes
 

@@ -65,6 +65,18 @@ This file records the notable changes to Spyglass. The format follows
   `UNKNOWN_STEP`.
 - `ps --wait [--timeout-ms MS]` polls until each required service is ready.
 
+- `status --work --run ID` lists what each claim, control and gate still
+  needs, by the rules of `result --check`.
+- `up` cites a planned gate that an earlier run passed on the same source and
+  profile, with kept evidence and the same binding values: the pending result
+  names its `run` and `steps`, and `up` and `status` list `citedGates`.
+  `up --cite-gates-from RUN` cites one run and fails with
+  `GATE_CITATION_REJECTED` when it cannot. `result set --gate-run RUN` cites
+  the gates of a run later.
+- `finish [--file PATH] [--cleanup CHECK]` runs `result`, `doctor`, the owner
+  cleanup check, `down` and `report` in order. Each stage is its own step. The
+  first failed stage stops it, writes no report and names the repair.
+
 ### Changed
 
 - A container with a health check that is `starting` or `unhealthy` is no
