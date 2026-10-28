@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-28",
+  "node": "v24.22.1",
+  "agentBrowser": "agent-browser 0.38.2",
+  "claims": 12,
+  "runs": 10,
+  "paths": [
+    {
+      "path": "baseline",
+      "label": "Spyglass 1.2.0 (one operation per call)",
+      "runs": 10,
+      "wallMs": [
+        10366.9,
+        11081.8,
+        9981,
+        10011.4,
+        10057.5,
+        10965.9,
+        10994.1,
+        11115.6,
+        10911.7,
+        11036.1
+      ],
+      "wallP50Ms": 10911.7,
+      "wallP95Ms": 11115.6,
+      "processes": 35,
+      "operatorSteps": 36,
+      "stdoutBytes": 79187,
+      "retries": 1,
+      "recordedSteps": 35,
+      "retainedArtifacts": 33,
+      "failedAttempts": 1
+    }
+  ]
+}

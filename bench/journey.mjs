@@ -450,11 +450,9 @@ async function runBaseline(repo, metrics) {
 
 /** The composite workflow: one batch per page, links on every step, one finish. */
 async function runComposite(repo, metrics) {
-  const probe = await timed(
-    process.execPath,
-    [CLI, "--json", "ui", "--help"],
-    { cwd: repo },
-  );
+  const probe = await timed(process.execPath, [CLI, "--json", "ui", "--help"], {
+    cwd: repo,
+  });
   if (!/verify \[--open/.test(probe.stdout))
     return { skipped: "ui verify is not in this build" };
   const spy = spyglassDriver(repo, metrics);

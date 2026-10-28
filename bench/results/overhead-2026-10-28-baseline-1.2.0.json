@@ -1,0 +1,156 @@
+{
+  "date": "2026-10-28",
+  "node": "v24.22.1",
+  "agentBrowser": "agent-browser 0.38.2",
+  "pairs": 20,
+  "budgetsMs": {
+    "p50": 120,
+    "p95": 150,
+    "cold": 100
+  },
+  "coldStart": {
+    "p50": 57.6,
+    "p95": 67.8
+  },
+  "scenarios": [
+    {
+      "name": "ui get title",
+      "pairs": [
+        {
+          "pair": 1,
+          "direct": 6.3,
+          "spyglass": 120.2,
+          "added": 113.8
+        },
+        {
+          "pair": 2,
+          "direct": 6.3,
+          "spyglass": 140.2,
+          "added": 133.9
+        },
+        {
+          "pair": 3,
+          "direct": 7.1,
+          "spyglass": 130.6,
+          "added": 123.5
+        },
+        {
+          "pair": 4,
+          "direct": 7,
+          "spyglass": 152.7,
+          "added": 145.7
+        },
+        {
+          "pair": 5,
+          "direct": 7.8,
+          "spyglass": 113.7,
+          "added": 105.9
+        },
+        {
+          "pair": 6,
+          "direct": 6.7,
+          "spyglass": 114.3,
+          "added": 107.7
+        },
+        {
+          "pair": 7,
+          "direct": 6.1,
+          "spyglass": 128.1,
+          "added": 122
+        },
+        {
+          "pair": 8,
+          "direct": 7.6,
+          "spyglass": 113.7,
+          "added": 106.2
+        },
+        {
+          "pair": 9,
+          "direct": 6.7,
+          "spyglass": 123.5,
+          "added": 116.8
+        },
+        {
+          "pair": 10,
+          "direct": 5.9,
+          "spyglass": 114.6,
+          "added": 108.7
+        },
+        {
+          "pair": 11,
+          "direct": 5.8,
+          "spyglass": 105.2,
+          "added": 99.5
+        },
+        {
+          "pair": 12,
+          "direct": 6.9,
+          "spyglass": 137.4,
+          "added": 130.5
+        },
+        {
+          "pair": 13,
+          "direct": 6,
+          "spyglass": 113.6,
+          "added": 107.6
+        },
+        {
+          "pair": 14,
+          "direct": 5.8,
+          "spyglass": 123.6,
+          "added": 117.8
+        },
+        {
+          "pair": 15,
+          "direct": 7.1,
+          "spyglass": 134.9,
+          "added": 127.8
+        },
+        {
+          "pair": 16,
+          "direct": 7.5,
+          "spyglass": 124.7,
+          "added": 117.2
+        },
+        {
+          "pair": 17,
+          "direct": 5.3,
+          "spyglass": 133.9,
+          "added": 128.6
+        },
+        {
+          "pair": 18,
+          "direct": 5.3,
+          "spyglass": 117.6,
+          "added": 112.3
+        },
+        {
+          "pair": 19,
+          "direct": 5.9,
+          "spyglass": 114.6,
+          "added": 108.7
+        },
+        {
+          "pair": 20,
+          "direct": 6.4,
+          "spyglass": 116.5,
+          "added": 110.1
+        }
+      ],
+      "directP50": 6.3,
+      "spyglassP50": 120.2,
+      "addedP50": 113.8,
+      "addedP95": 133.9,
+      "addedMax": 145.7
+    },
+    {
+      "name": "ui expect --title",
+      "skipped": "BROWSER_COMMAND"
+    },
+    {
+      "name": "ui verify (5 actions + proof)",
+      "skipped": "BROWSER_COMMAND"
+    }
+  ],
+  "passed": true
+}

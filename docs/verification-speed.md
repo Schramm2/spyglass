@@ -386,6 +386,42 @@ update `README.md`, `src/help.ts`, `skills/`, `landing/docs/index.html` and
 
 - **Condition:** Build **only** if Slice 6 still misses the Tier 2 p95 overhead gate (150 ms). If Slice 6 meets the p50 and p95 targets, skip Slice 8 and record the benchmark evidence in `docs/verification-speed.md`.
 
+### Measured results
+
+Measured on 2026-10-28 on one machine (Node 24, `agent-browser` 0.38.2, headless
+Chromium, 20 runs or pairs). The result files are in `bench/results/`. The
+numbers vary by machine; compare them only with the baseline from the same
+machine and session.
+
+**Tier 1: the 12-claim journey** (`node bench/journey.mjs`)
+
+| Path                                                                      | Wall p50 | Processes | Operator steps |  Stdout | Recorded steps | Artifacts | Failed attempts |
+| ------------------------------------------------------------------------- | -------: | --------: | -------------: | ------: | -------------: | --------: | --------------: |
+| Spyglass 1.2.0, one operation per call                                    |   10.9 s |        35 |             36 | 79.2 KB |             35 |        33 |               1 |
+| Spyglass composite (`ui verify`, `--claim`, `api --wait-until`, `finish`) |    9.0 s |        12 |             13 | 26.6 KB |             15 |        23 |               1 |
+| `agent-browser` and `fetch` script, no evidence                           |    1.8 s |         6 |              1 | 11.5 KB |              - |         - |               - |
+| Playwright script, no evidence                                            |    1.2 s |         2 |              1 |  0.9 KB |              - |         - |               - |
+
+The composite path needs 13 operator steps (goal: 12 to 20), 66 % fewer
+processes and 66 % less output than the 1.2.0 path. Its result has no
+rejections and no hand-copied step ID or artifact path. The one failed attempt
+is the control's deliberate failure. The baseline row comes from the 1.2.0
+build; the 1.2.0 path on the new build takes 10.1 s with 34 processes.
+
+**Tier 2: the overhead gate** (`node bench/overhead.mjs --gate-cold`)
+
+| Scenario                            | 1.2.0 added p50 | 1.2.0 added p95 | Now added p50 | Now added p95 |
+| ----------------------------------- | --------------: | --------------: | ------------: | ------------: |
+| `ui get title`                      |        113.8 ms |        133.9 ms |       83.1 ms |      101.4 ms |
+| `ui expect --title`                 |             n/a |             n/a |       93.7 ms |      104.2 ms |
+| `ui verify` (5 actions and a proof) |             n/a |             n/a |      107.2 ms |      125.6 ms |
+| Cold start (`spyglass --version`)   |         57.6 ms |         67.8 ms |       61.0 ms |       72.4 ms |
+
+The gate passes (p50 at most 120 ms, p95 at most 150 ms, cold start at most
+100 ms), so Slice 8 (`spyglass serve`) is not built. The cold start of the
+1.2.0 build on this machine is below the 135 ms in the goals table, which was
+measured on another machine; the new build keeps it under 100 ms.
+
 ## 8. Failure cases to add first
 
 These cases do not exist in [failure-cases.md](failure-cases.md) today. Each
