@@ -35,16 +35,36 @@ This file records the notable changes to Spyglass. The format follows
 - A selector action that matches no element returns `data.nearest`, up to 10
   interactive roles and names from the page, and keeps the page snapshot.
 
+- `ui verify` runs the actions (`--open`, `--do`), expectations (`--expect`),
+  an optional focus check (`--expect-focus-moved LABEL`) and a proof
+  (`--proof LABEL`, with `--viewport WxH` for each viewport) as one step with
+  ordered sub-steps. The first failure keeps the sub-steps before it as
+  passed, saves a failure screenshot and a delta snapshot, and marks the rest
+  `not run`.
+- `ui proof LABEL` takes `--viewport WxH` (repeatable) and `--expect`: it
+  resizes, settles, checks the expectations and saves
+  `proof-LABEL-WxH.png` for each viewport.
+- With `--claim ID` on a visual claim, a step that captured viewports adds an
+  inspection for each, with `viewport` and `artifact` and empty text for you.
+- `result` reports `EXPECTATION_FAILED`, `EXPECTATION_NOT_RUN`,
+  `ACTION_FAILED` and `ACTION_NOT_RUN` when a claim cites a batch step with a
+  failed or skipped sub-step.
+
 ### Changed
 
 - `ui` reports the last URL of a command batch as `currentUrl`, not the first.
 
 ### Fixed
 
-- A browser command no longer fails with `BROWSER_PROXY_UNAVAILABLE` when one
-  health reply of the run's proxy is slow, for example while a browser starts.
-  The check tries three times. A reply from another process, or no reply
-  after three tries, still fails it.
+- A screenshot of a page that has not drawn a frame no longer waits about 10
+  seconds for the first frame in a headless browser. Spyglass makes the page
+  draw before each screenshot.
+- The run's browser proxy no longer ends when a browser resets a connection.
+  An error on a proxy socket had no handler, so one reset ended the proxy
+  process and the next browser command failed with
+  `BROWSER_PROXY_UNAVAILABLE`, in about one run in ten on a loaded machine.
+  The error text now says whether the proxy gave no answer or answered as
+  another process.
 
 ## [1.2.0] - 2026-10-24
 

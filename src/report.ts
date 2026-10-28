@@ -230,6 +230,25 @@ function validateClaimProof(
           code: "FAILED_ASSERTION",
           message: `Claim ${claim.id} cites a failed assertion or skipped check.`,
         });
+      // A batch step such as ui verify lists its sub-steps. A claim cannot rest
+      // on one whose expectation or action failed or did not run.
+      for (const { entry } of resolved) {
+        const parts = entry.data?.subSteps;
+        if (!Array.isArray(parts)) continue;
+        for (const part of parts as Array<Record<string, unknown>>) {
+          if (part.status === "passed") continue;
+          const id = String(part.id ?? "");
+          const label = String(part.label ?? id);
+          const action = /^(open|do-)/.test(id);
+          const failed = part.status === "failed";
+          findings.push({
+            code: `${action ? "ACTION" : "EXPECTATION"}_${failed ? "FAILED" : "NOT_RUN"}`,
+            step: entry.id,
+            path: label,
+            message: `Claim ${claim.id} cites step ${entry.id}, whose ${action ? "action" : "expectation"} ${label} ${failed ? "did not pass" : "did not run"}.`,
+          });
+        }
+      }
       const attached = resolved.some(({ entry }) =>
         entry.artifacts?.some(
           (item) =>
@@ -1268,6 +1287,10 @@ const PROOF_CODES = [
   "VISUAL_INSPECTION_MISSING",
   "VISUAL_IMAGE_MISSING",
   "INDEPENDENT_READ_MISSING",
+  "EXPECTATION_FAILED",
+  "EXPECTATION_NOT_RUN",
+  "ACTION_FAILED",
+  "ACTION_NOT_RUN",
   "GATE_PROOF_MISSING",
   "STEP_SOURCE_MISSING",
   "STEP_SOURCE_MISMATCH",
@@ -1396,6 +1419,11 @@ function addRepairs(
           ? `Cite the action step and a later read, and set independentRead to the read: spyglass result set --claim ${c} --independent-read STEP_ID --step STEP_ID ${where}. Candidate reads: ${candidates.join(", ")}.`
           : `No read exists yet that follows the action. After the action completes, run spyglass api GET PATH ${where} --claim ${c} --independent-read, or spyglass db "SELECT ..." ${where} --claim ${c} --independent-read.`;
       }
+      case "EXPECTATION_FAILED":
+      case "EXPECTATION_NOT_RUN":
+      case "ACTION_FAILED":
+      case "ACTION_NOT_RUN":
+        return `Fix the cause, then run the batch step again with every sub-step passing, for example spyglass ui verify ... ${where} --claim ${c}. A step with a failed or skipped sub-step cannot prove a claim.`;
       case "CLAIM_INCOMPLETE":
         return `Run its steps with --claim ${c}, then spyglass result set --claim ${c} --outcome passed --observed "TEXT" ${where}. Or record a limit if it stays out of scope.`;
       case "GATE_PROOF_MISSING":

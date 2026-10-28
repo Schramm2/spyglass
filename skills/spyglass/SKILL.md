@@ -116,6 +116,15 @@ keeps `expect.json` with the last observation. Add `--settle` to one `click`,
 navigation or DOM change that it starts. When a selector matches no element,
 read `data.nearest`: the interactive roles and names that the page has. A
 changed name there is a stale selector; a missing element is a product defect.
+Prove one UI claim in one call with `ui verify`: for example `ui verify --open
+/dashboard --do "find role button click --name Save" --expect text=Saved
+--proof saved --viewport 1280x800 --viewport 390x844 --claim <id>`. The step has
+ordered sub-steps; the first failure keeps the sub-steps before it, saves a
+failure screenshot and a delta snapshot, and marks the rest `not run`. For
+focus, add `--expect-focus-moved <label>`: it records the focus before and
+after the actions in `focused.json`. `ui proof <label> --viewport WxH ...
+--expect ...` does the same for the current page. A step with a failed or
+skipped sub-step cannot back a claim.
 Use `ui proof` after the user action and after the visible result. Use
 `ui focused --expect LABEL` when a claim depends on focus, for example the
 password field after a refused sign-in; it never reads the field's value.

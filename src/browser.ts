@@ -9,7 +9,7 @@ import {
 import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { Fault } from "./errors.js";
+import { Fault, fault } from "./errors.js";
 import { hash, safePath } from "./files.js";
 import { BROWSER_IDLE_TIMEOUT_MS, runHome, saveRun } from "./state.js";
 import {
@@ -771,6 +771,15 @@ function validate(ctx: Context, command: Command): Command {
     command[1] = checkUrl(ctx, command[1]!, ctx.run.web);
   return command;
 }
+/**
+ * A screenshot of a page that has not produced a frame yet can wait for the
+ * first one for about 10 seconds in a headless browser. Two animation frames
+ * first make the page draw, so the screenshot returns at once.
+ */
+const frameCommand: Command = [
+  "eval",
+  "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+];
 function proofPath(ctx: Context, label: string): string {
   const name =
     label
@@ -915,7 +924,8 @@ export function browserHelp(): Record<string, unknown> {
       "open PATH|URL",
       "read [PATH|URL]",
       "snapshot [-i|-c|--delta|--full]",
-      "proof LABEL",
+      "proof LABEL [--viewport WxH]... [--expect KIND=VALUE]... [--timeout-ms MS]",
+      "verify [--open PATH] [--do COMMAND]... [--expect KIND=VALUE]... [--expect-focus-moved LABEL] [--proof LABEL [--viewport WxH]...] [--timeout-ms MS]",
       "expect [--url PATTERN] [--text TEXT] [--title TEXT] [--selector SEL] [--visible SEL] [--hidden SEL] [--enabled SEL] [--checked SEL] [--count SEL=N] [--focused LABEL] [--attr SEL:NAME=VALUE] [--no-errors] [--timeout-ms MS]",
       "focused [--expect LABEL]",
       "login SEAT",
@@ -949,6 +959,7 @@ export function browserHelp(): Record<string, unknown> {
       "No custom Authorization headers.",
       "wait accepts a selector, --text, --url or --load. --fn runs page JavaScript, --download saves outside evidence, and agent-browser reads wait --state as a saved-state file; all three are refused.",
       "A run-owned loopback proxy enforces exact scheme, host and port on browser traffic; agent-browser also checks allowed hosts.",
+      "verify runs actions, expectations and a proof as one step with ordered sub-steps. A failure keeps the sub-steps before it as passed, marks the failed one with its failure screenshot and delta snapshot, and marks the rest not run. Each --do is one command, such as find role button click --name Save; a click, fill, press or select settles before the next sub-step. An --expect is KIND=VALUE with the kinds of expect: url, text, title, selector, visible, hidden, enabled, checked, count (SEL=N), focused, attr (SEL:NAME=VALUE) and no-errors. --expect-focus-moved LABEL records the focus before the actions and after them in focused.json and fails when focus was already on LABEL or is not on it afterward. --proof LABEL saves proof-LABEL.png, its snapshot and its details; with --viewport WxH (repeat it) each viewport resizes, settles, checks every --expect again and saves proof-LABEL-WxH.png. A screenshot is never an action: its path is always inside run evidence.",
       "expect polls every 100 ms until all expectations hold or --timeout-ms (default 5000, maximum 120000) ends. It saves expect.json and exits 1 with the last observation when an expectation never holds. It never reads an input value: --attr value is refused.",
       "A click, fill or similar command that matches no element fails with data.nearest: up to 10 interactive roles and names from the page, nearest to the request first.",
     ],
@@ -974,6 +985,7 @@ async function captureFailure(
         ["get", "url"],
         ["get", "title"],
         ["snapshot", "-i", "-c", "--delta"],
+        frameCommand,
         ["screenshot", image],
         ["console", "--clear"],
         ["errors", "--clear"],
@@ -1159,50 +1171,16 @@ async function proof(
   domains: string[],
   label: string,
 ): Promise<Record<string, unknown>> {
-  const name = safeLabel(label),
-    image = proofPath(ctx, "proof-" + name);
   try {
-    const result = await run(ctx, id, domains.join(","), [
-      ["snapshot", "-i", "-c", "--delta"],
-      ["get", "url"],
-      ["get", "title"],
-      ["console", "--clear"],
-      ["errors", "--clear"],
-      ["network", "requests", "--clear"],
-      ["screenshot", image],
-    ]);
-    const picture = imageArtifact(ctx, image, "proof-" + name + ".png");
-    const snapshot = result.data.find(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        (item as Record<string, unknown>).command === "snapshot",
-    );
-    const snapshotArtifact = ctx.artifact(
-      "proof-" + name + "-snapshot.json",
-      snapshot ?? result.data,
-      "page-snapshot",
-    );
-    const details = ctx.artifact(
-      "proof-" + name + "-details.json",
-      {
-        label: name,
-        seat,
-        step: ctx.step.id,
-        pageContent: true,
-        results: clean(ctx, result.data),
-      },
-      "page-content",
-    );
+    const shot = await captureProof(ctx, seat, id, domains.join(","), label);
     return {
-      label: name,
+      label: safeLabel(label),
       seat,
       pageContent: true,
-      results: clean(ctx, result.data),
-      artifacts: [picture, snapshotArtifact, details],
+      results: clean(ctx, shot.results),
+      artifacts: shot.artifacts,
     };
   } catch (error) {
-    rmSync(image, { force: true });
     if (error instanceof Fault) throw error;
     throw new Fault(
       "BROWSER_PROOF_FAILED",
@@ -1235,7 +1213,10 @@ async function screenshot(
   if (indices.length) command[indices.at(-1)!.index] = target;
   else command.push(target);
   try {
-    const result = await run(ctx, id, domains.join(","), [command]);
+    const result = await run(ctx, id, domains.join(","), [
+      frameCommand,
+      command,
+    ]);
     if (!existsSync(target))
       throw new Fault(
         "BROWSER_ARTIFACT_MISSING",
@@ -1991,6 +1972,606 @@ async function diagnoseSelector(
     /* The original failure stands without the page picture. */
   }
 }
+/**
+ * ui verify and ui proof with viewports: one call for one claim. The call
+ * is one step with ordered sub-steps. When sub-step K fails, sub-steps before
+ * it stay passed, K keeps its failure and its page evidence, and the rest are
+ * "not run". The step exits 1 and stays in the log.
+ */
+interface Viewport {
+  width: number;
+  height: number;
+  label: string;
+}
+interface VerifyPlan {
+  open?: string;
+  dos: string[];
+  expects: Condition[];
+  focusMoved?: string;
+  proof?: string;
+  viewports: Viewport[];
+  /** ui proof checks its expectations after each resize, not before it. */
+  deferExpects?: boolean;
+  timeoutMs: number;
+}
+interface SubStep {
+  id: string;
+  label: string;
+  status: "passed" | "failed" | "not run";
+  detail?: string;
+}
+function verifyUsage(message: string): Fault {
+  return new Fault(
+    "BROWSER_USAGE",
+    message,
+    'Use spyglass ui verify --open /dashboard --do "find role button click --name Save" --expect text=Saved --proof saved --viewport 1280x800 --viewport 390x844.',
+  );
+}
+function parseViewport(value: string | undefined): Viewport {
+  const found = /^(\d{2,5})x(\d{2,5})$/.exec(value ?? "");
+  const width = Number(found?.[1]);
+  const height = Number(found?.[2]);
+  if (!found || width < 100 || width > 10000 || height < 100 || height > 10000)
+    throw verifyUsage("--viewport needs WIDTHxHEIGHT, for example 1280x800.");
+  return { width, height, label: `${width}x${height}` };
+}
+function parseTimeout(value: string | undefined): number {
+  const timeoutMs = Number(value);
+  if (
+    !value ||
+    !/^\d+$/.test(value) ||
+    timeoutMs < 1 ||
+    timeoutMs > MAX_EXPECT_TIMEOUT_MS
+  )
+    throw verifyUsage(
+      `--timeout-ms must be an integer from 1 to ${MAX_EXPECT_TIMEOUT_MS}.`,
+    );
+  return timeoutMs;
+}
+function parseVerifyArgs(args: string[]): VerifyPlan {
+  const plan: VerifyPlan = {
+    dos: [],
+    expects: [],
+    viewports: [],
+    timeoutMs: DEFAULT_EXPECT_TIMEOUT_MS,
+  };
+  const value = (i: number, flag: string) => {
+    const next = args[i];
+    if (next === undefined || next === "")
+      throw verifyUsage(`${flag} needs a value.`);
+    return next;
+  };
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i]!;
+    if (flag === "--open") plan.open = value(++i, flag);
+    else if (flag === "--do") plan.dos.push(value(++i, flag));
+    else if (flag === "--expect")
+      plan.expects.push(parseExpectSpec(value(++i, flag)));
+    else if (flag === "--expect-focus-moved")
+      plan.focusMoved = value(++i, flag);
+    else if (flag === "--proof") plan.proof = value(++i, flag);
+    else if (flag === "--viewport")
+      plan.viewports.push(parseViewport(args[++i]));
+    else if (flag === "--timeout-ms") plan.timeoutMs = parseTimeout(args[++i]);
+    else throw verifyUsage(`ui verify does not accept ${flag}.`);
+  }
+  if (plan.viewports.length && plan.proof === undefined)
+    throw verifyUsage("--viewport needs --proof LABEL.");
+  if (plan.focusMoved !== undefined && !plan.dos.length)
+    throw verifyUsage("--expect-focus-moved needs at least one --do action.");
+  if (
+    plan.open === undefined &&
+    !plan.dos.length &&
+    !plan.expects.length &&
+    plan.proof === undefined
+  )
+    throw verifyUsage("ui verify needs --open, --do, --expect or --proof.");
+  return plan;
+}
+/** `ui proof LABEL [--viewport WxH]... [--expect COND]... [--timeout-ms MS]` */
+function parseProofArgs(args: string[]): VerifyPlan | undefined {
+  const label = args[0];
+  if (!label || label.startsWith("--"))
+    throw new Fault(
+      "BROWSER_LABEL",
+      "Missing proof label.",
+      "Use spyglass ui proof <label>.",
+    );
+  if (args.length === 1) return undefined;
+  const plan: VerifyPlan = {
+    dos: [],
+    expects: [],
+    viewports: [],
+    proof: label,
+    timeoutMs: DEFAULT_EXPECT_TIMEOUT_MS,
+  };
+  for (let i = 1; i < args.length; i++) {
+    const flag = args[i]!;
+    if (flag === "--viewport") plan.viewports.push(parseViewport(args[++i]));
+    else if (flag === "--expect") {
+      const spec = args[++i];
+      if (spec === undefined || spec === "")
+        throw verifyUsage("--expect needs a value.");
+      plan.expects.push(parseExpectSpec(spec));
+    } else if (flag === "--timeout-ms")
+      plan.timeoutMs = parseTimeout(args[++i]);
+    else throw verifyUsage(`ui proof does not accept ${flag}.`);
+  }
+  plan.deferExpects = plan.viewports.length > 0;
+  return plan;
+}
+async function readFocus(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<{ element: FocusedElement; url?: string }> {
+  const result = await run(ctx, id, domains, [
+    ["eval", focusedElementScript],
+    ["get", "url"],
+  ]);
+  const reply = (result.data[0] as { result?: Record<string, unknown> })
+    ?.result;
+  if (!reply || !("result" in reply))
+    throw new Fault(
+      "BROWSER_COMMAND_FAILED",
+      "agent-browser returned no focused-element result.",
+      "Check the supported agent-browser version with spyglass doctor.",
+      3,
+    );
+  const url = currentUrl(result.data);
+  return {
+    element: reply.result as FocusedElement,
+    url: url ? redactText(ctx, url) : undefined,
+  };
+}
+/** The page as it is, kept when a sub-step fails. */
+async function captureVerifyFailure(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<void> {
+  const image = proofPath(ctx, "verify-failure");
+  try {
+    const result = await run(
+      ctx,
+      id,
+      domains,
+      [
+        ["get", "url"],
+        ["get", "title"],
+        ["snapshot", "-i", "-c", "--delta"],
+        frameCommand,
+        ["screenshot", image],
+        ["console", "--clear"],
+        ["errors", "--clear"],
+      ],
+      30000,
+    );
+    imageArtifact(ctx, image, "verify-failure.png");
+    const snapshot = result.data.find(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        (item as Record<string, unknown>).command === "snapshot",
+    );
+    ctx.artifact(
+      "verify-failure-snapshot.json",
+      snapshot ?? result.data,
+      "page-snapshot",
+    );
+    ctx.artifact(
+      "verify-failure-page.json",
+      { pageContent: true, results: clean(ctx, result.data) },
+      "page-content",
+    );
+  } catch (error) {
+    rmSync(image, { force: true });
+    ctx.artifact(
+      "verify-failure-capture-error.json",
+      {
+        pageContent: true,
+        captureFailure:
+          error instanceof Error ? redactText(ctx, error.message) : "failed",
+      },
+      "page-content",
+    );
+  }
+}
+interface ProofResult {
+  picture: Record<string, unknown>;
+  artifacts: Record<string, unknown>[];
+  results: unknown[];
+}
+async function captureProof(
+  ctx: Context,
+  seat: string,
+  id: Identity,
+  domains: string,
+  label: string,
+  suffix = "",
+): Promise<ProofResult> {
+  const name = safeLabel(label) + suffix,
+    image = proofPath(ctx, "proof-" + name);
+  try {
+    const result = await run(ctx, id, domains, [
+      ["snapshot", "-i", "-c", "--delta"],
+      ["get", "url"],
+      ["get", "title"],
+      ["console", "--clear"],
+      ["errors", "--clear"],
+      ["network", "requests", "--clear"],
+      frameCommand,
+      ["screenshot", image],
+    ]);
+    const picture = imageArtifact(ctx, image, "proof-" + name + ".png");
+    const snapshot = result.data.find(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        (item as Record<string, unknown>).command === "snapshot",
+    );
+    const snapshotArtifact = ctx.artifact(
+      "proof-" + name + "-snapshot.json",
+      snapshot ?? result.data,
+      "page-snapshot",
+    );
+    const details = ctx.artifact(
+      "proof-" + name + "-details.json",
+      {
+        label: name,
+        seat,
+        step: ctx.step.id,
+        pageContent: true,
+        results: clean(ctx, result.data),
+      },
+      "page-content",
+    );
+    return {
+      picture,
+      artifacts: [picture, snapshotArtifact, details] as unknown as Record<
+        string,
+        unknown
+      >[],
+      results: result.data,
+    };
+  } catch (error) {
+    rmSync(image, { force: true });
+    throw error;
+  }
+}
+async function runVerify(
+  ctx: Context,
+  seat: string,
+  id: Identity,
+  domains: string,
+  plan: VerifyPlan,
+): Promise<Record<string, unknown>> {
+  const started = Date.now();
+  const steps: SubStep[] = [];
+  const add = (stepId: string, label: string): SubStep => {
+    const step: SubStep = { id: stepId, label, status: "not run" };
+    steps.push(step);
+    return step;
+  };
+  const openStep =
+    plan.open !== undefined ? add("open", `open ${plan.open}`) : undefined;
+  const doSteps = plan.dos.map((text, i) => add(`do-${i + 1}`, text));
+  const focusStep =
+    plan.focusMoved !== undefined
+      ? add("focus-moved", `focus moves to ${plan.focusMoved}`)
+      : undefined;
+  const expectSteps = plan.deferExpects
+    ? []
+    : plan.expects.map((condition, i) => add(`expect-${i + 1}`, condition.id));
+  const proofSteps =
+    plan.proof === undefined
+      ? []
+      : plan.viewports.length
+        ? plan.viewports.map((viewport) =>
+            add(
+              `proof-${viewport.label}`,
+              `proof ${plan.proof} at ${viewport.label}`,
+            ),
+          )
+        : [add("proof", `proof ${plan.proof}`)];
+  const viewports: { viewport: string; artifact: string }[] = [];
+  const extra: Record<string, unknown> = {};
+  const outcome: { failure?: Fault } = {};
+  let last: Observation = {};
+  const trackFailure = (step: SubStep | undefined, error: unknown) => {
+    const failure = error instanceof Fault ? error : fault(error);
+    outcome.failure = failure;
+    if (step && step.status === "not run") {
+      step.status = "failed";
+      step.detail = failure.message;
+    }
+  };
+
+  /**
+   * Run the commands in order, in as few agent-browser calls as the order
+   * allows: commands run together until an interactive one, which settles
+   * before the next command starts. A failure names its own sub-step.
+   */
+  const runBatch = async (
+    entries: { step: SubStep; command: Command }[],
+  ): Promise<void> => {
+    const groups: (typeof entries)[] = [];
+    let current: typeof entries = [];
+    for (const entry of entries) {
+      current.push(entry);
+      if (isInteractive(entry.command)) {
+        groups.push(current);
+        current = [];
+      }
+    }
+    if (current.length) groups.push(current);
+    for (const group of groups) {
+      try {
+        await run(
+          ctx,
+          id,
+          domains,
+          group.map((entry) => entry.command),
+        );
+      } catch (error) {
+        let owner = group.at(-1)!;
+        if (error instanceof Fault && Array.isArray(error.data.results)) {
+          const at = (error.data.results as Item[]).findIndex(
+            (item) => item?.success === false,
+          );
+          if (at >= 0 && group[at]) owner = group[at]!;
+        }
+        // Everything before the failed command ran and passed.
+        for (const entry of group) {
+          if (entry === owner) break;
+          entry.step.status = "passed";
+        }
+        owner.step.status = "failed";
+        owner.step.detail =
+          error instanceof Fault ? error.message : String(error);
+        if (error instanceof Fault) {
+          await diagnoseSelector(ctx, id, domains, error);
+          if (error.data.nearest) extra.nearest = error.data.nearest;
+        }
+        throw error;
+      }
+      for (const entry of group) entry.step.status = "passed";
+      if (isInteractive(group.at(-1)!.command)) await settle(ctx, id, domains);
+    }
+  };
+
+  /** Check every command's policy in order; run those that precede a refusal. */
+  const prepare = (
+    queue: { step: SubStep; build: () => Command }[],
+  ): {
+    runnable: { step: SubStep; command: Command }[];
+    refusal?: { step: SubStep; error: unknown };
+  } => {
+    const runnable: { step: SubStep; command: Command }[] = [];
+    for (const item of queue) {
+      try {
+        runnable.push({ step: item.step, command: item.build() });
+      } catch (error) {
+        return { runnable, refusal: { step: item.step, error } };
+      }
+    }
+    return { runnable };
+  };
+  const checked = (words: Command): Command => {
+    if (["screenshot", "batch"].includes(words[0] ?? ""))
+      throw new Fault(
+        "BROWSER_POLICY",
+        `${words[0]} cannot be an action of ui verify; it could write outside run evidence or hide commands.`,
+        "Use --proof LABEL for a screenshot.",
+      );
+    return validate(ctx, words);
+  };
+  const batchFor = async (queue: { step: SubStep; build: () => Command }[]) => {
+    const { runnable, refusal } = prepare(queue);
+    await runBatch(runnable);
+    if (refusal) {
+      refusal.step.status = "failed";
+      refusal.step.detail =
+        refusal.error instanceof Fault
+          ? refusal.error.message
+          : String(refusal.error);
+      throw refusal.error;
+    }
+  };
+
+  const observe = async (conditions: Condition[], timeoutMs = plan.timeoutMs) =>
+    pollConditions(ctx, id, domains, conditions, timeoutMs);
+  /** All at once first; then one at a time, so the first failure is named. */
+  const expectAll = async (
+    conditions: Condition[],
+    stepsFor: SubStep[] | undefined,
+  ): Promise<void> => {
+    if (!conditions.length) return;
+    const all = await observe(conditions, 1);
+    last = all.observation;
+    if (all.passed) {
+      for (const step of stepsFor ?? []) step.status = "passed";
+      return;
+    }
+    for (let i = 0; i < conditions.length; i++) {
+      const single = await observe([conditions[i]!]);
+      last = single.observation;
+      if (single.passed) {
+        if (stepsFor) stepsFor[i]!.status = "passed";
+        continue;
+      }
+      const verdict = single.conditions[0]!;
+      const step = stepsFor?.[i];
+      if (step) {
+        step.status = "failed";
+        step.detail = `${verdict.id}: ${verdict.observed}`;
+      }
+      throw new Fault(
+        "BROWSER_EXPECTATION_FAILED",
+        `Expectation ${verdict.id} did not hold after ${single.elapsedMs} ms (${verdict.observed}).`,
+        "Inspect the page with spyglass ui snapshot; failed steps stay in the run log.",
+        1,
+        { elapsedMs: single.elapsedMs, polls: single.polls },
+      );
+    }
+  };
+
+  const proxyAfter = ctx.run.browserProxy?.sequence ?? 0;
+  try {
+    if (openStep)
+      await batchFor([
+        {
+          step: openStep,
+          build: () => checked(["open", plan.open!]),
+        },
+      ]);
+    let before: { element: FocusedElement; url?: string } | undefined;
+    if (focusStep) before = await readFocus(ctx, id, domains);
+    await batchFor(
+      doSteps.map((step, i) => ({
+        step,
+        build: () => checked(parseWords(plan.dos[i]!)),
+      })),
+    );
+    if (focusStep) {
+      const after = await readFocus(ctx, id, domains);
+      const moved =
+        before?.element?.label !== plan.focusMoved &&
+        after.element?.label === plan.focusMoved;
+      const evidence = ctx.artifact(
+        "focused.json",
+        {
+          seat,
+          pageContent: true,
+          url: after.url,
+          expected: plan.focusMoved,
+          before: before?.element ?? null,
+          after: after.element ?? null,
+          moved,
+        },
+        "page-content",
+      );
+      extra.focus = {
+        before: before?.element ?? null,
+        after: after.element ?? null,
+        artifact: evidence.path,
+      };
+      if (!moved) {
+        focusStep.status = "failed";
+        focusStep.detail =
+          before?.element?.label === plan.focusMoved
+            ? `focus was already on "${plan.focusMoved}" before the action`
+            : `focus is on ${after.element ? `"${after.element.label}"` : "the page body"}, not "${plan.focusMoved}"`;
+        throw new Fault(
+          "BROWSER_EXPECTATION_FAILED",
+          focusStep.detail + ".",
+          "Inspect focused.json: it keeps the focus before and after the action.",
+          1,
+        );
+      }
+      focusStep.status = "passed";
+    }
+    if (!plan.deferExpects) await expectAll(plan.expects, expectSteps);
+    if (plan.proof !== undefined) {
+      if (!plan.viewports.length) {
+        await captureProof(ctx, seat, id, domains, plan.proof);
+        proofSteps[0]!.status = "passed";
+      } else
+        for (let i = 0; i < plan.viewports.length; i++) {
+          const viewport = plan.viewports[i]!;
+          const step = proofSteps[i]!;
+          try {
+            await run(ctx, id, domains, [
+              [
+                "set",
+                "viewport",
+                String(viewport.width),
+                String(viewport.height),
+              ],
+            ]);
+            await settle(ctx, id, domains);
+            await expectAll(plan.expects, undefined);
+            const shot = await captureProof(
+              ctx,
+              seat,
+              id,
+              domains,
+              plan.proof,
+              `-${viewport.label}`,
+            );
+            viewports.push({
+              viewport: viewport.label,
+              artifact: String(shot.picture.path),
+            });
+            step.status = "passed";
+          } catch (error) {
+            if (step.status === "not run") {
+              step.status = "failed";
+              step.detail =
+                error instanceof Fault ? error.message : String(error);
+            }
+            throw error;
+          }
+        }
+    }
+    await checkProxy(ctx, proxyAfter);
+  } catch (error) {
+    trackFailure(
+      steps.find((step) => step.status === "failed"),
+      error,
+    );
+    await captureVerifyFailure(ctx, id, domains);
+  }
+
+  const failure = outcome.failure;
+  const passed = !failure;
+  const assertionRows = [
+    ...steps
+      .filter((step) => step.id.startsWith("expect-"))
+      .map((step) => ({
+        id: step.label,
+        ok: step.status === "passed",
+        detail: step.status === "passed" ? "held" : (step.detail ?? "not run"),
+      })),
+    ...steps
+      .filter((step) => !step.id.startsWith("expect-"))
+      .map((step) => ({
+        id: step.id,
+        ok: step.status === "passed",
+        detail:
+          step.status === "passed" ? "passed" : (step.detail ?? "not run"),
+      })),
+  ];
+  const data: Record<string, unknown> = {
+    summary: `${passed ? "PASS" : "FAIL"} ${steps
+      .map((step) => `${step.id}:${step.status}`)
+      .join(" ")}`,
+    seat,
+    pageContent: true,
+    passed,
+    elapsedMs: Date.now() - started,
+    subSteps: steps.map((step) => ({
+      id: step.id,
+      label: clean(ctx, step.label),
+      status: step.status,
+      ...(step.detail ? { detail: redactText(ctx, step.detail) } : {}),
+    })),
+    claims: assertionRows,
+    ...(viewports.length ? { viewports } : {}),
+    ...(last.url ? { lastObservation: last } : {}),
+    ...extra,
+    artifacts: ctx.step.artifacts.slice(),
+  };
+  if (failure) {
+    const cause: Fault = failure;
+    throw new Fault(cause.code, cause.message, cause.next, cause.exit, {
+      ...cause.data,
+      ...data,
+    });
+  }
+  return data;
+}
+
 export async function browser(
   ctx: Context,
   args: string[],
@@ -2037,19 +2618,24 @@ export async function browser(
       }
       return login(ctx, name, loginId, [...policy.domains.split(",")]);
     }
-    if (action[0] === "proof") {
-      if (!action[1])
-        throw new Fault(
-          "BROWSER_LABEL",
-          "Missing proof label.",
-          "Use spyglass ui proof <label>.",
-        );
+    if (action[0] === "proof" || action[0] === "verify") {
+      const plan =
+        action[0] === "verify"
+          ? parseVerifyArgs(action.slice(1))
+          : parseProofArgs(action.slice(1));
       const fresh = await ensure(ctx, id, policy.domains);
       if (fresh) {
         ctx.run.sessions[seat] = id.session;
         saveRun(ctx.run);
       }
-      return proof(ctx, seat, id, [...policy.domains.split(",")], action[1]);
+      if (!plan)
+        return proof(ctx, seat, id, [...policy.domains.split(",")], action[1]!);
+      try {
+        return await runVerify(ctx, seat, id, policy.domains, plan);
+      } finally {
+        ctx.run.activeSeat = seat;
+        saveRun(ctx.run);
+      }
     }
     if (action[0] === "focused") {
       const fresh = await ensure(ctx, id, policy.domains);

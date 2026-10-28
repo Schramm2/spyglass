@@ -1122,7 +1122,21 @@ spyglass report --run my-change --json          # write the offline report</code
               <li><code>open PATH|URL</code></li>
               <li><code>read [PATH|URL]</code></li>
               <li><code>snapshot [-i|-c|--delta|--full]</code></li>
-              <li><code>proof LABEL</code></li>
+              <li>
+                <code
+                  >proof LABEL [--viewport WxH]... [--expect KIND=VALUE]...
+                  [--timeout-ms MS]</code
+                >: saves a screenshot, snapshot and details; with
+                <code>--viewport</code> it resizes, settles, checks the
+                expectations and saves one screenshot per viewport.
+              </li>
+              <li>
+                <code
+                  >verify [--open PATH] [--do COMMAND]... [--expect
+                  KIND=VALUE]... [--expect-focus-moved LABEL] [--proof LABEL
+                  [--viewport WxH]...] [--timeout-ms MS]</code
+                >: one step with ordered sub-steps for one claim.
+              </li>
               <li>
                 <code
                   >expect [--url PATTERN] [--text TEXT] [--title TEXT]
@@ -1331,6 +1345,107 @@ spyglass report --run my-change --json          # write the offline report</code
             <pre><code>spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID</code></pre>
             <button class="copy" type="button" data-copy>Copy</button>
           </div>
+          <h3>Verify one claim in one call</h3>
+          <p>
+            <code>ui verify</code> runs the actions, the expectations and the
+            proof of one claim as one step with ordered sub-steps:
+          </p>
+          <div class="call">
+            <pre><code>spyglass ui verify --open /dashboard \
+  --do 'find label Question fill "Does it work?"' \
+  --do "find role button click --name 'Submit question'" \
+  --expect text="Ask a question" --expect visible="#question" \
+  --proof dashboard --viewport 1280x800 --viewport 390x844 \
+  --claim form-works --claim form-looks-right --run ID</code></pre>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Flag</th>
+                  <th scope="col">Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>--open PATH</code></td>
+                  <td>Open a page first.</td>
+                </tr>
+                <tr>
+                  <td><code>--do COMMAND</code></td>
+                  <td>
+                    One browser command. Repeat the flag for more. A
+                    <code>click</code>, <code>fill</code>, <code>press</code> or
+                    <code>select</code> settles before the next sub-step. A
+                    screenshot is not an action: use <code>--proof</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--expect KIND=VALUE</code></td>
+                  <td>
+                    An expectation of <code>ui expect</code>: <code>url</code>,
+                    <code>text</code>, <code>title</code>,
+                    <code>selector</code>, <code>visible</code>,
+                    <code>hidden</code>, <code>enabled</code>,
+                    <code>checked</code>, <code>count=SEL=N</code>,
+                    <code>focused</code>, <code>attr=SEL:NAME=VALUE</code> or
+                    <code>no-errors</code>. Spyglass checks them in order.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--expect-focus-moved LABEL</code></td>
+                  <td>
+                    Record the focus before the actions and after them in
+                    <code>focused.json</code>. It fails when focus was already
+                    on <code>LABEL</code>, or is not on it afterward.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--proof LABEL</code></td>
+                  <td>
+                    Save <code>proof-LABEL.png</code>, its snapshot and its
+                    details.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--viewport WxH</code></td>
+                  <td>
+                    With <code>--proof</code>, repeat per viewport: resize,
+                    settle, check every <code>--expect</code> again and save
+                    <code>proof-LABEL-WxH.png</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--timeout-ms MS</code></td>
+                  <td>The limit for each expectation (default 5000).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            When sub-step K fails, the sub-steps before it stay
+            <code>passed</code>, K keeps its failure with a failure screenshot
+            and a delta snapshot, and the later ones are <code>not run</code>.
+            The step exits 1 and stays in the log. Each expectation is an
+            assertion in <code>data.claims</code>. A claim cannot cite a batch
+            step that has a failed or skipped sub-step:
+            <code>result</code> reports <code>EXPECTATION_FAILED</code>,
+            <code>EXPECTATION_NOT_RUN</code>, <code>ACTION_FAILED</code> or
+            <code>ACTION_NOT_RUN</code> and names it. With
+            <code>--claim ID</code> on a visual claim, Spyglass adds an
+            inspection per viewport with the viewport and the screenshot. You
+            write the <code>expected</code> and <code>observed</code> text after
+            you look at the image.
+          </p>
+          <p>
+            <code
+              >ui proof LABEL --viewport 1280x800 --viewport 390x844 --expect
+              visible="#form"</code
+            >
+            does the same for the current page: it resizes, settles, checks the
+            expectations and saves one screenshot per viewport.
+          </p>
           <p>
             Add <code>--settle</code> to one <code>click</code>,
             <code>dblclick</code>, <code>press</code>, <code>fill</code>,
@@ -1892,6 +2007,92 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                     The command fails with exit status 1. It includes the
                     nearest interactive roles and labels from the current page
                     in its error data and keeps the page snapshot.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A <code>ui verify</code> batch action passes, but a later
+                    expectation in the same call fails.
+                  </td>
+                  <td>
+                    The step fails at that expectation, captures failure
+                    evidence, and keeps the passed actions and the failed
+                    assertion in the step record. Later sub-steps are
+                    <code>not run</code>. The exit status is 1.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A <code>ui verify</code> batch action targets an origin
+                    outside the allowlist.
+                  </td>
+                  <td>
+                    The call fails with <code>BROWSER_ORIGIN_BLOCKED</code> on
+                    that action. The record keeps the actions that ran and marks
+                    the later ones <code>not run</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    <code>ui verify --expect-focus-moved LABEL</code> sees focus
+                    already on <code>LABEL</code> before the action, or on
+                    another element after.
+                  </td>
+                  <td>
+                    The call fails with
+                    <code>BROWSER_EXPECTATION_FAILED</code> and retains both the
+                    <code>before</code> and <code>after</code> focus records in
+                    <code>focused.json</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    <code>ui verify --proof</code> or <code>ui proof</code> is
+                    called with several <code>--viewport</code> values and one
+                    viewport fails an expectation.
+                  </td>
+                  <td>
+                    The step fails, retains the screenshots captured up to the
+                    failure, and does not mark the visual claim passed.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Claim</td>
+                  <td>
+                    A claim cites a batch step that has an expectation that did
+                    not run or did not pass.
+                  </td>
+                  <td>
+                    The claim cannot pass. The result names the expectation.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A screenshot is taken of a page that has not drawn a frame
+                    yet, and the headless browser waits about 10 seconds for the
+                    first frame.
+                  </td>
+                  <td>
+                    A proof right after <code>ui open</code> returns in under 5
+                    seconds. Spyglass makes the page draw before each
+                    screenshot.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Browser</td>
+                  <td>
+                    A browser resets a connection to the run's proxy, for
+                    example when it starts or closes a page.
+                  </td>
+                  <td>
+                    The proxy process stays up and later browser commands work.
+                    A proxy that is gone still fails the command with
+                    <code>BROWSER_PROXY_UNAVAILABLE</code>.
                   </td>
                 </tr>
                 <tr>

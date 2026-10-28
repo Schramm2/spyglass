@@ -148,6 +148,44 @@ condition never holds. It never reads an input value: `--attr value` is refused.
 spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID
 ```
 
+### Verify one claim in one call
+
+`ui verify` runs the actions, the expectations and the proof of one claim as one
+step with ordered sub-steps:
+
+```sh
+spyglass ui verify --open /dashboard \
+  --do 'find label Question fill "Does it work?"' \
+  --do "find role button click --name 'Submit question'" \
+  --expect text="Ask a question" --expect visible="#question" \
+  --proof dashboard --viewport 1280x800 --viewport 390x844 \
+  --claim form-works --claim form-looks-right --run ID
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--open PATH` | Open a page first. |
+| `--do COMMAND` | One browser command. Repeat the flag for more. A `click`, `fill`, `press` or `select` settles before the next sub-step. A screenshot is not an action: use `--proof`. |
+| `--expect KIND=VALUE` | An expectation of `ui expect`: `url`, `text`, `title`, `selector`, `visible`, `hidden`, `enabled`, `checked`, `count=SEL=N`, `focused`, `attr=SEL:NAME=VALUE` or `no-errors`. Spyglass checks them in order. |
+| `--expect-focus-moved LABEL` | Record the focus before the actions and after them in `focused.json`. It fails when focus was already on `LABEL`, or is not on it afterward. |
+| `--proof LABEL` | Save `proof-LABEL.png`, its snapshot and its details. |
+| `--viewport WxH` | With `--proof`, repeat per viewport: resize, settle, check every `--expect` again and save `proof-LABEL-WxH.png`. |
+| `--timeout-ms MS` | The limit for each expectation (default 5000). |
+
+When sub-step K fails, the sub-steps before it stay `passed`, K keeps its
+failure with a failure screenshot and a delta snapshot, and the later ones are
+`not run`. The step exits 1 and stays in the log. Each expectation is an
+assertion in `data.claims`. A claim cannot cite a batch step that has a failed
+or skipped sub-step: `result` reports `EXPECTATION_FAILED`,
+`EXPECTATION_NOT_RUN`, `ACTION_FAILED` or `ACTION_NOT_RUN` and names it. With
+`--claim ID` on a visual claim, Spyglass adds an inspection per viewport with
+the viewport and the screenshot. You write the `expected` and `observed` text
+after you look at the image.
+
+`ui proof LABEL --viewport 1280x800 --viewport 390x844 --expect visible="#form"`
+does the same for the current page: it resizes, settles, checks the
+expectations and saves one screenshot per viewport.
+
 Add `--settle` to one `click`, `dblclick`, `press`, `fill`, `select`, `type` or
 `find ... click` command. Spyglass then waits until the page is loaded and no
 DOM change has happened for 150 ms, for at most 3 seconds, and records it in

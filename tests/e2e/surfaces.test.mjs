@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
+import { connect } from "node:net";
 import { existsSync } from "node:fs";
 import { readFile, readdir, rm, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
@@ -15,6 +16,7 @@ import {
   readRunFile,
   removeRepo,
   runCli,
+  runRecord,
   spawnCapture,
   waitFor,
   writeJson,
@@ -1696,6 +1698,579 @@ surfaceTest(
       assert.match(click.data.currentUrl, /\/dashboard$/);
       const url = await ui(dir, run, ["get", "url"]);
       assert.match(JSON.stringify(url.data.results), /\/dashboard/);
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+// Slice 3 of docs/verification-speed.md: ui verify and ui proof --viewport.
+const demoSeat = {
+  demo: {
+    login: {
+      path: "/login",
+      steps: [
+        { fill: { label: "Email" }, value: "agent@example.test" },
+        { fill: { label: "Password" }, secret: "env:DEMO_PASSWORD" },
+        { click: { role: "button", name: "Sign in" } },
+      ],
+      done: { urlContains: "/dashboard" },
+    },
+  },
+};
+const verifyPlan = {
+  claims: [
+    {
+      id: "form-works",
+      behavior: "The dashboard shows its question form.",
+      entryPoint: "The dashboard.",
+      precondition: "The demo user is signed in.",
+      expected: "The form is visible and enabled.",
+      case: "Valid demo user.",
+      checks: ["browser"],
+      evidence: ["verify record"],
+      kind: "behavior",
+      required: true,
+    },
+    {
+      id: "form-looks-right",
+      behavior: "The dashboard fits desktop and phone viewports.",
+      entryPoint: "The dashboard.",
+      precondition: "The demo user is signed in.",
+      expected: "The form is readable at 1280x800 and 390x844.",
+      case: "Valid demo user.",
+      checks: ["browser"],
+      evidence: ["inspected screenshots"],
+      kind: "visual",
+      required: true,
+    },
+  ],
+  gates: [],
+  limits: [],
+};
+const demoEnv = { DEMO_PASSWORD: "verify-demo-password" };
+const uiEnv = (dir, run, args, expected = { ok: true, code: 0 }) =>
+  runCli(dir, ["--json", "--run", run, "ui", ...args], {
+    env: demoEnv,
+    timeoutMs: 60000,
+  }).then((result) => assertEnvelope(result, expected));
+const pendingFile = async (dir, run) =>
+  JSON.parse(await readRunFile(dir, run, "spyglass/result.json"));
+const subSteps = (envelope) =>
+  envelope.data.subSteps.map(({ id, status }) => `${id}:${status}`);
+
+surfaceTest(
+  "ui verify runs actions, expectations and a two-viewport proof as one step and links the claim",
+  async () => {
+    const dir = await makeRepo({
+      profile: baseProfile({ seats: demoSeat }),
+      plan: verifyPlan,
+    });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "verify-pass", "--plan", "plan.json"],
+          { env: demoEnv },
+        ),
+        { ok: true, code: 0 },
+      ).run;
+      await uiEnv(dir, run, ["login", "demo"]);
+      const verify = await uiEnv(dir, run, [
+        "verify",
+        "--open",
+        "/dashboard",
+        "--do",
+        'find label Question fill "Does the settle work?"',
+        "--expect",
+        "text=Ask a question",
+        "--expect",
+        "visible=#question",
+        "--expect",
+        "enabled=button",
+        "--expect",
+        "title=Questions",
+        "--proof",
+        "dashboard",
+        "--viewport",
+        "1280x800",
+        "--viewport",
+        "390x844",
+        "--claim",
+        "form-works",
+        "--claim",
+        "form-looks-right",
+      ]);
+      assert.deepEqual(subSteps(verify), [
+        "open:passed",
+        "do-1:passed",
+        "expect-1:passed",
+        "expect-2:passed",
+        "expect-3:passed",
+        "expect-4:passed",
+        "proof-1280x800:passed",
+        "proof-390x844:passed",
+      ]);
+      assert.ok(verify.data.claims.every((claim) => claim.ok === true));
+      const images = verify.artifacts
+        .map((a) => a.path)
+        .filter((path) => /\.png$/.test(path));
+      assert.equal(images.length, 2);
+      assert.ok(
+        images.some((path) => path.endsWith("proof-dashboard-1280x800.png")),
+      );
+      assert.ok(
+        images.some((path) => path.endsWith("proof-dashboard-390x844.png")),
+      );
+
+      const pending = await pendingFile(dir, run);
+      const works = pending.claims.find((c) => c.id === "form-works");
+      const looks = pending.claims.find((c) => c.id === "form-looks-right");
+      assert.deepEqual(works.steps, [verify.step]);
+      assert.equal(works.observed, "", "observed stays for the operator");
+      assert.equal(works.outcome, "not run");
+      assert.deepEqual(
+        looks.inspections.map(({ viewport, artifact, expected, observed }) => ({
+          viewport,
+          artifact,
+          expected,
+          observed,
+        })),
+        [
+          {
+            viewport: "1280x800",
+            artifact: images.find((p) => p.includes("1280x800")),
+            expected: "",
+            observed: "",
+          },
+          {
+            viewport: "390x844",
+            artifact: images.find((p) => p.includes("390x844")),
+            expected: "",
+            observed: "",
+          },
+        ],
+        "viewport and artifact are filled; the words stay for the operator",
+      );
+      const unobserved = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+        { ok: false, code: 2 },
+      );
+      assert.ok(
+        unobserved.data.findings.some((f) => f.code === "RESULT_SCHEMA"),
+      );
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], { env: demoEnv });
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui verify keeps passed sub-steps, fails at the first bad expectation and cannot back a claim",
+  async () => {
+    const dir = await makeRepo({
+      profile: baseProfile({ seats: demoSeat }),
+      plan: verifyPlan,
+    });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "verify-fail", "--plan", "plan.json"],
+          { env: demoEnv },
+        ),
+        { ok: true, code: 0 },
+      ).run;
+      await uiEnv(dir, run, ["login", "demo"]);
+      const failed = await uiEnv(
+        dir,
+        run,
+        [
+          "verify",
+          "--open",
+          "/dashboard",
+          "--do",
+          "find role button click --name 'Submit question'",
+          "--expect",
+          "text=Ask a question",
+          "--expect",
+          "text=This text never appears",
+          "--expect",
+          "visible=#question",
+          "--timeout-ms",
+          "600",
+          "--proof",
+          "never",
+          "--claim",
+          "form-works",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(failed.error.code, "BROWSER_EXPECTATION_FAILED");
+      assert.deepEqual(subSteps(failed), [
+        "open:passed",
+        "do-1:passed",
+        "expect-1:passed",
+        "expect-2:failed",
+        "expect-3:not run",
+        "proof:not run",
+      ]);
+      const artifacts = failed.data.artifacts;
+      assert.ok(
+        artifacts.some((a) => /\.png$/.test(a.path)),
+        "a failure screenshot is kept",
+      );
+      assert.ok(
+        artifacts.some((a) => a.kind === "page-snapshot"),
+        "a delta snapshot is kept",
+      );
+      const pending = await pendingFile(dir, run);
+      assert.deepEqual(
+        pending.claims.find((c) => c.id === "form-works").steps,
+        [],
+      );
+      assert.ok(
+        (await readRunFile(dir, run, "spyglass/log.jsonl")).includes(
+          failed.step,
+        ),
+      );
+
+      await runCli(dir, [
+        "--json",
+        "--run",
+        run,
+        "result",
+        "set",
+        "--claim",
+        "form-works",
+        "--outcome",
+        "passed",
+        "--observed",
+        "I saw the form.",
+        "--step",
+        failed.step,
+      ]);
+      const rejected = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+        { ok: false, code: 1 },
+      );
+      const named = rejected.data.findings.filter(
+        (f) => f.claim === "form-works",
+      );
+      assert.ok(
+        named.some(
+          (f) =>
+            f.code === "EXPECTATION_FAILED" &&
+            /This text never appears/.test(f.message),
+        ),
+        JSON.stringify(rejected.data.findings),
+      );
+      assert.ok(
+        named.some(
+          (f) =>
+            f.code === "EXPECTATION_NOT_RUN" &&
+            /visible=#question/.test(f.message),
+        ),
+        "the expectation that did not run is named",
+      );
+      assert.ok(named.some((f) => f.code === "FAILED_STEP"));
+    } finally {
+      if (run)
+        await runCli(dir, ["--json", "--run", run, "down"], { env: demoEnv });
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui verify refuses an action outside the origin allowlist and keeps the actions that ran",
+  async () => {
+    const { dir, run } = await upBrowserRun("verify-origin");
+    try {
+      const blocked = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--open",
+          "/login",
+          "--do",
+          "find label Email fill agent@example.test",
+          "--do",
+          "open https://example.invalid/",
+          "--do",
+          "find label Password click",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(blocked.error.code, "BROWSER_ORIGIN_BLOCKED");
+      assert.deepEqual(subSteps(blocked), [
+        "open:passed",
+        "do-1:passed",
+        "do-2:failed",
+        "do-3:not run",
+      ]);
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "ui verify --expect-focus-moved keeps both focus records and fails when focus did not move",
+  async () => {
+    const { dir, run } = await upBrowserRun("verify-focus");
+    try {
+      const moved = await ui(dir, run, [
+        "verify",
+        "--open",
+        "/login",
+        "--do",
+        "find label Email click",
+        "--expect-focus-moved",
+        "Email",
+      ]);
+      const focus = await evidenceJson(
+        dir,
+        run,
+        moved.artifacts.find((a) => a.path.endsWith("focused.json")),
+      );
+      assert.equal(focus.before, null);
+      assert.equal(focus.after.label, "Email");
+
+      const already = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--do",
+          "find label Password click",
+          "--expect-focus-moved",
+          "Email",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(already.error.code, "BROWSER_EXPECTATION_FAILED");
+      const kept = await evidenceJson(
+        dir,
+        run,
+        already.data.artifacts.find((a) => a.path.endsWith("focused.json")),
+      );
+      assert.equal(
+        kept.before.label,
+        "Email",
+        "focus was on Email before the action",
+      );
+      assert.equal(kept.after.label, "Password");
+
+      await ui(dir, run, ["open", "/login"]);
+      const wrong = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--do",
+          "find label Password click",
+          "--expect-focus-moved",
+          "Email",
+        ],
+        { ok: false, code: 1 },
+      );
+      const wrongFocus = await evidenceJson(
+        dir,
+        run,
+        wrong.data.artifacts.find((a) => a.path.endsWith("focused.json")),
+      );
+      assert.equal(wrongFocus.after.label, "Password");
+    } finally {
+      await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+surfaceTest(
+  "a viewport that fails its expectation keeps the earlier screenshots and no visual claim passes",
+  async () => {
+    const page = await servePage(
+      '<!doctype html><title>Responsive</title><style>@media (max-width: 600px){#wide{display:none}}</style><h1 id="wide">Wide layout</h1><p id="always">Always here</p>',
+    );
+    const plan = {
+      claims: [
+        {
+          id: "layout",
+          behavior: "The wide heading shows on every viewport.",
+          entryPoint: "The page.",
+          precondition: "None.",
+          expected: "The heading is visible at 1280x800 and 390x844.",
+          case: "Both viewports.",
+          checks: ["browser"],
+          evidence: ["screenshots"],
+          kind: "visual",
+          required: true,
+        },
+      ],
+      gates: [],
+      limits: [],
+    };
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile, plan });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "up",
+          "--run",
+          "viewport-fail",
+          "--plan",
+          "plan.json",
+        ]),
+        { ok: true, code: 0 },
+      ).run;
+      const failed = await ui(
+        dir,
+        run,
+        [
+          "verify",
+          "--open",
+          "/",
+          "--expect",
+          "visible=#wide",
+          "--timeout-ms",
+          "500",
+          "--proof",
+          "layout",
+          "--viewport",
+          "1280x800",
+          "--viewport",
+          "390x844",
+          "--claim",
+          "layout",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(failed.error.code, "BROWSER_EXPECTATION_FAILED");
+      const images = failed.data.artifacts
+        .map((a) => a.path)
+        .filter((p) => /\.png$/.test(p));
+      assert.ok(
+        images.some((p) => p.endsWith("proof-layout-1280x800.png")),
+        "the first viewport screenshot stays",
+      );
+      assert.ok(
+        !images.some((p) => p.endsWith("proof-layout-390x844.png")),
+        "no proof for the failed viewport",
+      );
+      assert.equal(images.length, 2, "one proof and one failure screenshot");
+      const pending = await pendingFile(dir, run);
+      assert.deepEqual(pending.claims[0].steps, []);
+      assert.deepEqual(pending.claims[0].inspections, []);
+      assert.equal(pending.claims[0].outcome, "not run");
+
+      // ui proof takes the same viewport and expectation options.
+      const proof = await ui(dir, run, [
+        "proof",
+        "again",
+        "--viewport",
+        "1280x800",
+        "--expect",
+        "visible=#wide",
+      ]);
+      assert.ok(
+        proof.artifacts.some((a) =>
+          a.path.endsWith("proof-again-1280x800.png"),
+        ),
+      );
+      const bad = await ui(
+        dir,
+        run,
+        [
+          "proof",
+          "phone",
+          "--viewport",
+          "390x844",
+          "--expect",
+          "visible=#wide",
+          "--timeout-ms",
+          "400",
+        ],
+        { ok: false, code: 1 },
+      );
+      assert.equal(bad.error.code, "BROWSER_EXPECTATION_FAILED");
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+      await page.close();
+    }
+  },
+);
+
+surfaceTest(
+  "a proof right after ui open does not wait for the first browser frame",
+  async () => {
+    // A new headless page can make its first screenshot wait about 10 seconds.
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const { dir, run } = await upBrowserRun(`first-frame-${attempt}`);
+      try {
+        await ui(dir, run, ["open", "/login"]);
+        const proof = await ui(dir, run, ["proof", "first-frame"]);
+        const log = (await readRunFile(dir, run, "spyglass/log.jsonl"))
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line));
+        const step = log.find((entry) => entry.id === proof.step);
+        assert.ok(
+          step.durationMs < 5000,
+          `attempt ${attempt}: the proof took ${step.durationMs} ms`,
+        );
+      } finally {
+        await runCli(dir, ["--json", "--run", run, "down"]);
+        await removeRepo(dir);
+      }
+    }
+  },
+);
+
+surfaceTest(
+  "the browser proxy stays up when clients reset their connections",
+  async () => {
+    const { dir, run } = await upBrowserRun("proxy-reset");
+    try {
+      await ui(dir, run, ["open", "/login"]);
+      const record = JSON.parse(
+        await readFile(await runRecord(dir, run), "utf8"),
+      );
+      const { port, pid } = record.browserProxy;
+      // A browser resets connections as it starts and as it closes pages.
+      for (let i = 0; i < 100; i++)
+        await new Promise((resolve) => {
+          const socket = connect(port, "127.0.0.1", () => {
+            socket.write(
+              "CONNECT blocked.example.invalid:443 HTTP/1.1\r\nHost: blocked.example.invalid:443\r\n\r\n",
+            );
+            socket.resetAndDestroy();
+            resolve();
+          });
+          socket.on("error", () => resolve());
+        });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assert.doesNotThrow(
+        () => process.kill(pid, 0),
+        "the proxy process ended",
+      );
+      await ui(dir, run, ["get", "title"]);
     } finally {
       await runCli(dir, ["--json", "--run", run, "down"]);
       await removeRepo(dir);

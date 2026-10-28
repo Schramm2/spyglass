@@ -431,14 +431,14 @@ function serve(configFile: string): void {
       client.pipe(upstream);
       upstream.pipe(client);
     });
-    upstream.once("error", () => {
+    upstream.on("error", () => {
       clearTimeout(timer);
       if (!client.destroyed)
         client.end(
           "HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
         );
     });
-    client.once("error", () => upstream.destroy());
+    client.on("error", () => upstream.destroy());
     client.once("close", () => upstream.destroy());
   });
 
@@ -525,7 +525,7 @@ function serve(configFile: string): void {
           "HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
         );
     });
-    client.once("error", () => forward.destroy());
+    client.on("error", () => forward.destroy());
     client.once("close", () => forward.destroy());
     forward.end();
   });
@@ -579,6 +579,9 @@ function serve(configFile: string): void {
   );
   server.on("connection", (socket) => {
     idle.refresh();
+    // A browser can reset a connection at any time. An error with no handler
+    // would end the proxy process and fail every later browser command.
+    socket.on("error", () => socket.destroy());
     sockets.add(socket);
     socket.once("close", () => sockets.delete(socket));
   });
@@ -943,14 +946,7 @@ export async function browserProxyEvents(
       3,
     );
   }
-  // One slow reply is not a dead proxy: a browser that starts can keep the
-  // machine busy for longer than one reply may take. A reply from another
-  // process, or no reply after three tries, fails the check.
-  let state = await healthRequest(saved.port, config.nonce, after);
-  for (let attempt = 1; !state && attempt < 3; attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    state = await healthRequest(saved.port, config.nonce, after);
-  }
+  const state = await healthRequest(saved.port, config.nonce, after);
   if (
     !state ||
     state.pid !== saved.pid ||
@@ -959,7 +955,9 @@ export async function browserProxyEvents(
   ) {
     throw proxyFault(
       "BROWSER_PROXY_UNAVAILABLE",
-      "The browser proxy health check failed.",
+      !state
+        ? `The browser proxy on port ${saved.port} did not answer its health check.`
+        : `The browser proxy on port ${saved.port} answered as another process or instance, not as this run's proxy.`,
       "Run spyglass down and create a new run.",
       3,
     );

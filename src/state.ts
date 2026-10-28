@@ -483,6 +483,28 @@ export function linkPendingResult(
     }
     const row = cite(id);
     if (links.independentRead) row.independentRead = step.id;
+    // A visual claim gets one inspection per viewport that the step captured.
+    // The viewport and the screenshot are facts of the run; what the image
+    // shows stays for the operator to write.
+    const shots = step.data?.viewports;
+    if (
+      run.plan.claims.find((item) => item.id === id)?.kind === "visual" &&
+      Array.isArray(shots)
+    ) {
+      row.inspections ??= [];
+      for (const shot of shots as { viewport?: string; artifact?: string }[])
+        if (
+          shot.viewport &&
+          shot.artifact &&
+          !row.inspections.some((item) => item.artifact === shot.artifact)
+        )
+          row.inspections.push({
+            viewport: shot.viewport,
+            expected: "",
+            observed: "",
+            artifact: shot.artifact,
+          });
+    }
     summary.claims.push(id);
   }
   for (const { id, state } of links.controls) {

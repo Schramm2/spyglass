@@ -8,7 +8,8 @@
 // 150 ms. With --gate-cold, also exits 1 when the cold start is over 100 ms.
 //
 //   node bench/overhead.mjs [--pairs N] [--gate-cold] [--label NAME] [--no-write]
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   CLI,
@@ -46,6 +47,7 @@ const label = option("--label", "");
 await requireBuild();
 const repo = await makeRepo({ profile: baseProfile() });
 const env = { XDG_STATE_HOME: stateHome(repo) };
+const shotDir = await mkdtemp(join(tmpdir(), "spyglass-bench-"));
 const spyglass = (args) =>
   timed(process.execPath, [CLI, ...args, "--json"], { cwd: repo, env });
 
@@ -127,6 +129,47 @@ try {
       spyglass: ["ui", "expect", "--title", "Spyglass demo", "--run", "bench"],
       direct: [["get", "title"]],
     },
+    {
+      name: "ui verify (5 actions + proof)",
+      spyglass: [
+        "ui",
+        "verify",
+        "--do",
+        "get title",
+        "--do",
+        "get url",
+        "--do",
+        "is visible input[name=email]",
+        "--do",
+        "get count input",
+        "--do",
+        "get text h1",
+        "--proof",
+        "bench",
+        "--run",
+        "bench",
+      ],
+      // The same browser work in one direct batch: the five actions, then the
+      // commands of a proof.
+      direct: () => [
+        ["get", "title"],
+        ["get", "url"],
+        ["is", "visible", "input[name=email]"],
+        ["get", "count", "input"],
+        ["get", "text", "h1"],
+        ["snapshot", "-i", "-c", "--delta"],
+        ["get", "url"],
+        ["get", "title"],
+        ["console", "--clear"],
+        ["errors", "--clear"],
+        ["network", "requests", "--clear"],
+        [
+          "eval",
+          "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+        ],
+        ["screenshot", join(shotDir, "direct.png")],
+      ],
+    },
   ];
 
   const measured = [];
@@ -139,10 +182,14 @@ try {
       });
       continue;
     }
-    await direct(scenario.direct);
+    const commands = () =>
+      typeof scenario.direct === "function"
+        ? scenario.direct()
+        : scenario.direct;
+    await direct(commands());
     const rows = [];
     for (let i = 0; i < pairs; i++) {
-      const base = await direct(scenario.direct);
+      const base = await direct(commands());
       if (base.code !== 0)
         throw new Error(`direct ${scenario.name} failed: ${base.stdout}`);
       const through = await spyglass(scenario.spyglass);
@@ -257,6 +304,7 @@ try {
 } finally {
   await spyglass(["down", "--run", "bench"]).catch(() => undefined);
   await removeRepo(repo);
+  await rm(shotDir, { recursive: true, force: true });
 }
 if (failure) {
   console.error(failure.message);
