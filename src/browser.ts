@@ -480,8 +480,8 @@ function expiryText(ctx: Context): string {
     ? `${Math.round(idle / 60_000)} min`
     : `${Math.round(idle / 1000)} s`;
 }
-const EXPIRED_NEXT =
-  "Run the ui command again to start a new browser for this run. Sign in again first with spyglass ui login <seat> when the seat needs it.";
+const expiredNext = (run: string, seat: string): string =>
+  `Run spyglass ui --run ${run} --seat ${seat} snapshot to start a new browser for this seat. Sign in again first with spyglass ui --run ${run} login ${seat} when the seat needs it.`;
 // agent-browser shuts an idle daemon down and discards the seat's pages and
 // sign-in state; its next command would silently start a signed-out browser.
 // Probe only the seat this command uses, and only when it may have expired,
@@ -517,7 +517,7 @@ async function expireIdleBrowsers(
     throw new Fault(
       "BROWSER_EXPIRED",
       `The run browser for seat ${seat} shut down after ${expiryText(ctx)} without a ui command. Its pages and sign-in state are gone.`,
-      EXPIRED_NEXT,
+      expiredNext(ctx.run.id, seat),
       3,
       { expiredSeats: expired },
     );
@@ -1152,7 +1152,7 @@ function selectedSeat(
       throw new Fault(
         "BROWSER_SEAT",
         "Missing seat after --seat.",
-        "Use spyglass ui --seat <seat> snapshot.",
+        "Use spyglass ui --seat SEAT snapshot, with a seat name from the profile.",
       );
     rest.splice(0, 2);
     seat = value;
@@ -1178,7 +1178,7 @@ async function proof(
       label: safeLabel(label),
       seat,
       pageContent: true,
-      results: clean(ctx, shot.results),
+      observation: shot.observation,
       artifacts: shot.artifacts,
     };
   } catch (error) {
@@ -2130,7 +2130,7 @@ async function captureVerifyFailure(
   ctx: Context,
   id: Identity,
   domains: string,
-): Promise<void> {
+): Promise<PageObservation | undefined> {
   const image = proofPath(ctx, "verify-failure");
   try {
     const result = await run(
@@ -2140,31 +2140,37 @@ async function captureVerifyFailure(
       [
         ["get", "url"],
         ["get", "title"],
+        ["eval", focusedElementScript],
         ["snapshot", "-i", "-c", "--delta"],
+        ["network", "requests"],
         frameCommand,
         ["screenshot", image],
+        ["console"],
         ["console", "--clear"],
+        ["errors"],
         ["errors", "--clear"],
       ],
       30000,
     );
-    imageArtifact(ctx, image, "verify-failure.png");
-    const snapshot = result.data.find(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        (item as Record<string, unknown>).command === "snapshot",
+    const picture = imageArtifact(ctx, image, "verify-failure.png");
+    const snapshot = (result.data as Row[]).find(
+      (item) => item?.command?.[0] === "snapshot",
     );
-    ctx.artifact(
+    const snapshotArtifact = ctx.artifact(
       "verify-failure-snapshot.json",
       snapshot ?? result.data,
       "page-snapshot",
     );
-    ctx.artifact(
+    const page = ctx.artifact(
       "verify-failure-page.json",
       { pageContent: true, results: clean(ctx, result.data) },
       "page-content",
     );
+    return observationFrom(ctx, result.data, [
+      String(picture.path),
+      snapshotArtifact.path,
+      page.path,
+    ]);
   } catch (error) {
     rmSync(image, { force: true });
     ctx.artifact(
@@ -2176,12 +2182,157 @@ async function captureVerifyFailure(
       },
       "page-content",
     );
+    return undefined;
   }
 }
+/**
+ * The compact picture of a page that a ui command returns first. The full
+ * snapshot stays in an artifact when it is longer than the line budget, so a
+ * model reads a few lines, not a page tree.
+ */
+const OBSERVATION_LINE_BUDGET = 40;
+interface PageObservation {
+  url?: string;
+  title?: string;
+  focused: string | null;
+  consoleErrors: number;
+  failedRequests: number;
+  interactiveCount: number;
+  changedLines: number;
+  artifacts: string[];
+}
+type Row = {
+  command?: string[];
+  result?: Record<string, unknown>;
+  success?: boolean;
+};
+/** The commands that an observation reads, without clearing anything. */
+const observationCommands = (): Command[] => [
+  ["get", "url"],
+  ["get", "title"],
+  ["eval", focusedElementScript],
+  ["console"],
+  ["errors"],
+  ["network", "requests"],
+];
+function snapshotParts(item: Row | undefined): {
+  text: string;
+  refs: Record<string, { role?: string }>;
+} {
+  const raw = item?.result?.snapshot;
+  const text =
+    typeof raw === "string"
+      ? raw
+      : typeof (raw as { tree?: unknown } | undefined)?.tree === "string"
+        ? String((raw as { tree: string }).tree)
+        : "";
+  const refs =
+    (item?.result?.refs as Record<string, { role?: string }> | undefined) ??
+    (raw as { refs?: Record<string, { role?: string }> } | undefined)?.refs ??
+    {};
+  return { text, refs };
+}
+function observationFrom(
+  ctx: Context,
+  items: unknown[],
+  artifacts: string[],
+): PageObservation {
+  const rows = items as Row[];
+  const find = (head: string, sub?: string) =>
+    rows.find(
+      (row) =>
+        row?.success !== false &&
+        row?.command?.[0] === head &&
+        (sub === undefined || row.command[1] === sub),
+    );
+  const text = (value: unknown) =>
+    typeof value === "string" && value ? redactText(ctx, value) : undefined;
+  const focus = rows.find(
+    (row) =>
+      row?.command?.[0] === "eval" && row.command[1] === focusedElementScript,
+  )?.result?.result as { label?: string } | null | undefined;
+  const messages =
+    (find("console")?.result?.messages as
+      Array<{ type?: string }> | undefined) ?? [];
+  const errors =
+    (find("errors")?.result?.errors as unknown[] | undefined) ?? [];
+  const requests =
+    (find("network")?.result?.requests as
+      | Array<{ status?: number; failed?: boolean; errorText?: string }>
+      | undefined) ?? [];
+  const snapshot = snapshotParts(find("snapshot"));
+  return {
+    url: text(find("get", "url")?.result?.url),
+    title: text(find("get", "title")?.result?.title),
+    focused: focus ? (text(focus.label) ?? "") : null,
+    consoleErrors:
+      messages.filter((message) => message.type === "error").length +
+      errors.length,
+    failedRequests: requests.filter(
+      (request) =>
+        (typeof request.status === "number" && request.status >= 400) ||
+        request.failed === true ||
+        Boolean(request.errorText),
+    ).length,
+    interactiveCount: Object.values(snapshot.refs).filter(
+      (ref) => ref.role && interactiveRoles.has(ref.role),
+    ).length,
+    changedLines: snapshot.text
+      ? snapshot.text.split("\n").filter(Boolean).length
+      : 0,
+    artifacts,
+  };
+}
+/** The state of the page now, for a step that took no proof. */
+async function observePage(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+): Promise<PageObservation | undefined> {
+  try {
+    const result = await run(
+      ctx,
+      id,
+      domains,
+      [...observationCommands(), ["snapshot", "-i", "-c"]],
+      30000,
+    );
+    return observationFrom(ctx, result.data, []);
+  } catch {
+    return undefined;
+  }
+}
+/**
+ * Keep a long snapshot out of the output: a preview stays in the result and
+ * the whole tree goes to an artifact.
+ */
+function boundSnapshot(ctx: Context, item: Row | undefined): string[] {
+  if (!item?.result) return [];
+  const { text } = snapshotParts(item);
+  const lines = text.split("\n");
+  if (lines.length <= OBSERVATION_LINE_BUDGET) return [];
+  const artifact = ctx.artifact("snapshot.json", item, "page-snapshot");
+  const preview =
+    lines.slice(0, OBSERVATION_LINE_BUDGET).join("\n") +
+    `\n… ${lines.length - OBSERVATION_LINE_BUDGET} more lines in ${artifact.path}`;
+  const raw = item.result.snapshot;
+  // The element list names every element: it stays in the artifact too.
+  delete item.result.refs;
+  item.result.snapshot =
+    typeof raw === "string"
+      ? preview
+      : (() => {
+          const { refs: _refs, ...rest } = raw as Record<string, unknown>;
+          return { ...rest, tree: preview, truncated: true };
+        })();
+  return [artifact.path];
+}
+
 interface ProofResult {
   picture: Record<string, unknown>;
   artifacts: Record<string, unknown>[];
   results: unknown[];
+  observation: PageObservation;
 }
 async function captureProof(
   ctx: Context,
@@ -2198,18 +2349,20 @@ async function captureProof(
       ["snapshot", "-i", "-c", "--delta"],
       ["get", "url"],
       ["get", "title"],
+      // Read each list before it is cleared: a clear returns no entries.
+      ["console"],
       ["console", "--clear"],
+      ["errors"],
       ["errors", "--clear"],
+      ["eval", focusedElementScript],
+      ["network", "requests"],
       ["network", "requests", "--clear"],
       frameCommand,
       ["screenshot", image],
     ]);
     const picture = imageArtifact(ctx, image, "proof-" + name + ".png");
-    const snapshot = result.data.find(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        (item as Record<string, unknown>).command === "snapshot",
+    const snapshot = (result.data as Row[]).find(
+      (item) => item?.command?.[0] === "snapshot",
     );
     const snapshotArtifact = ctx.artifact(
       "proof-" + name + "-snapshot.json",
@@ -2234,6 +2387,11 @@ async function captureProof(
         unknown
       >[],
       results: result.data,
+      observation: observationFrom(ctx, result.data, [
+        String(picture.path),
+        String((snapshotArtifact as { path: string }).path),
+        String((details as { path: string }).path),
+      ]),
     };
   } catch (error) {
     rmSync(image, { force: true });
@@ -2279,6 +2437,7 @@ async function runVerify(
   const extra: Record<string, unknown> = {};
   const outcome: { failure?: Fault } = {};
   let last: Observation = {};
+  let page: PageObservation | undefined;
   const trackFailure = (step: SubStep | undefined, error: unknown) => {
     const failure = error instanceof Fault ? error : fault(error);
     outcome.failure = failure;
@@ -2475,7 +2634,8 @@ async function runVerify(
     if (!plan.deferExpects) await expectAll(plan.expects, expectSteps);
     if (plan.proof !== undefined) {
       if (!plan.viewports.length) {
-        await captureProof(ctx, seat, id, domains, plan.proof);
+        page = (await captureProof(ctx, seat, id, domains, plan.proof))
+          .observation;
         proofSteps[0]!.status = "passed";
       } else
         for (let i = 0; i < plan.viewports.length; i++) {
@@ -2500,6 +2660,7 @@ async function runVerify(
               plan.proof,
               `-${viewport.label}`,
             );
+            page = shot.observation;
             viewports.push({
               viewport: viewport.label,
               artifact: String(shot.picture.path),
@@ -2516,12 +2677,13 @@ async function runVerify(
         }
     }
     await checkProxy(ctx, proxyAfter);
+    page ??= await observePage(ctx, id, domains);
   } catch (error) {
     trackFailure(
       steps.find((step) => step.status === "failed"),
       error,
     );
-    await captureVerifyFailure(ctx, id, domains);
+    page = await captureVerifyFailure(ctx, id, domains);
   }
 
   const failure = outcome.failure;
@@ -2547,6 +2709,7 @@ async function runVerify(
     summary: `${passed ? "PASS" : "FAIL"} ${steps
       .map((step) => `${step.id}:${step.status}`)
       .join(" ")}`,
+    ...(page ? { observation: page } : {}),
     seat,
     pageContent: true,
     passed,
@@ -2625,7 +2788,7 @@ export async function browser(
         throw new Fault(
           "BROWSER_SEAT",
           "Missing seat after login.",
-          "Use spyglass ui login <seat>.",
+          "Use spyglass ui login SEAT, with a seat name from the profile.",
         );
       if (!ctx.run.profile.seats[name])
         throw new Fault(
@@ -2759,6 +2922,9 @@ export async function browser(
     }
     let result: { reply: Reply; data: unknown[] };
     let settled: Record<string, unknown> | undefined;
+    // A snapshot also reads the facts of an observation in the same call.
+    const observing = commands.length === 1 && commands[0]![0] === "snapshot";
+    if (observing) commands.push(...observationCommands());
     try {
       result = await run(ctx, id, policy.domains, commands);
       if (wantSettle) {
@@ -2776,7 +2942,16 @@ export async function browser(
     if (url) checkUrl(ctx, url);
     ctx.run.activeSeat = seat;
     saveRun(ctx.run);
+    let observation: PageObservation | undefined;
+    if (observing) {
+      const rows = result.data as Row[];
+      // Count first: the bound drops the element list from the output.
+      observation = observationFrom(ctx, rows, []);
+      observation.artifacts = boundSnapshot(ctx, rows[0]);
+      result = { ...result, data: [rows[0]] };
+    }
     return {
+      ...(observation ? { observation } : {}),
       seat,
       pageContent: true,
       currentUrl: url ? redactText(ctx, url) : undefined,
@@ -2886,7 +3061,12 @@ export async function browserDoctor(
         { seat },
       );
     if (meta.active !== true && (!proxyLive || stale)) {
-      sessions.push({ seat, active: false, expired: true, next: EXPIRED_NEXT });
+      sessions.push({
+        seat,
+        active: false,
+        expired: true,
+        next: expiredNext(ctx.run.id, seat),
+      });
       continue;
     }
     if (meta.active !== true)

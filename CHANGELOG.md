@@ -92,8 +92,21 @@ This file records the notable changes to Spyglass. The format follows
   `bench/overhead.mjs` and `bench/journey.mjs` measure the added time and a
   12-claim journey.
 
+- `ui snapshot`, `ui proof` and `ui verify` return `data.observation`: the URL
+  and title, the focused element, the counts of console errors, failed
+  requests and interactive elements, the changed lines and the artifacts, in
+  at most 40 lines. The whole snapshot stays in the artifact `snapshot.json`.
+- `replay --from RUN [--failed-only] [--execute]` lists, or runs again, the
+  `check`, `exec`, `api`, `db` and `ui` steps that the claims of an earlier run
+  cite. Each replayed step is a step of the new run and links to the same
+  claim. Spyglass skips a step with a masked secret, stops at the first failed
+  step and sets `failedRun` and `failedStep` on a control that the earlier run
+  failed. It writes no observed text and no outcome.
+
 ### Changed
 
+- The `next` action of a failed command names the run, the seat and the flags
+  that it needs, so it can be run as written.
 - `doctor` runs its independent probes at the same time.
 - A `ui` command no longer loads the HTTP client library (about 25 ms); the
   added time of `ui get title` fell from about 105 ms to about 85 ms at the

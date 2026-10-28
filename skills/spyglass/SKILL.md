@@ -235,7 +235,14 @@ spyglass --run <run-id> finish [--cleanup <cleanup-check>]
 `finish` runs `result`, `doctor`, the cleanup check, `down` and `report` in order,
 and records each as its own step. The first failed stage stops it, writes no
 report and names the repair; fix it and run `finish` again. You can still run
-`result`, `doctor`, `down` and `report` one by one:
+`result`, `doctor`, `down` and `report` one by one.
+
+To check a fix against a failed run, create a new run, then use
+`spyglass --run <new-run> replay --from <old-run> --failed-only` to list the
+steps that the failed claims cite. Add `--execute` to run them again. Each step
+links to the same claim, a step with a masked secret is skipped, and the first
+failed step stops the call. Write `observed` and the outcome yourself with
+`result set`; `replay` never writes them.
 
 ```sh
 spyglass --run <run-id> down

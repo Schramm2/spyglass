@@ -26,6 +26,7 @@ All runtime code is in `src/`. Each command loads only the module it needs.
 | `src/export-schemas.ts` | Build step that writes `schemas/*.schema.json` | |
 | `src/profile.ts` | Profile discovery (`init`), location, loading and `${...}` templates | `init`, `locateProfile`, `loadProfile`, `template` |
 | `src/state.ts` | Run and step records, source identity and its stat table, the lock, the per-command `Context` and the links from a step into the pending result | `Run`, `Step`, `Artifact`, `Context`, `source`, `sourceChanges`, `assertSource`, `linkPendingResult`, `lock`, `stateRoot` |
+| `src/replay.ts` | `replay`: plans the steps that an earlier run cited, then runs each as its own command of the new run | `replay` |
 | `src/lifecycle.ts` | `up` (with gate citation and `--warm`), `status`, `doctor`, `down` and `finish`, and the owned-process stop | `allocate`, `launch`, `doctor`, `down`, `finishRun`, `status`, `capabilities`, `stopOwned` |
 | `src/supervisor.ts` | Separate process that holds the owned app's process group and writes its masked log | |
 | `src/process.ts` | Child commands with bounds, and process identity checks | `runCommand`, `processIdentity`, `processGroupMembers` |

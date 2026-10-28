@@ -39,6 +39,8 @@ Commands:
   result set --claim ID ...    Edit the pending result with flags
   down                         Clean up this run's owned resources
   finish [--cleanup CHECK]     Run result, doctor, down and report in order
+  replay --from RUN [--failed-only] [--execute]
+                               List or run the steps that RUN's claims cite
   report                       Write an offline evidence report
 
 Step flags on ui, api, db, check, exec, evidence: --claim ID --independent-read
@@ -208,6 +210,25 @@ function render(data: Record<string, unknown>): string {
       : text;
   return tail ? `${body}\n${tail}` : body;
 }
+// A next action names the run it belongs to, so a person or an agent can copy
+// it and run it as written even when several runs exist.
+const RUN_COMMANDS =
+  "ui|exec|check|evidence|artifact|result|report|api|db|ps|logs|mark|status|down|doctor|finish|replay";
+function concrete(next: string, id: string | undefined): string {
+  if (!id) return next;
+  return next
+    .replace(/--run <id>/g, `--run ${id}`)
+    .split(/(?<=\.)\s+/)
+    .map((sentence) =>
+      sentence.includes("--run ")
+        ? sentence
+        : sentence.replace(
+            new RegExp(`\\bspyglass (${RUN_COMMANDS})\\b`, "g"),
+            `spyglass $1 --run ${id}`,
+          ),
+    )
+    .join(" ");
+}
 function emit(data: Record<string, unknown>, error?: Fault): void {
   const envelope = {
     schemaVersion: 1,
@@ -223,14 +244,14 @@ function emit(data: Record<string, unknown>, error?: Fault): void {
       ? {
           code: error.code,
           message: ctx ? ctx.vault.text(error.message) : error.message,
-          next: error.next,
+          next: concrete(error.next, run?.id),
         }
       : null,
   };
   if (json) console.log(JSON.stringify(envelope));
   else if (error) {
     console.error(
-      `${error.code}: ${envelope.error?.message}\nNext: ${error.next}`,
+      `${error.code}: ${envelope.error?.message}\nNext: ${envelope.error?.next}`,
     );
     if (Object.keys(data).length) console.log(render(envelope.data));
   } else if ("help" in data) console.log(data.help);
@@ -345,6 +366,7 @@ try {
       "logs",
       "mark",
       "finish",
+      "replay",
     ];
     if (!known.includes(command))
       throw new Fault(
@@ -358,6 +380,7 @@ try {
       status: ["--work"],
       check: ["--gates", "--concurrency"],
       finish: ["--file", "--cleanup"],
+      replay: ["--from", "--failed-only", "--execute"],
       result:
         args[1] === "set"
           ? [
@@ -480,7 +503,27 @@ try {
       }
       release = lock(run, command);
       run = loadRun(repo, run.id);
-      if (command === "finish") {
+      if (command === "replay") {
+        const at = args.indexOf("--from");
+        const outcome = await (
+          await import("./replay.js")
+        ).replay(
+          run,
+          {
+            from: requireValue(args[at + 1], "--from"),
+            failedOnly: args.includes("--failed-only"),
+            execute: args.includes("--execute"),
+          },
+          (stage) => {
+            ctx = stage;
+          },
+          () => {
+            release?.();
+            release = undefined;
+          },
+        );
+        emit(outcome.data, outcome.fault);
+      } else if (command === "finish") {
         const at = (flag: string) => {
           const index = args.indexOf(flag);
           return index < 0 ? undefined : requireValue(args[index + 1], flag);

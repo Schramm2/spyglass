@@ -958,7 +958,7 @@ surfaceTest(
         { ok: false, code: 3 },
       );
       assert.equal(expired.error.code, "BROWSER_EXPIRED");
-      assert.match(expired.error.next, /ui login/);
+      assert.match(expired.error.next, /ui --run browser-idle login default/);
       assert.equal(
         await browserRunning(open.data.session),
         false,
@@ -2771,6 +2771,110 @@ surfaceTest(
       for (const name of runs)
         await runCli(dir, ["--json", "--run", name, "down"], { env: seatEnv });
       await removeRepo(dir);
+    }
+  },
+);
+
+// Slice 7 of docs/verification-speed.md: bounded observations.
+surfaceTest(
+  "ui snapshot, ui proof and ui verify return a bounded observation and keep a long snapshot in an artifact",
+  async () => {
+    const buttons = Array.from(
+      { length: 120 },
+      (_, i) => `<button>Item ${i}</button>`,
+    ).join("");
+    const page = await servePage(
+      `<!doctype html><title>Long page</title><h1>Many buttons</h1><input aria-label="Name" autofocus>${buttons}<script>console.error("page console error")</script>`,
+    );
+    const profile = baseProfile({
+      launch: { mode: "none" },
+      web: page.origin,
+      api: undefined,
+      browser: { allowedOrigins: [page.origin] },
+    });
+    const dir = await makeRepo({ profile });
+    let run;
+    try {
+      run = assertEnvelope(
+        await runCli(dir, ["--json", "up", "--run", "observe"]),
+        {
+          ok: true,
+          code: 0,
+        },
+      ).run;
+      await ui(dir, run, ["open", "/"]);
+      const snapshot = await ui(dir, run, ["snapshot", "--full"]);
+      const observation = snapshot.data.observation;
+      assert.equal(observation.title, "Long page");
+      assert.match(observation.url, /^http:\/\/127\.0\.0\.1:\d+\/$/);
+      assert.ok(
+        observation.interactiveCount >= 120,
+        `${observation.interactiveCount}`,
+      );
+      assert.equal(observation.consoleErrors, 1);
+      assert.equal(typeof observation.failedRequests, "number");
+      assert.ok(observation.changedLines > 40);
+      assert.equal(
+        observation.artifacts.length,
+        1,
+        "the full snapshot is an artifact",
+      );
+      const kept = snapshot.artifacts.find(
+        (a) => a.path === observation.artifacts[0],
+      );
+      assert.equal(kept.kind, "page-snapshot");
+      const full = JSON.stringify(await evidenceJson(dir, run, kept));
+      assert.ok(full.includes("Item 119"), "the artifact has the whole tree");
+      const shown = JSON.stringify(snapshot.data.results);
+      assert.ok(!shown.includes("Item 119"), "the output has a preview only");
+      assert.match(shown, /more lines in/);
+      assert.ok(
+        JSON.stringify(snapshot.data).length < 6000,
+        "the output stays short",
+      );
+
+      const proof = await ui(dir, run, ["proof", "long"]);
+      assert.equal(proof.data.observation.consoleErrors, 1);
+      assert.equal(proof.data.observation.title, "Long page");
+      assert.ok(
+        proof.data.observation.artifacts.some((p) => p.endsWith(".png")),
+      );
+      assert.equal(
+        proof.data.results,
+        undefined,
+        "the raw results stay in the details artifact",
+      );
+
+      const verify = await ui(dir, run, [
+        "verify",
+        "--do",
+        "get title",
+        "--expect",
+        "title=Long page",
+        "--proof",
+        "v",
+      ]);
+      assert.equal(verify.data.observation.title, "Long page");
+      const failed = await ui(
+        dir,
+        run,
+        ["verify", "--expect", "text=never shown", "--timeout-ms", "300"],
+        { ok: false, code: 1 },
+      );
+      assert.equal(failed.data.observation.title, "Long page");
+      assert.ok(
+        failed.data.observation.artifacts.some((p) => p.endsWith(".png")),
+      );
+      const bare = await ui(dir, run, ["verify", "--do", "get title"]);
+      assert.equal(
+        bare.data.observation.title,
+        "Long page",
+        "a step without a proof still observes the page",
+      );
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+      await page.close();
     }
   },
 );

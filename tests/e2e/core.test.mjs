@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { basename, isAbsolute, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -5233,6 +5240,228 @@ test("up --warm needs a web address and a known seat, and creates no run without
       code: 0,
     });
     assert.deepEqual(status.data.runs, [], "no run was created");
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
+test("every failing command names its run in the next action", async () => {
+  const { dir, run } = await readyToFinish("next-run");
+  try {
+    const invocations = [
+      ["check", "missing-check"],
+      ["check"],
+      ["exec"],
+      ["exec", "--"],
+      ["result", "--check"],
+      ["result", "set"],
+      ["result", "set", "--claim", "nobody", "--outcome", "passed"],
+      ["evidence"],
+      ["artifact"],
+      ["artifact", "no-such-file.txt"],
+      ["api"],
+      ["api", "/health", "--expect-json", "nonsense"],
+      ["db"],
+      ["logs", "--since-step", "nope"],
+      ["ps", "--wait"],
+      ["mark"],
+      ["ui"],
+      ["ui", "--seat"],
+      ["ui", "login"],
+      ["ui", "verify"],
+      ["ui", "proof"],
+      ["status", "--work", "--gate-run", "nope"],
+      ["replay"],
+      ["doctor", "--bogus"],
+    ];
+    let named = 0;
+    for (const args of invocations) {
+      const result = await runCli(dir, ["--json", ...args, "--run", run]);
+      if (!result.json || result.json.ok) continue;
+      const next = result.json.error.next;
+      assert.ok(
+        !/<[a-z-]+>/.test(next.replace(/<command>|<url>/g, "")),
+        `${args.join(" ")} leaves a placeholder: ${next}`,
+      );
+      for (const sentence of next.split(/(?<=\.)\s+/)) {
+        if (
+          /\bspyglass (ui|exec|check|result|api|db|logs|ps|status|down|doctor|finish|report)\b/.test(
+            sentence,
+          )
+        ) {
+          assert.ok(
+            sentence.includes(`--run ${run}`),
+            `${args.join(" ")} next action lacks the run: ${sentence}`,
+          );
+          named++;
+        }
+      }
+    }
+    assert.ok(named >= 8, `only ${named} next actions named the run`);
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
+test("replay lists, then runs again, the steps that an earlier run cited", async () => {
+  const profile = linkProfile();
+  const plan = {
+    claims: [
+      linkClaim("ready", "behavior", ["pass"]),
+      linkClaim("effect", "side-effect", ["exec"]),
+    ],
+    controls: linkPlan.controls,
+    gates: [],
+    limits: [],
+  };
+  const dir = await makeRepo({ profile, plan });
+  const marker = join(dir, ".spyglass/replay-marker");
+  const probe = `process.exit(require('node:fs').existsSync('.spyglass/replay-marker')?0:1)`;
+  try {
+    await mkdir(join(dir, ".spyglass"), { recursive: true });
+    await writeFile(marker, "present");
+    const up = async (name) =>
+      assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "up",
+          "--run",
+          name,
+          "--plan",
+          "plan.json",
+        ]),
+        { ok: true, code: 0 },
+      ).run;
+    const old = await up("replay-old");
+    const pass = await drive(dir, old, ["check", "pass", "--claim", "ready"]);
+    const failed = await drive(dir, old, ["check", "fail"], {
+      ok: false,
+      code: 1,
+    });
+    const effect = await drive(dir, old, [
+      "exec",
+      "--claim",
+      "effect",
+      "--",
+      "node",
+      "-e",
+      probe,
+    ]);
+    const secret = await drive(dir, old, [
+      "exec",
+      "--claim",
+      "effect",
+      "--",
+      "node",
+      "-e",
+      "0",
+      "Authorization: Bearer replay-secret-value",
+    ]);
+    await drive(dir, old, [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "failed",
+      "--observed",
+      "The check did not pass.",
+    ]);
+    await drive(dir, old, [
+      "result",
+      "set",
+      "--claim",
+      "effect",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The effect was seen.",
+    ]);
+    await drive(dir, old, [
+      "result",
+      "set",
+      "--control",
+      "ready-control",
+      "--failed-step",
+      failed.step,
+    ]);
+
+    const fresh = await up("replay-new");
+    const before = (await logged(dir, fresh)).length;
+    const listed = await drive(dir, fresh, [
+      "replay",
+      "--from",
+      old,
+      "--failed-only",
+    ]);
+    assert.deepEqual(
+      listed.data.steps.map((s) => [s.from, s.status]),
+      [[pass.step, "planned"]],
+    );
+    assert.equal(
+      (await logged(dir, fresh)).length,
+      before + 1,
+      "only the replay step is new",
+    );
+
+    const all = await drive(dir, fresh, ["replay", "--from", old]);
+    assert.deepEqual(
+      all.data.steps.map((s) => [s.from, s.status]),
+      [
+        [pass.step, "planned"],
+        [effect.step, "planned"],
+        [secret.step, "skipped"],
+      ],
+    );
+    assert.match(all.data.steps[2].reason, /masked secret/);
+    assert.match(all.error?.next ?? all.data.next, /--execute/);
+
+    const done = await drive(dir, fresh, [
+      "replay",
+      "--from",
+      old,
+      "--failed-only",
+      "--execute",
+    ]);
+    assert.equal(done.data.steps[0].status, "passed");
+    const pending = await pendingResult(dir, fresh);
+    const ready = pending.claims.find((c) => c.id === "ready");
+    assert.deepEqual(ready.steps, [done.data.steps[0].step]);
+    assert.equal(ready.outcome, "not run", "replay does not set an outcome");
+    assert.equal(ready.observed, "", "replay does not write observed text");
+    const control = pending.controls.find((c) => c.id === "ready-control");
+    assert.equal(control.failedRun, old);
+    assert.equal(control.failedStep, failed.step);
+    assert.equal(control.observedFailure, "");
+
+    await unlink(marker);
+    const stopped = await drive(
+      dir,
+      fresh,
+      ["replay", "--from", old, "--execute"],
+      { ok: false, code: 1 },
+    );
+    assert.deepEqual(
+      stopped.data.steps.map((s) => s.status),
+      ["passed", "failed", "skipped"],
+    );
+    const log = await logged(dir, fresh);
+    assert.ok(
+      log.some((s) => s.id === stopped.data.steps[1].step && s.exitCode !== 0),
+      "the failed attempt stays in the log",
+    );
+    const same = await drive(dir, fresh, ["replay", "--from", fresh], {
+      ok: false,
+      code: 2,
+    });
+    assert.equal(same.error.code, "INVALID_USAGE");
+    const unknown = await drive(
+      dir,
+      fresh,
+      ["replay", "--from", "no-such-run"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(unknown.error.code, "UNKNOWN_RUN");
   } finally {
     await removeRepo(dir);
   }

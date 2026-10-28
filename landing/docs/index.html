@@ -140,6 +140,9 @@
                   <a href="#cmd-finish"><code>finish</code></a>
                 </li>
                 <li>
+                  <a href="#cmd-replay"><code>replay</code></a>
+                </li>
+                <li>
                   <a href="#cmd-report"><code>report</code></a>
                 </li>
                 <li>
@@ -1236,6 +1239,36 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
           </article>
           <article
             class="cmd"
+            id="cmd-replay"
+            data-keys="replay earlier run failed claim steps execute control"
+          >
+            <h3><code>replay</code></h3>
+            <pre
+              class="usage"
+            ><code>spyglass replay --from RUN [--failed-only] [--execute] --run ID</code></pre>
+            <p>
+              Run again the steps that an earlier run cited, in the new run.
+              Without --execute, list the steps and the claims they would link
+              to, and start nothing. With --execute, run each check, exec, api,
+              db and ui step of the earlier run in its log order, and link it to
+              the same claim with --claim; the read after a side effect keeps
+              --independent-read. --failed-only uses only the claims that did
+              not pass. Spyglass does not run a step that has an argument it
+              masked as a secret; it lists the step as skipped. The first failed
+              step stops the call and exits with status 1; its failed attempt
+              stays in the log. A control that the earlier run failed gets
+              failedRun and failedStep. replay never writes observed text or an
+              outcome; the operator writes them with result set. A ui step that
+              needs page state from an earlier step is not rebuilt: replay it
+              with its earlier step by hand.
+            </p>
+            <div class="call">
+              <pre><code>spyglass replay --from change-41 --failed-only --execute --run change-42 --json</code></pre>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </article>
+          <article
+            class="cmd"
             id="cmd-report"
             data-keys="report html json offline"
           >
@@ -1738,6 +1771,20 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
             the page, nearest to your request first. The page snapshot stays in
             the evidence folder. Use it to tell a stale selector from a product
             defect.
+          </p>
+          <p>
+            When <code>ui snapshot</code>, <code>ui proof</code> or
+            <code>ui verify</code> ends, <code>data.observation</code> holds a
+            short block: the URL and title, the focused element, the counts of
+            console errors, failed requests and interactive elements, the
+            changed lines and the artifacts. It is at most 40 lines. A long
+            snapshot stays whole in the artifact <code>snapshot.json</code>; the
+            output keeps the first lines and the path.
+          </p>
+          <p>
+            Every failed command prints a <code>next</code> action that names
+            the run, the seat and the flags, so you can copy it and run it as
+            written.
           </p>
         </section>
 
@@ -2700,6 +2747,65 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   <td>
                     The command exits with status 2 and names the valid IDs. It
                     does not change the pending result.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Replay</td>
+                  <td>
+                    <code>replay</code> names a run that does not exist, or the
+                    same run.
+                  </td>
+                  <td>The command exits with status 2. It starts no step.</td>
+                </tr>
+                <tr>
+                  <td>Replay</td>
+                  <td>
+                    A step to replay has an argument that Spyglass masked as a
+                    secret.
+                  </td>
+                  <td>
+                    Spyglass does not run the step. It lists the step as skipped
+                    and says why, and it does not guess the value.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Replay</td>
+                  <td>A replayed step fails.</td>
+                  <td>
+                    Spyglass stops there. The failed attempt stays in the log of
+                    the new run, the later steps are not run, and the command
+                    exits with status 1.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Replay</td>
+                  <td>
+                    <code>replay</code> runs without <code>--execute</code>.
+                  </td>
+                  <td>
+                    Spyglass lists the steps and the links it would make. It
+                    starts no replayed step.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Result</td>
+                  <td>
+                    A control names an earlier run and a failed step, and the
+                    new run has replayed the passing side.
+                  </td>
+                  <td>
+                    <code>replay</code> sets <code>failedRun</code> and
+                    <code>failedStep</code> on that control. It leaves
+                    <code>observedFailure</code> and
+                    <code>observedPass</code> blank for the operator.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Operator</td>
+                  <td>A failed command prints a next action.</td>
+                  <td>
+                    The next action names the run ID, the seat and the flags, so
+                    it can be copied and run as written.
                   </td>
                 </tr>
                 <tr>

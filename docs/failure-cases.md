@@ -63,6 +63,12 @@ results and retained evidence.
 | Result | `result` or `result --check` inspects a result file with multiple independent errors (for example, a missing step on claim A and a missing inspection on claim B). | Both `result` and `result --check` report all findings together in `data.findings` with the same rules and messages, and each finding has a `repair` hint. `--check` does not record the result on the run. |
 | Result | `result` is run without `--file`. | Spyglass reads the pending result file of the run (`resultPath`). It does not read another file. |
 | Result | `result set` is given an unknown claim, gate or control ID, or an unknown outcome. | The command exits with status 2 and names the valid IDs. It does not change the pending result. |
+| Replay | `replay` names a run that does not exist, or the same run. | The command exits with status 2. It starts no step. |
+| Replay | A step to replay has an argument that Spyglass masked as a secret. | Spyglass does not run the step. It lists the step as skipped and says why, and it does not guess the value. |
+| Replay | A replayed step fails. | Spyglass stops there. The failed attempt stays in the log of the new run, the later steps are not run, and the command exits with status 1. |
+| Replay | `replay` runs without `--execute`. | Spyglass lists the steps and the links it would make. It starts no replayed step. |
+| Result | A control names an earlier run and a failed step, and the new run has replayed the passing side. | `replay` sets `failedRun` and `failedStep` on that control. It leaves `observedFailure` and `observedPass` blank for the operator. |
+| Operator | A failed command prints a next action. | The next action names the run ID, the seat and the flags, so it can be copied and run as written. |
 | Operator | A required input is missing while JSON mode is active. | Stdout contains one versioned result object, stderr contains diagnostics, and the command exits without prompting. |
 
 Regression tests also cover these review findings. Each test failed on the CLI

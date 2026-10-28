@@ -224,6 +224,15 @@ When a selector action matches no element, the error has `data.nearest`: up to
 The page snapshot stays in the evidence folder. Use it to tell a stale
 selector from a product defect.
 
+When `ui snapshot`, `ui proof` or `ui verify` ends, `data.observation` holds a
+short block: the URL and title, the focused element, the counts of console
+errors, failed requests and interactive elements, the changed lines and the
+artifacts. It is at most 40 lines. A long snapshot stays whole in the artifact
+`snapshot.json`; the output keeps the first lines and the path.
+
+Every failed command prints a `next` action that names the run, the seat and
+the flags, so you can copy it and run it as written.
+
 ### Shorter runs
 
 | Command | What it saves |
@@ -232,6 +241,7 @@ selector from a product defect.
 | `check a,b`, `check --gates [--concurrency N]` | Runs checks at the same time (default 4, up to 8). Each check is its own step and keeps its artifacts; the run lock and the log stay whole. The checks must not change the source. `--gates` runs the profile checks named like the planned gates and links each to its gate. |
 | `ui ... --relogin` | When the seat's browser expired and the seat has a login, signs the seat in again, then runs the command. The step keeps the expiry in `data.relogin`. |
 | `finish` | Runs `result`, `doctor`, `down` and `report`. |
+| `replay --from RUN [--failed-only] [--execute]` | Lists, or runs again, the `check`, `exec`, `api`, `db` and `ui` steps that the claims of an earlier run cite. Each replayed step is a step of the new run, linked to the same claim. It skips a step with a masked secret, stops at the first failed step and sets `failedRun` and `failedStep` on a control that the earlier run failed. It writes no observed text and no outcome. |
 
 `check`, `exec`, `api` and `db` read again only the source files whose size,
 modification time, change time, inode or mode changed since the last full check,
