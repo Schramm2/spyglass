@@ -6,6 +6,8 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-02
+
 ### Changed
 
 - `npm run build` removes `dist/` before it bundles the sources. A stale chunk
@@ -24,6 +26,12 @@ This file records the notable changes to Spyglass. The format follows
   that order 8 was not built.
 - `agent_docs/delivery.md` names every file that pins the tested
   `agent-browser` version.
+- The `spyglass` skill follows one run in seven steps: plan the claims, start
+  the run, prove each claim, prove the checks with controls, keep the proof on
+  the final source, record the result, and finish and clean up. Its new
+  `references/browser.md` covers the first `ui` command. The
+  `create-verification-skill` and `maintain-verification-skill` skills are
+  unchanged.
 - The source identity test now covers untracked names that look like a Git
   stage row, a `160000` entry and a `..` suffix after a tab. The source check
   keeps its two Git scans, so a file name keeps its whole identity.
@@ -258,7 +266,8 @@ This file records the notable changes to Spyglass. The format follows
 - The agent skills `spyglass`, `create-verification-skill` and
   `maintain-verification-skill`.
 
-[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/Schramm2/spyglass/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Schramm2/spyglass/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Schramm2/spyglass/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Schramm2/spyglass/compare/v1.0.0...v1.1.0
