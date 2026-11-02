@@ -6,6 +6,41 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- `npm run build` removes `dist/` before it bundles the sources. A stale chunk
+  in `dist/chunks/` can no longer stay in the build.
+- An artifact records the SHA-256 of the data that Spyglass writes. The code
+  no longer reads the new file again.
+- Secret masking sorts the registered values one time and reuses the list.
+- `db` sanitizes the statement, the role and the error text one time. It no
+  longer sanitizes the whole result on each truncation pass.
+- `exec` counts the output bytes as they arrive.
+- `landing/docs/index.html` matches `README.md`, `docs/quickstart.md` and
+  `docs/failure-cases.md` again: it has the `replay` failure case, the
+  PostgreSQL and Docker Compose rows, the two `resultRules` sentences and the
+  `replay` row of the shorter-run table.
+- `docs/verification-speed.md` records that orders 0 to 7 shipped in 1.3.0 and
+  that order 8 was not built.
+- `agent_docs/delivery.md` names every file that pins the tested
+  `agent-browser` version.
+- The source identity test now covers untracked names that look like a Git
+  stage row, a `160000` entry and a `..` suffix after a tab. The source check
+  keeps its two Git scans, so a file name keeps its whole identity.
+
+### Fixed
+
+- `replay` without `--from`, or with a flag where `--from` needs a value, now
+  exits with status 2 and `MISSING_INPUT`. Before, it read `replay` itself or
+  the flag as the run ID.
+- `evidence add` rejects an extra argument or a duplicate flag with
+  `INVALID_USAGE`.
+- A `db` command masks a secret in a URL query parameter in its recorded
+  arguments, its error text and the saved query result. `replay` treats an
+  encoded mask as a masked secret and skips that step.
+- A next action now replaces `--run ID` and `--run <id>` with the run ID, so
+  the command can be copied and run as written.
+
 ## [1.3.0] - 2026-10-28
 
 ### Added

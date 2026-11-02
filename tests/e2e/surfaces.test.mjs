@@ -2334,14 +2334,35 @@ surfaceTest(
       },
       db: { connection: "env:SPYGLASS_TEST_DATABASE_URL" },
     });
-    const dir = await makeRepo({ profile });
+    const dir = await makeRepo({
+      profile,
+      plan: {
+        claims: [
+          {
+            id: "db-ready",
+            behavior: "The database answers a read-only query.",
+            entryPoint: "db",
+            precondition: "The demo database is ready.",
+            expected: "The query returns one row.",
+            case: "The query runs normally.",
+            checks: ["db"],
+            evidence: ["retained output"],
+          },
+        ],
+      },
+    });
     let run;
+    let replayRun;
     let compose;
     try {
       compose = await startDemoDatabase(dir, project);
       const { env } = compose;
       run = assertEnvelope(
-        await runCli(dir, ["--json", "up", "--run", "db-assert"], { env }),
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "db-assert", "--plan", "plan.json"],
+          { env },
+        ),
         { ok: true, code: 0 },
       ).run;
       const db = (args, expected = { ok: true, code: 0 }) =>
@@ -2386,6 +2407,52 @@ surfaceTest(
       );
       assert.equal(record.rows[0].name, "alpha");
       assert.equal(record.assertions.at(-1).ok, false);
+
+      // A URL query secret in a database error is masked in the envelope,
+      // the step record and the saved result. The token is not a registered
+      // secret, so only the URL redaction can hide it.
+      const urlToken = "db-url-token-3f9a1c";
+      const failed = await db(
+        [`SELECT 'https://example.test/hook?apiKey=${urlToken}'::int`],
+        { ok: false, code: 1 },
+      );
+      assert.equal(failed.error.code, "DATABASE_QUERY_FAILED");
+      const failedArtifact = failed.artifacts.find(
+        (item) => item.kind === "database",
+      );
+      assert.ok(failedArtifact, "the failed query keeps its result");
+      const failedRecord = await readRunFile(
+        dir,
+        run,
+        `spyglass/${failedArtifact.path}`,
+      );
+      const failedLog = await readRunFile(dir, run, "spyglass/log.jsonl");
+      for (const [where, text] of [
+        ["the envelope", JSON.stringify(failed)],
+        ["the step record", failedLog],
+        ["the database result", failedRecord],
+      ])
+        assert.ok(
+          !text.includes(urlToken),
+          `the URL query secret leaks from ${where}`,
+        );
+      assert.match(failed.error.message, /apiKey=%5BREDACTED%5D/);
+      assert.match(failedRecord, /apiKey=%5BREDACTED%5D/);
+      // The size check throws before the query runs. The recorded argument
+      // must still hide the URL secret.
+      const hugeToken = "db-url-token-huge-7c2b";
+      const huge = `SELECT 'https://example.test/hook?apiKey=${hugeToken}'::int${" ".repeat(100_000)}`;
+      const tooLarge = await db([huge], { ok: false, code: 2 });
+      assert.equal(tooLarge.error.code, "DATABASE_QUERY_TOO_LARGE");
+      const hugeLog = await readRunFile(dir, run, "spyglass/log.jsonl");
+      for (const [where, text] of [
+        ["the envelope", JSON.stringify(tooLarge)],
+        ["the step record", hugeLog],
+      ])
+        assert.ok(
+          !text.includes(hugeToken),
+          `the oversized SQL secret leaks from ${where}`,
+        );
       await db(["SELECT 'alpha' AS name", "--expect-col", "missing=1"], {
         ok: false,
         code: 1,
@@ -2437,7 +2504,65 @@ surfaceTest(
         ok: false,
         code: 1,
       });
+
+      // replay skips a cited step whose recorded argument holds an encoded
+      // URL mask, and it does not run that step.
+      assertEnvelope(
+        await runCli(
+          dir,
+          [
+            "--json",
+            "--run",
+            run,
+            "result",
+            "set",
+            "--claim",
+            "db-ready",
+            "--step",
+            failed.step,
+          ],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      );
+      replayRun = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "up", "--run", "db-replay", "--plan", "plan.json"],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      ).run;
+      const replayed = assertEnvelope(
+        await runCli(
+          dir,
+          ["--json", "--run", replayRun, "replay", "--from", run, "--execute"],
+          { env },
+        ),
+        { ok: true, code: 0 },
+      );
+      assert.deepEqual(
+        replayed.data.steps.map((item) => [item.command, item.status]),
+        [["db", "skipped"]],
+      );
+      assert.match(replayed.data.steps[0].reason, /masked secret/);
+      const replayLog = (
+        await readRunFile(dir, replayRun, "spyglass/log.jsonl")
+      )
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+      assert.deepEqual(
+        replayLog.map((step) => step.command),
+        ["up", "replay"],
+        "a skipped replay step is not executed",
+      );
     } finally {
+      if (replayRun)
+        await runCli(dir, ["--json", "--run", replayRun, "down"], {
+          env: compose?.env,
+        });
       if (run)
         await runCli(dir, ["--json", "--run", run, "down"], {
           env: compose?.env,
