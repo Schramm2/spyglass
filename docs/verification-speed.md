@@ -278,6 +278,9 @@ comparable and keep the record.
 |     7 | `replay --from RUN`, bounded observations, and exact repair commands on every `Fault`                                                                    | Faster defect re-verification and lower token use        | 30% fewer tokens                    | 1, 3                                        |
 |     8 | Local server (`spyglass serve`)                                                                                                                          | Sub-5 ms CLI dispatch                                    | Only if Slice 6 misses the p95 gate | 6                                           |
 
+Orders 0 to 7 shipped in v1.3.0. Order 8 was not needed: Slice 6 passed the
+overhead gate, so `spyglass serve` was not built.
+
 Every slice starts with its failure case and its end-to-end test. Add the row
 to [failure-cases.md](failure-cases.md) first. Then write the test. Then
 write the code. When a slice changes a command, option, output field or schema,
@@ -424,8 +427,8 @@ measured on another machine; the new build keeps it under 100 ms.
 
 ## 8. Failure cases to add first
 
-These cases do not exist in [failure-cases.md](failure-cases.md) today. Each
-new command or option in section 5 needs at least one.
+These cases were added to [failure-cases.md](failure-cases.md) in 1.3.0. Each
+new command or option in section 5 has at least one.
 
 | Area     | Failure case                                                                                                                                                       | Required result                                                                                                                                                       |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

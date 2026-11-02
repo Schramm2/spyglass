@@ -28,7 +28,7 @@ export function fault(error: unknown): Fault {
       );
 }
 export function requireValue(value: string | undefined, name: string): string {
-  if (!value)
+  if (!value || value.startsWith("--"))
     throw new Fault(
       "MISSING_INPUT",
       `Missing ${name}.`,

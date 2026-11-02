@@ -363,7 +363,8 @@ spyglass status --run terminal-trial</code></pre>
             you write it.
           </p>
           <p>
-            Open
+            The <code>resultRules</code> that <code>up</code> printed list what
+            this plan's claim and control need. Open
             <code>.spyglass/runs/terminal-trial/spyglass/result.json</code> in
             your editor. Set <code>operator</code> to <code>human</code>. For
             <code>health-ready</code>, set <code>outcome</code> to
@@ -546,6 +547,21 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
                   <td>
                     Runs <code>result</code>, <code>doctor</code>,
                     <code>down</code> and <code>report</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>replay --from RUN [--failed-only] [--execute]</code>
+                  </td>
+                  <td>
+                    Lists, or runs again, the <code>check</code>,
+                    <code>exec</code>, <code>api</code>, <code>db</code> and
+                    <code>ui</code> steps that the claims of an earlier run
+                    cite. Each replayed step is a step of the new run, linked to
+                    the same claim. It skips a step with a masked secret, stops
+                    at the first failed step and sets <code>failedRun</code> and
+                    <code>failedStep</code> on a control that the earlier run
+                    failed. It writes no observed text and no outcome.
                   </td>
                 </tr>
               </tbody>
@@ -1437,17 +1453,22 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
                 </tr>
                 <tr>
                   <td>PostgreSQL</td>
-                  <td><code>db 'SELECT ...' --expect-rows 1</code></td>
                   <td>
-                    One statement in a read-only transaction, with rows and role
-                    limits
+                    <code
+                      >db 'SELECT ...' --expect-rows 1 --expect-col
+                      name=alpha</code
+                    >
+                  </td>
+                  <td>
+                    One statement in a read-only transaction, with rows,
+                    assertions and role limits
                   </td>
                 </tr>
                 <tr>
                   <td>Docker Compose</td>
                   <td>
-                    <code>ps</code>, <code>mark LABEL</code>,
-                    <code>logs SERVICE --since LABEL</code>
+                    <code>ps --wait</code>, <code>mark LABEL</code>,
+                    <code>logs SERVICE --since-step ID --grep PATTERN</code>
                   </td>
                   <td>Project-scoped status and timestamped logs</td>
                 </tr>
@@ -2086,10 +2107,13 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
             <code>--run ID</code> selects a run across shell calls. You can also
             set <code>SPYGLASS_RUN</code>; <code>--run</code> has priority.
             <code>spyglass status --run ID</code> shows the handoff state of a
-            run. <code>completedChecks.childExitCode</code> is the child process
-            exit code; <code>completedChecks.spyglassExitCode</code> is the
-            Spyglass command exit code. A child can exit zero while Spyglass
-            rejects failed assertions. The earlier <code>exitCode</code> and
+            run. Its <code>resultRules</code>, also in the output of
+            <code>up</code>, list what this plan's claims, controls and gates
+            need in the result. <code>completedChecks.childExitCode</code> is
+            the child process exit code;
+            <code>completedChecks.spyglassExitCode</code> is the Spyglass
+            command exit code. A child can exit zero while Spyglass rejects
+            failed assertions. The earlier <code>exitCode</code> and
             <code>commandExitCode</code> fields remain as aliases.
           </p>
         </section>
@@ -2206,6 +2230,20 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   </td>
                 </tr>
                 <tr>
+                  <td>Source</td>
+                  <td>
+                    An untracked file name starts like a Git stage row, for
+                    example <code>100644 &lt;hash&gt; 0&lt;TAB&gt;name</code>,
+                    or holds <code>..</code> after the tab.
+                  </td>
+                  <td>
+                    The source identity keeps the whole file name. A change to
+                    the file fails the next check with
+                    <code>STALE_SOURCE</code>, and Spyglass reads no path
+                    outside the repository.
+                  </td>
+                </tr>
+                <tr>
                   <td>Check</td>
                   <td>
                     A check exits zero but reports a failed assertion or skipped
@@ -2251,7 +2289,8 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   <td>Evidence</td>
                   <td>
                     An imported artifact is missing, outside an approved root,
-                    or changes during import.
+                    changes during import, or <code>evidence add</code> is given
+                    missing or extra arguments.
                   </td>
                   <td>
                     The import fails and does not claim the artifact as
@@ -2260,7 +2299,10 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                 </tr>
                 <tr>
                   <td>Secret</td>
-                  <td>A request or page reflects a test credential.</td>
+                  <td>
+                    A request, page or command output reflects a test
+                    credential.
+                  </td>
                   <td>
                     Reports and artifacts do not expose credential values,
                     cookies, or authorization headers.
@@ -2752,8 +2794,8 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                 <tr>
                   <td>Replay</td>
                   <td>
-                    <code>replay</code> names a run that does not exist, or the
-                    same run.
+                    <code>replay</code> is run without <code>--from</code>, or
+                    names a run that does not exist, or the same run.
                   </td>
                   <td>The command exits with status 2. It starts no step.</td>
                 </tr>

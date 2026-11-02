@@ -710,7 +710,7 @@ export class Context {
     writeFileSync(file, data, { mode: 0o600, flag: "wx" });
     const a = {
       path: relativePath,
-      sha256: hash(readFileSync(file)),
+      sha256: hash(data),
       kind,
       step: this.step.id,
     };

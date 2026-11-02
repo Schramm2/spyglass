@@ -14,9 +14,9 @@ version or prepare a release.
 | `package-lock.json` | `npm install` | Change only with a dependency change. |
 
 The tested `agent-browser` version is pinned in several places. Change all of
-them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:255`,
-`src/profile.ts:294`, `README.md`, `CONTRIBUTING.md` and
-`agent_docs/testing.md`.
+them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:409`,
+`src/profile.ts:280`, `AGENTS.md`, `README.md`, `CONTRIBUTING.md`,
+`agent_docs/testing.md` and `landing/docs/index.html`.
 
 ## User-visible changes
 

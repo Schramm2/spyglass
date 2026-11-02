@@ -217,10 +217,11 @@ const RUN_COMMANDS =
 function concrete(next: string, id: string | undefined): string {
   if (!id) return next;
   return next
-    .replace(/--run <id>/g, `--run ${id}`)
+    .replace(/--run (?:<id>|ID)(?![A-Za-z0-9])/g, `--run ${id}`)
     .split(/(?<=\.)\s+/)
     .map((sentence) =>
-      sentence.includes("--run ")
+      // A sentence that already names a run keeps its own flags.
+      /--run\s+\S+/.test(sentence)
         ? sentence
         : sentence.replace(
             new RegExp(`\\bspyglass (${RUN_COMMANDS})\\b`, "g"),
@@ -510,7 +511,7 @@ try {
         ).replay(
           run,
           {
-            from: requireValue(args[at + 1], "--from"),
+            from: requireValue(at < 0 ? undefined : args[at + 1], "--from"),
             failedOnly: args.includes("--failed-only"),
             execute: args.includes("--execute"),
           },

@@ -56,7 +56,7 @@ function plan(old: Run, failedOnly: boolean): Planned[] {
         args: step.args,
         claims: [],
         independentRead: false,
-        ...(step.args.some((arg) => arg.includes("[REDACTED]"))
+        ...(step.args.some((arg) => /\[REDACTED\]|%5BREDACTED%5D/.test(arg))
           ? {
               skipped:
                 "an argument holds a masked secret; Spyglass cannot rebuild it",

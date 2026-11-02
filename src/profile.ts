@@ -1,23 +1,9 @@
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import { Fault } from "./errors.js";
 import { hash, readJson, writeJson } from "./files.js";
 import { profileSchema, validate } from "./schema.js";
 import type { Profile } from "./schema.js";
-export function repository(cwd = process.cwd()): string {
-  const r = spawnSync("git", ["rev-parse", "--show-toplevel"], {
-    cwd,
-    encoding: "utf8",
-  });
-  if (r.status !== 0)
-    throw new Fault(
-      "NOT_REPOSITORY",
-      "Spyglass requires a Git working tree.",
-      "Run git init in the target project, then run spyglass init.",
-    );
-  return realpathSync(r.stdout.trim());
-}
 export function locateProfile(repo: string, explicit?: string): string {
   if (explicit) return resolve(process.cwd(), explicit);
   const paths = new Set<string>();

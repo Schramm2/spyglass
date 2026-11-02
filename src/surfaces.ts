@@ -672,6 +672,9 @@ async function database(
   ctx: Context,
   args: string[],
 ): Promise<Record<string, unknown>> {
+  // The recorded arguments are user-visible too: mask a secret in a URL query
+  // parameter before any result or error can leave it in the step record.
+  ctx.step.args = ctx.step.args.map((value) => redactUrls(ctx, value));
   const sql = args[0];
   if (!sql || sql.startsWith("--"))
     throw usage(
@@ -793,21 +796,28 @@ async function database(
   let outputBytes = bounded.bytes;
   const rowLimitExceeded = fetchedRows.length > MAX_DB_ROWS;
   let outputLimitExceeded = bounded.truncated;
-  const makeData = (): JsonObject =>
-    sanitizeValue(ctx, {
-      sql,
-      rows,
-      rowCount,
-      role,
-      rowLimit: MAX_DB_ROWS,
-      outputLimitBytes: MAX_DB_OUTPUT_BYTES,
-      outputBytes,
-      ...(rowLimitExceeded || outputLimitExceeded ? { truncated: true } : {}),
-      ...(result?.command
-        ? { command: queryCommand(sql) ?? result.command }
-        : {}),
-      ...(failure ? { error: ctx.vault.text(errorText(failure)) } : {}),
-    }) as JsonObject;
+  // boundedRows already sanitized the rows. The other fields do not change
+  // between truncation passes, so sanitize them once.
+  const cleanSql = redactUrls(ctx, sql);
+  const cleanRole = sanitizeValue(ctx, role);
+  // Redact URLs as well as registered secrets: the error text is user-visible
+  // in the envelope, the step record and the saved result.
+  const cleanError = failure ? redactUrls(ctx, errorText(failure)) : "";
+  const cleanCommand = result?.command
+    ? redactUrls(ctx, queryCommand(sql) ?? result.command)
+    : undefined;
+  const makeData = (): JsonObject => ({
+    sql: cleanSql,
+    rows,
+    rowCount,
+    role: cleanRole,
+    rowLimit: MAX_DB_ROWS,
+    outputLimitBytes: MAX_DB_OUTPUT_BYTES,
+    outputBytes,
+    ...(rowLimitExceeded || outputLimitExceeded ? { truncated: true } : {}),
+    ...(cleanCommand ? { command: cleanCommand } : {}),
+    ...(cleanError ? { error: cleanError } : {}),
+  });
   let data = makeData();
   while (
     Buffer.byteLength(`${JSON.stringify(data, null, 2)}\n`) >
@@ -843,10 +853,9 @@ async function database(
     "database",
   );
   if (failure) {
-    const message = ctx.vault.text(errorText(failure));
     throw new Fault(
       "DATABASE_QUERY_FAILED",
-      `Database query failed: ${message}.`,
+      `Database query failed: ${cleanError}.`,
       "Check the query and database role, then retry.",
       1,
       { ...shown, artifacts: [artifact] },

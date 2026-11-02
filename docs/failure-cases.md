@@ -15,12 +15,13 @@ results and retained evidence.
 | Run | Two operators try to change one run at once. | One mutation owns the lock. Status can inspect the active command. The second mutation fails with a recovery action. |
 | Source | Source changes after the run starts. | Later evidence cannot be presented as proof for the original source. The run records both source identities or rejects the stale result. |
 | Source | A source file is modified between commands while its size or timestamp is checked by the fast source check. | `assertSource` detects the change at once, also when the size and the modification time are unchanged, and refuses the command with `STALE_SOURCE`. `doctor` and `report` still verify the full content hashes. |
+| Source | An untracked file name starts like a Git stage row, for example `100644 <hash> 0<TAB>name`, or holds `..` after the tab. | The source identity keeps the whole file name. A change to the file fails the next check with `STALE_SOURCE`, and Spyglass reads no path outside the repository. |
 | Check | A check exits zero but reports a failed assertion or skipped required assertion. | The check fails and retains the command result, assertion details, skips, and artifacts. |
 | Check | `check a,b` runs two checks in parallel and one fails. | Both steps and their artifacts are retained in `log.jsonl` without corrupting `run.json` or the log. The command exits 1 and names the failed check. |
 | Claim | A required claim has no completed step or required evidence. | The claim cannot pass. The report stays incomplete and names the missing proof. |
 | Claim | A side-effect claim has no independent read after the action completes. | The claim cannot pass. |
-| Evidence | An imported artifact is missing, outside an approved root, or changes during import. | The import fails and does not claim the artifact as evidence. |
-| Secret | A request or page reflects a test credential. | Reports and artifacts do not expose credential values, cookies, or authorization headers. |
+| Evidence | An imported artifact is missing, outside an approved root, changes during import, or `evidence add` is given missing or extra arguments. | The import fails and does not claim the artifact as evidence. |
+| Secret | A request, page or command output reflects a test credential. | Reports and artifacts do not expose credential values, cookies, or authorization headers. |
 | Browser | A browser action targets an origin outside the profile allowlist. | The action fails with the required capability or policy named. It does not use another browser session. |
 | Browser | A screenshot succeeds but a visual claim has no inspection record. | The visual claim remains incomplete. |
 | Browser | An inspection for a viewport names a missing or unrelated screenshot. | The result fails and names the inspection's missing proof. |
@@ -63,7 +64,7 @@ results and retained evidence.
 | Result | `result` or `result --check` inspects a result file with multiple independent errors (for example, a missing step on claim A and a missing inspection on claim B). | Both `result` and `result --check` report all findings together in `data.findings` with the same rules and messages, and each finding has a `repair` hint. `--check` does not record the result on the run. |
 | Result | `result` is run without `--file`. | Spyglass reads the pending result file of the run (`resultPath`). It does not read another file. |
 | Result | `result set` is given an unknown claim, gate or control ID, or an unknown outcome. | The command exits with status 2 and names the valid IDs. It does not change the pending result. |
-| Replay | `replay` names a run that does not exist, or the same run. | The command exits with status 2. It starts no step. |
+| Replay | `replay` is run without `--from`, or names a run that does not exist, or the same run. | The command exits with status 2. It starts no step. |
 | Replay | A step to replay has an argument that Spyglass masked as a secret. | Spyglass does not run the step. It lists the step as skipped and says why, and it does not guess the value. |
 | Replay | A replayed step fails. | Spyglass stops there. The failed attempt stays in the log of the new run, the later steps are not run, and the command exits with status 1. |
 | Replay | `replay` runs without `--execute`. | Spyglass lists the steps and the links it would make. It starts no replayed step. |

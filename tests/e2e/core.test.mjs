@@ -431,6 +431,23 @@ test("evidence import copies a declared artifact with a checksum and rejects an 
       outside,
     ]);
     assertEnvelope(rejected, { ok: false });
+    for (const extraArgs of [
+      ["--step", command.step, "--file", "proof.txt", "extra"],
+      ["--step", command.step, "--step", command.step, "--file", "proof.txt"],
+    ]) {
+      const badUsage = assertEnvelope(
+        await runCli(dir, [
+          "--json",
+          "--run",
+          run,
+          "evidence",
+          "add",
+          ...extraArgs,
+        ]),
+        { ok: false, code: 2 },
+      );
+      assert.equal(badUsage.error.code, "INVALID_USAGE");
+    }
   } finally {
     if (run) await runCli(dir, ["--json", "--run", run, "down"]);
     await unlink(outside).catch(() => {});
@@ -5031,6 +5048,16 @@ test("a changed file is found by the fast source check, and doctor and report ha
     }),
   });
   const readme = join(dir, "README.md");
+  // Untracked names shaped like stage rows must keep their own identity.
+  const object = "0123456789abcdef0123456789abcdef01234567";
+  const stageLike = `100644 ${object} 0\tactual-name`;
+  const submoduleLike = `160000 ${object} 0\tsubmodule-name`;
+  const traversalDir = `100644 ${object} 0\t..`;
+  const traversalLike = `${traversalDir}/outside`;
+  for (const name of [stageLike, submoduleLike])
+    await writeFile(join(dir, name), "first content\n");
+  await mkdir(join(dir, traversalDir), { recursive: true });
+  await writeFile(join(dir, traversalLike), "first content\n");
   let run;
   try {
     run = assertEnvelope(
@@ -5056,6 +5083,22 @@ test("a changed file is found by the fast source check, and doctor and report ha
     assert.ok(check.files > 0);
     if (before.mtimeMs % 1000 !== 0)
       assert.equal(check.rehashed, 0, "an unchanged file is not read again");
+
+    // The source identity keeps each whole name, tab included.
+    for (const name of [stageLike, submoduleLike, traversalLike])
+      await writeFile(join(dir, name), "second content\n");
+    const staged = await drive(
+      dir,
+      run,
+      ["exec", "--", process.execPath, "-e", "0"],
+      { ok: false, code: 1 },
+    );
+    assert.equal(staged.error.code, "STALE_SOURCE");
+    for (const name of [stageLike, submoduleLike, traversalLike])
+      assert.ok(
+        staged.error.message.includes(name),
+        `the changed source input is missing: ${JSON.stringify(name)}`,
+      );
 
     // The same size and the same modification time: only ctime shows it.
     const text = await readFile(readme, "utf8");
@@ -5277,7 +5320,12 @@ test("every failing command names its run in the next action", async () => {
     ];
     let named = 0;
     for (const args of invocations) {
-      const result = await runCli(dir, ["--json", ...args, "--run", run]);
+      const at = args.indexOf("--");
+      const full =
+        at < 0
+          ? [...args, "--run", run]
+          : [...args.slice(0, at), "--run", run, ...args.slice(at)];
+      const result = await runCli(dir, ["--json", ...full]);
       if (!result.json || result.json.ok) continue;
       const next = result.json.error.next;
       assert.ok(
@@ -5463,6 +5511,18 @@ test("replay lists, then runs again, the steps that an earlier run cited", async
       { ok: false, code: 2 },
     );
     assert.equal(unknown.error.code, "UNKNOWN_RUN");
+    const missingFrom = await drive(dir, fresh, ["replay"], {
+      ok: false,
+      code: 2,
+    });
+    assert.equal(missingFrom.error.code, "MISSING_INPUT");
+    const flagAsValue = await drive(
+      dir,
+      fresh,
+      ["replay", "--from", "--failed-only"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(flagAsValue.error.code, "MISSING_INPUT");
   } finally {
     await removeRepo(dir);
   }

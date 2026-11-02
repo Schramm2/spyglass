@@ -33,7 +33,8 @@ export async function runCommand(
     let stdout = "",
       stderr = "",
       timedOut = false,
-      overflow = false;
+      overflow = false,
+      totalBytes = 0;
     const kill = () => {
       try {
         if (process.platform !== "win32" && child.pid)
@@ -48,10 +49,8 @@ export async function runCommand(
     const add = (kind: "stdout" | "stderr", data: string) => {
       if (kind === "stdout") stdout += data;
       else stderr += data;
-      if (
-        Buffer.byteLength(stdout) + Buffer.byteLength(stderr) >
-        (options.maxBytes ?? 8 * 1024 * 1024)
-      ) {
+      totalBytes += Buffer.byteLength(data);
+      if (totalBytes > (options.maxBytes ?? 8 * 1024 * 1024)) {
         overflow = true;
         kill();
       }

@@ -368,10 +368,10 @@ async function addEvidence(
 ): Promise<Record<string, unknown>> {
   const step = valueAfter(args, "--step");
   const file = valueAfter(args, "--file");
-  if (!step || !file)
+  if (!step || !file || args.length !== 6)
     throw new Fault(
       "INVALID_USAGE",
-      "evidence add requires --step and --file.",
+      "evidence add requires one --step and one --file.",
       "Run spyglass evidence add --step STEP_ID --file PATH.",
     );
   const producer = steps(ctx.run).find((item) => item.id === step);
@@ -417,7 +417,7 @@ export async function checks(
   throw new Fault(
     "INVALID_USAGE",
     `Unsupported check command ${args.join(" ")}.`,
-    "Use check NAME, exec -- COMMAND, or evidence add --step ID --file PATH.",
+    "Run spyglass check NAME, spyglass exec -- COMMAND, or spyglass evidence add --step STEP_ID --file PATH.",
   );
 }
 

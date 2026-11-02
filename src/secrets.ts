@@ -5,12 +5,16 @@ import { Fault } from "./errors.js";
 const isReference = (s: string) => /^(env:|file:|dotenv:|op:\/\/)/.test(s);
 export class Secrets {
   private values = new Set<string>();
+  private ordered?: { raw: string; encoded: string }[];
   private repo: string;
   constructor(repo: string) {
     this.repo = repo;
   }
   register(value: string): string {
-    if (value) this.values.add(value);
+    if (value && !this.values.has(value)) {
+      this.values.add(value);
+      this.ordered = undefined;
+    }
     return value;
   }
   all(): string[] {
@@ -73,9 +77,13 @@ export class Secrets {
       Object.values(value).forEach((v) => this.collect(v, strict));
   }
   text(s: string): string {
-    for (const v of [...this.values].sort((a, b) => b.length - a.length)) {
-      s = s.split(v).join("[REDACTED]");
-      s = s.split(encodeURIComponent(v)).join("[REDACTED]");
+    this.ordered ??= [...this.values]
+      .sort((a, b) => b.length - a.length)
+      .map((raw) => ({ raw, encoded: encodeURIComponent(raw) }));
+    for (const { raw, encoded } of this.ordered) {
+      if (s.includes(raw)) s = s.replaceAll(raw, "[REDACTED]");
+      if (encoded !== raw && s.includes(encoded))
+        s = s.replaceAll(encoded, "[REDACTED]");
     }
     return s
       .replace(/(Bearer\s+)[^\s"\\]+/gi, "$1[REDACTED]")
