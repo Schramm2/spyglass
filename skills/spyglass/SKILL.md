@@ -101,7 +101,11 @@ the step check itself:
   must check what the claim needs.
 - **HTTP**: `api` with `--expect <status>` and `--expect-json` or
   `--expect-body-contains`. Poll an asynchronous job with a GET and
-  `--wait-until ... --fail-on ...`.
+  `--wait-until ... --fail-on ...`. For an immediate pending-state control,
+  use a write with `--then GET '/questions/{body.id}' --then-expect-json
+  status=complete`; the GET reuses the seat. Keep its failed assertion,
+  then restore `json status=complete` with a later separate GET. The combined
+  step is a write, not an independent read; see `api --help`.
 - **Database**: `db` with `--expect-rows` or `--expect-empty` and
   `--expect-col` (first row only).
 - **Containers and logs**: `ps --wait`; `logs [service] --since-step <step-id>
