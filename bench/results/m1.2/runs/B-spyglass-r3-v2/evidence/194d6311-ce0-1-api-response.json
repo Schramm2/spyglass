@@ -1,0 +1,48 @@
+{
+  "startedAt": "2026-11-03T15:08:06.097Z",
+  "completedAt": "2026-11-03T15:08:06.112Z",
+  "request": {
+    "method": "POST",
+    "url": "http://127.0.0.1:53195/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "content-type": "application/json",
+      "authorization": "[REDACTED]"
+    },
+    "body": {
+      "question": "What does this demo verify?"
+    }
+  },
+  "response": {
+    "status": 202,
+    "statusText": "Accepted",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 15:08:06 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "22140ada-d700-4286-bec1-e93ba99edd9a",
+      "status": "pending"
+    }
+  },
+  "assertions": [
+    {
+      "id": "status=202",
+      "ok": true,
+      "detail": "HTTP 202"
+    },
+    {
+      "id": "json status=pending",
+      "ok": true,
+      "detail": "observed \"pending\""
+    },
+    {
+      "id": "json id!=null",
+      "ok": true,
+      "detail": "observed \"22140ada-d700-4286-bec1-e93ba99edd9a\""
+    }
+  ]
+}

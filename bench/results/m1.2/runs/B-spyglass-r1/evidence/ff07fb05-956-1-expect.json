@@ -1,0 +1,24 @@
+{
+  "seat": "agent",
+  "pageContent": true,
+  "timeoutMs": 5000,
+  "elapsedMs": 8,
+  "polls": 1,
+  "passed": true,
+  "conditions": [
+    {
+      "id": "url=/dashboard",
+      "ok": true,
+      "observed": "http://127.0.0.1:53557/dashboard"
+    },
+    {
+      "id": "text=Ask a question",
+      "ok": true,
+      "observed": "found"
+    }
+  ],
+  "lastObservation": {
+    "url": "http://127.0.0.1:53557/dashboard",
+    "title": "Questions"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r1",
+      "failedStep": "0e1d9959-9a7",
+      "restoredStep": "0a7959ad-481",
+      "observedFailure": "Immediate follow-up GET after HTTP 202 returned pending; json status=complete failed with API_EXPECTATION_FAILED.",
+      "observedPass": "Later GET of the same control question returned complete with an answer; json status=complete passed."
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "outcome": "passed",
+      "steps": [
+        "06579b39-e0b",
+        "fd85fe1c-8fa"
+      ],
+      "observed": "Submitting the demo email with a deliberately wrong password showed Sign in failed.",
+      "artifacts": [
+        "fd85fe1c-8fa-1-proof-signin-refused.png",
+        "fd85fe1c-8fa-2-proof-signin-refused-snapshot.json",
+        "fd85fe1c-8fa-3-proof-signin-refused-details.json"
+      ]
+    },
+    {
+      "id": "login-dashboard",
+      "outcome": "passed",
+      "steps": [
+        "095fcbd5-c87",
+        "ff07fb05-956"
+      ],
+      "observed": "Seat agent signed in using its secret reference, reached /dashboard and the Ask a question heading expectation passed.",
+      "artifacts": [
+        "ff07fb05-956-1-expect.json"
+      ]
+    },
+    {
+      "id": "dashboard-mobile",
+      "outcome": "passed",
+      "steps": [
+        "e43bf638-b2c"
+      ],
+      "observed": "Dashboard proof captured and opened with read.",
+      "artifacts": [
+        "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+        "e43bf638-b2c-2-proof-dashboard-mobile-390x844-snapshot.json",
+        "e43bf638-b2c-3-proof-dashboard-mobile-390x844-details.json"
+      ],
+      "inspections": [
+        {
+          "viewport": "390x844",
+          "expected": "Heading, question field and Submit question button visible, readable and not clipped horizontally.",
+          "observed": "Opened the 390x844 image: Ask a question heading, Question label, empty textarea and green Submit question button are readable and fully inside the viewport. No horizontal clipping is visible.",
+          "artifact": "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png"
+        }
+      ]
+    },
+    {
+      "id": "question-accepted",
+      "outcome": "passed",
+      "steps": [
+        "6d2489ed-3cd"
+      ],
+      "observed": "POST returned HTTP 202, status pending and question id 39a9a740-c4db-43ae-a458-c3ba30e61c70.",
+      "artifacts": [
+        "6d2489ed-3cd-1-api-response.json"
+      ]
+    },
+    {
+      "id": "question-completed",
+      "outcome": "passed",
+      "steps": [
+        "0a7959ad-481",
+        "5b9f57b6-e30",
+        "ed096c7c-f86",
+        "6d2489ed-3cd"
+      ],
+      "observed": "After the accepted POST, a separate later GET of 39a9a740-c4db-43ae-a458-c3ba30e61c70 returned HTTP 200, complete and a nonempty answer. The list contained both questions complete with answers. The control question also completed on the restored GET.",
+      "artifacts": [
+        "0a7959ad-481-1-api-response.json",
+        "5b9f57b6-e30-1-api-response.json",
+        "ed096c7c-f86-1-api-response.json"
+      ],
+      "independentRead": "5b9f57b6-e30"
+    },
+    {
+      "id": "error-page-errors",
+      "outcome": "passed",
+      "steps": [
+        "ebabbf3f-159",
+        "eeb2c18d-a25",
+        "de56a517-071",
+        "b2efd37d-483"
+      ],
+      "observed": "On /error, console reported fixture console error with type error, and errors reported Error: fixture page error at /error:1:154. Both outputs are retained in linked steps.",
+      "artifacts": [
+        "b2efd37d-483-1-proof-error-page.png",
+        "b2efd37d-483-2-proof-error-page-snapshot.json",
+        "b2efd37d-483-3-proof-error-page-details.json"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+  ]
+}

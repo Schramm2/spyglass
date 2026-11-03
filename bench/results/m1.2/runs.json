@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 1,
+  "candidateSource": "b53a6cd",
+  "protocolRepairCommit": "c5ea6c0",
+  "model": "openai/gpt-6.1-sol",
+  "reasoning": "medium",
+  "harness": "Pi 1.5.0",
+  "platform": "macOS arm64",
+  "node": "v24.11.1",
+  "agentBrowser": "0.38.2",
+  "order": [
+    "B-direct-r3-v2",
+    "B-spyglass-r3-v2",
+    "B-spyglass-r1",
+    "B-direct-r1",
+    "B-spyglass-r2",
+    "B-direct-r2"
+  ],
+  "orderLimit": "Fixed before launch, not sampled from a retained random seed. No randomized-study claim.",
+  "runs": [
+    {
+      "run": "B-direct-r3-v2",
+      "completed": true,
+      "operatorToolCalls": 20,
+      "byTool": {
+        "read": 6,
+        "bash": 8,
+        "write": 3,
+        "edit": 3
+      },
+      "shellInvocations": 8,
+      "wallSeconds": 219.97,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 20917,
+        "output": 5866,
+        "cacheRead": 228992,
+        "cacheWrite": 0,
+        "reasoning": 301,
+        "totalTokens": 255775
+      },
+      "driverLinesIncludingEvidenceProse": 133,
+      "coordinatorMessages": 0,
+      "toolErrorResults": 0,
+      "scored": true,
+      "accepted": true,
+      "verifiedClaims": 6,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0.3,
+      "sourceCommit": "99f64721739ec1fd5acb4f38ac0744010cef174f",
+      "evidence": "runs/B-direct-r3-v2/evidence/",
+      "metricsEvidence": "runs/B-direct-r3-v2/operator-measures.json",
+      "imagesOpenedByOperator": 1,
+      "deliberateControlFailures": 1,
+      "helperScripts": true,
+      "resultRejections": "n/a",
+      "resultCheckRejections": "n/a",
+      "unplannedFailedSteps": "not comparable across direct log formats; retained in evidence"
+    },
+    {
+      "run": "B-spyglass-r3-v2",
+      "completed": true,
+      "operatorToolCalls": 21,
+      "byTool": {
+        "read": 11,
+        "bash": 10
+      },
+      "shellInvocations": 10,
+      "wallSeconds": 122.736,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 33467,
+        "output": 3218,
+        "cacheRead": 330368,
+        "cacheWrite": 0,
+        "reasoning": 93,
+        "totalTokens": 367053
+      },
+      "driverLinesIncludingEvidenceProse": 0,
+      "coordinatorMessages": 0,
+      "toolErrorResults": 2,
+      "scored": true,
+      "accepted": true,
+      "verifiedClaims": 6,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0.2857,
+      "sourceCommit": "7e33c66216150e9260f7dc249fd6db9b75aa0d95",
+      "evidence": "runs/B-spyglass-r3-v2/evidence/",
+      "metricsEvidence": "runs/B-spyglass-r3-v2/operator-measures.json",
+      "imagesOpenedByOperator": 1,
+      "deliberateControlFailures": 1,
+      "helperScripts": false,
+      "resultRejections": 1,
+      "resultCheckRejections": 1,
+      "unplannedFailedSteps": 2
+    },
+    {
+      "run": "B-spyglass-r1",
+      "completed": true,
+      "operatorToolCalls": 19,
+      "byTool": {
+        "read": 8,
+        "bash": 11
+      },
+      "shellInvocations": 11,
+      "wallSeconds": 123.767,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 29693,
+        "output": 2790,
+        "cacheRead": 235520,
+        "cacheWrite": 0,
+        "reasoning": 43,
+        "totalTokens": 268003
+      },
+      "driverLinesIncludingEvidenceProse": 0,
+      "coordinatorMessages": 0,
+      "toolErrorResults": 2,
+      "scored": true,
+      "accepted": true,
+      "verifiedClaims": 6,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0.3158,
+      "sourceCommit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+      "evidence": "runs/B-spyglass-r1/evidence/",
+      "metricsEvidence": "runs/B-spyglass-r1/operator-measures.json",
+      "imagesOpenedByOperator": 1,
+      "deliberateControlFailures": 1,
+      "helperScripts": false,
+      "resultRejections": 0,
+      "resultCheckRejections": 1,
+      "unplannedFailedSteps": 1
+    },
+    {
+      "run": "B-direct-r1",
+      "completed": true,
+      "operatorToolCalls": 15,
+      "byTool": {
+        "read": 6,
+        "bash": 5,
+        "write": 3,
+        "edit": 1
+      },
+      "shellInvocations": 5,
+      "wallSeconds": 154.395,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 20544,
+        "output": 5235,
+        "cacheRead": 173184,
+        "cacheWrite": 0,
+        "reasoning": 239,
+        "totalTokens": 198963
+      },
+      "driverLinesIncludingEvidenceProse": 114,
+      "coordinatorMessages": 0,
+      "toolErrorResults": 0,
+      "scored": true,
+      "accepted": true,
+      "verifiedClaims": 6,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0.4,
+      "sourceCommit": "6062fb4699464fe945e9feea7ae9457bd84d6574",
+      "evidence": "runs/B-direct-r1/evidence/",
+      "metricsEvidence": "runs/B-direct-r1/operator-measures.json",
+      "imagesOpenedByOperator": 1,
+      "deliberateControlFailures": 1,
+      "helperScripts": true,
+      "resultRejections": "n/a",
+      "resultCheckRejections": "n/a",
+      "unplannedFailedSteps": "not comparable across direct log formats; retained in evidence"
+    },
+    {
+      "run": "B-spyglass-r2",
+      "completed": true,
+      "operatorToolCalls": 25,
+      "byTool": {
+        "read": 11,
+        "bash": 14
+      },
+      "shellInvocations": 14,
+      "wallSeconds": 117.642,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 65670,
+        "output": 3313,
+        "cacheRead": 391168,
+        "cacheWrite": 0,
+        "reasoning": 71,
+        "totalTokens": 460151
+      },
+      "driverLinesIncludingEvidenceProse": 0,
+      "coordinatorMessages": 0,
+      "toolErrorResults": 2,
+      "scored": true,
+      "accepted": true,
+      "verifiedClaims": 6,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0.24,
+      "sourceCommit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+      "evidence": "runs/B-spyglass-r2/evidence/",
+      "metricsEvidence": "runs/B-spyglass-r2/operator-measures.json",
+      "imagesOpenedByOperator": 1,
+      "deliberateControlFailures": 1,
+      "helperScripts": false,
+      "resultRejections": 0,
+      "resultCheckRejections": 1,
+      "unplannedFailedSteps": 2
+    },
+    {
+      "run": "B-direct-r2",
+      "completed": true,
+      "operatorToolCalls": 15,
+      "byTool": {
+        "read": 6,
+        "bash": 5,
+        "write": 4
+      },
+      "shellInvocations": 5,
+      "wallSeconds": 147.674,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 32101,
+        "output": 4782,
+        "cacheRead": 145280,
+        "cacheWrite": 0,
+        "reasoning": 165,
+        "totalTokens": 182163
+      },
+      "driverLinesIncludingEvidenceProse": 90,
+      "coordinatorMessages": 0,
+      "toolErrorResults": 0,
+      "scored": true,
+      "accepted": true,
+      "verifiedClaims": 6,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0.4,
+      "sourceCommit": "6062fb4699464fe945e9feea7ae9457bd84d6574",
+      "evidence": "runs/B-direct-r2/evidence/",
+      "metricsEvidence": "runs/B-direct-r2/operator-measures.json",
+      "imagesOpenedByOperator": 1,
+      "deliberateControlFailures": 1,
+      "helperScripts": true,
+      "resultRejections": "n/a",
+      "resultCheckRejections": "n/a",
+      "unplannedFailedSteps": "not comparable across direct log formats; retained in evidence"
+    }
+  ],
+  "superseded": [
+    {
+      "run": "B-direct-r3",
+      "completed": true,
+      "operatorToolCalls": 11,
+      "byTool": {
+        "read": 5,
+        "bash": 4,
+        "write": 2
+      },
+      "shellInvocations": 4,
+      "wallSeconds": 113.097,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 32955,
+        "output": 3281,
+        "cacheRead": 61440,
+        "cacheWrite": 0,
+        "reasoning": 165,
+        "totalTokens": 97676
+      },
+      "driverLinesIncludingEvidenceProse": 69,
+      "coordinatorMessages": 1,
+      "toolErrorResults": 1,
+      "scored": false,
+      "accepted": false,
+      "verifiedClaims": 0,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0,
+      "sourceCommit": "6062fb4699464fe945e9feea7ae9457bd84d6574",
+      "evidence": "superseded/B-direct-r3/evidence/",
+      "metricsEvidence": "superseded/B-direct-r3/operator-measures.json",
+      "imagesOpenedByOperator": 0,
+      "deliberateControlFailures": 0,
+      "helperScripts": true
+    },
+    {
+      "run": "B-spyglass-r3",
+      "completed": true,
+      "operatorToolCalls": 14,
+      "byTool": {
+        "read": 8,
+        "bash": 5,
+        "write": 1
+      },
+      "shellInvocations": 5,
+      "wallSeconds": 85.256,
+      "phaseSeconds": "unavailable",
+      "tokens": {
+        "input": 17703,
+        "output": 2494,
+        "cacheRead": 97664,
+        "cacheWrite": 0,
+        "reasoning": 109,
+        "totalTokens": 117861
+      },
+      "driverLinesIncludingEvidenceProse": 56,
+      "coordinatorMessages": 1,
+      "toolErrorResults": 1,
+      "scored": false,
+      "accepted": false,
+      "verifiedClaims": 0,
+      "claimSet": 6,
+      "verifiedClaimsPerToolCall": 0,
+      "sourceCommit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+      "evidence": "superseded/B-spyglass-r3/evidence/",
+      "metricsEvidence": "superseded/B-spyglass-r3/operator-measures.json",
+      "imagesOpenedByOperator": 0,
+      "deliberateControlFailures": 0,
+      "helperScripts": false
+    }
+  ],
+  "redactions": [
+    {
+      "file": "runs/B-direct-r2/evidence/steps.jsonl",
+      "originalSha256": "5a8c788c757db7af0a0e54ee6bfd583c3b4822d1bf9e4c49a4b679fea2fa8c3e",
+      "retainedSha256": "308fb0e41a37725ae6d09ff319fa97c7c7c4faf2ecc5527589ebd9e9870e2da9",
+      "reason": "Remove host-specific browser socket path; no Spyglass artifact was changed."
+    },
+    {
+      "file": "runs/B-direct-r2/evidence/browser-before-close.json",
+      "originalSha256": "f188f2a48a318878f9039e9f1cbdba2ac023649e12f35bd9195114ef636eefd0",
+      "retainedSha256": "0c081df40d4d918604c8bed5c2d8c1ef96e7a324bb86e24c790a85cfff3989e6",
+      "reason": "Remove host-specific browser socket path; no Spyglass artifact was changed."
+    },
+    {
+      "file": "superseded/B-direct-r3/evidence/steps.jsonl",
+      "originalSha256": "b798f79665a5d37de958891d22398dfa837bfc6355183a08fb67a93cfebde32a",
+      "retainedSha256": "49c734fba3d52bd4435b3a5b9afb95963e4cace98edbda7a065259a530a3a9cf",
+      "reason": "Remove host-specific browser socket path; no Spyglass artifact was changed."
+    },
+    {
+      "file": "runs/B-direct-r1/evidence/browser-help.txt",
+      "originalSha256": "3ab55fa1934a401e79ef51e5d4d6c032b51d24b77c6111c1c06b94651a1e7546",
+      "retainedSha256": "31cb4ac62c244e4fa3226b976cfa0b47c33dcecfd75880bc9bf8c8c04aca6484",
+      "reason": "Remove credential-shaped upstream proxy example flagged by the scanner; not a study credential."
+    },
+    {
+      "file": "runs/B-direct-r2/evidence/browser-help.txt",
+      "originalSha256": "3ab55fa1934a401e79ef51e5d4d6c032b51d24b77c6111c1c06b94651a1e7546",
+      "retainedSha256": "31cb4ac62c244e4fa3226b976cfa0b47c33dcecfd75880bc9bf8c8c04aca6484",
+      "reason": "Remove credential-shaped upstream proxy example flagged by the scanner; not a study credential."
+    },
+    {
+      "file": "runs/B-direct-r3-v2/evidence/browser-help.txt",
+      "originalSha256": "3ab55fa1934a401e79ef51e5d4d6c032b51d24b77c6111c1c06b94651a1e7546",
+      "retainedSha256": "31cb4ac62c244e4fa3226b976cfa0b47c33dcecfd75880bc9bf8c8c04aca6484",
+      "reason": "Remove credential-shaped upstream proxy example flagged by the scanner; not a study credential."
+    },
+    {
+      "file": "superseded/B-direct-r3/evidence/browser-help.txt",
+      "originalSha256": "3ab55fa1934a401e79ef51e5d4d6c032b51d24b77c6111c1c06b94651a1e7546",
+      "retainedSha256": "31cb4ac62c244e4fa3226b976cfa0b47c33dcecfd75880bc9bf8c8c04aca6484",
+      "reason": "Remove credential-shaped upstream proxy example flagged by the scanner; not a study credential."
+    }
+  ],
+  "limits": [
+    "Three pairs are descriptive only.",
+    "The model, harness and platform differ from M1.1; do not compare speed across studies.",
+    "Phase times are unavailable because calls combine phases.",
+    "Tool-error counts are calls, not every failed assertion; step logs retain all assertions.",
+    "Driver lines include written evidence prose and multi-line shell content, not just executable code."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "accepted": true,
+  "verifiedClaimIds": [
+    "signin-refused",
+    "login-dashboard",
+    "dashboard-mobile",
+    "question-accepted",
+    "question-completed",
+    "error-page-errors"
+  ],
+  "control": {
+    "method": "one write with --then GET; later separate restored GET",
+    "failedStep": "0660ae56-eda",
+    "restoredStep": "d6bc6fe5-d56",
+    "sameQuestionId": true,
+    "assertion": "json status=complete",
+    "failedObserved": "pending",
+    "restoredObserved": "complete"
+  },
+  "sourceIdentityUnchanged": true,
+  "appPortClosed": true,
+  "browserSessionActive": false,
+  "browserSessionPid": null,
+  "artifactChecksumsVerified": 21,
+  "credentialValuesFound": 0,
+  "report": "evidence/311d43e2-aee-1-index.html",
+  "image": "evidence/1bbbf767-b73-1-proof-dashboard-mobile-390x844.png",
+  "viewport": "390x844",
+  "coordinatorInspection": "Opened the retained image. The Ask a question heading, Question label and textarea, and green Submit question button are readable and inside the 390 px width without horizontal clipping. The label is beside the lower part of the textarea; the button wraps below.",
+  "operatorOpenedImageBeforeInspection": true,
+  "operatorReadOtherRunFiles": false,
+  "coordinatorHelp": 0,
+  "limits": [
+    "One model and shared host; no general speed claim.",
+    "Same-origin later HTTP read, not database or durability proof."
+  ]
+}

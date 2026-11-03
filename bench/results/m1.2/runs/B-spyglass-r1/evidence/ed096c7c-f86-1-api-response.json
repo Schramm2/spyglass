@@ -1,0 +1,55 @@
+{
+  "startedAt": "2026-11-03T15:12:25.656Z",
+  "completedAt": "2026-11-03T15:12:25.668Z",
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:53557/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 15:12:25 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": [
+      {
+        "id": "39a9a740-c4db-43ae-a458-c3ba30e61c70",
+        "question": "What does Spyglass retain?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "777db197-03f5-4e15-8e1e-722c0b48263a",
+        "question": "How is completion verified?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "body-contains 39a9a740-c4db-43ae-a458-c3ba30e61c70",
+      "ok": true,
+      "detail": "found"
+    },
+    {
+      "id": "body-contains 777db197-03f5-4e15-8e1e-722c0b48263a",
+      "ok": true,
+      "detail": "found"
+    }
+  ]
+}

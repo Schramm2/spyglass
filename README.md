@@ -439,9 +439,10 @@ and Docker.
 ## Roadmap
 
 See the [product roadmap](docs/roadmap.md) for priorities, completion checks
-and the next development task. The first operator comparison is complete,
-with limits. The next task is to repair its measured API read-after-write gap
-and repeat the affected comparison at equal proof.
+and the next development task. The first operator comparison and its
+[API read-after-write repair](docs/operator-comparison-m1.2.md) are complete,
+with limits. The next milestone is to reduce first-adoption work through
+fresh adoption attempts.
 
 ## Contributing
 

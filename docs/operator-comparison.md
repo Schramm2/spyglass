@@ -519,3 +519,9 @@ attempt. Acceptance checks:
 Other findings to keep visible: the overhead gate fails in this cloud
 container; the first-frame proof surface test fails here; Journey C
 Spyglass operators finished each pair sooner with less written output.
+
+**Resolution note:** [M1.2](operator-comparison-m1.2.md) implements the bounded
+API follow-up GET and records three fresh browser/API pairs. Every new
+Spyglass run met the original control without helper scripts. The earlier
+measurements and coverage limits above are unchanged; the new study uses
+another model, harness and platform and is not a cross-study speed comparison.

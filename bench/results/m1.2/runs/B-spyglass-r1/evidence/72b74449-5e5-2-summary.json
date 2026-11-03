@@ -1,0 +1,3419 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "complete": true,
+  "run": "B-spyglass-r1",
+  "app": "spyglass-demo",
+  "operator": "agent",
+  "generatedAt": "2026-11-03T15:12:50.971Z",
+  "source": {
+    "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+    "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+    "currentHash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+    "changed": []
+  },
+  "claims": [
+    {
+      "id": "signin-refused",
+      "kind": "behavior",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "In the browser, a wrong password on /login is refused.",
+      "entryPoint": "GET /login in the browser",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The page shows Sign in failed.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "06579b39-e0b",
+        "fd85fe1c-8fa"
+      ],
+      "observed": "Submitting the demo email with a deliberately wrong password showed Sign in failed.",
+      "artifacts": [
+        "fd85fe1c-8fa-1-proof-signin-refused.png",
+        "fd85fe1c-8fa-2-proof-signin-refused-snapshot.json",
+        "fd85fe1c-8fa-3-proof-signin-refused-details.json"
+      ],
+      "inspections": []
+    },
+    {
+      "id": "login-dashboard",
+      "kind": "behavior",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "In the browser, the demo user signs in with the correct password.",
+      "entryPoint": "GET /login in the browser",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The browser reaches /dashboard and the heading reads Ask a question.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "095fcbd5-c87",
+        "ff07fb05-956"
+      ],
+      "observed": "Seat agent signed in using its secret reference, reached /dashboard and the Ask a question heading expectation passed.",
+      "artifacts": [
+        "ff07fb05-956-1-expect.json"
+      ],
+      "inspections": []
+    },
+    {
+      "id": "dashboard-mobile",
+      "kind": "visual",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "The signed-in dashboard fits a phone viewport.",
+      "entryPoint": "/dashboard at 390x844",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The heading, question field and Submit question button are visible, readable and not clipped horizontally.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "e43bf638-b2c"
+      ],
+      "observed": "Dashboard proof captured and opened with read.",
+      "artifacts": [
+        "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+        "e43bf638-b2c-2-proof-dashboard-mobile-390x844-snapshot.json",
+        "e43bf638-b2c-3-proof-dashboard-mobile-390x844-details.json"
+      ],
+      "inspections": [
+        {
+          "viewport": "390x844",
+          "expected": "Heading, question field and Submit question button visible, readable and not clipped horizontally.",
+          "observed": "Opened the 390x844 image: Ask a question heading, Question label, empty textarea and green Submit question button are readable and fully inside the viewport. No horizontal clipping is visible.",
+          "artifact": "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png"
+        }
+      ]
+    },
+    {
+      "id": "question-accepted",
+      "kind": "behavior",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "The API accepts a question for processing.",
+      "entryPoint": "POST /api/questions with a bearer [REDACTED]",
+      "precondition": "The demo app is running and ready.",
+      "expected": "HTTP 202 with status pending and an id.",
+      "case": "Valid demo input.",
+      "checks": [
+        "api"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "6d2489ed-3cd"
+      ],
+      "observed": "POST returned HTTP 202, status pending and question id 39a9a740-c4db-43ae-a458-c3ba30e61c70.",
+      "artifacts": [
+        "6d2489ed-3cd-1-api-response.json"
+      ],
+      "inspections": []
+    },
+    {
+      "id": "question-completed",
+      "kind": "side-effect",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "An accepted question completes and is listed.",
+      "entryPoint": "GET /api/questions/<id> and GET /api/questions",
+      "precondition": "The demo app is running and ready.",
+      "expected": "A later separate read shows status complete with an answer, and the list contains the question.",
+      "case": "Valid demo input.",
+      "checks": [
+        "api"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "0a7959ad-481",
+        "5b9f57b6-e30",
+        "ed096c7c-f86",
+        "6d2489ed-3cd"
+      ],
+      "observed": "After the accepted POST, a separate later GET of 39a9a740-c4db-43ae-a458-c3ba30e61c70 returned HTTP 200, complete and a nonempty answer. The list contained both questions complete with answers. The control question also completed on the restored GET.",
+      "artifacts": [
+        "0a7959ad-481-1-api-response.json",
+        "5b9f57b6-e30-1-api-response.json",
+        "ed096c7c-f86-1-api-response.json"
+      ],
+      "inspections": [],
+      "independentRead": "5b9f57b6-e30"
+    },
+    {
+      "id": "error-page-errors",
+      "kind": "behavior",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "The error page reports its console and page errors.",
+      "entryPoint": "GET /error in the browser",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The console error 'fixture console error' and the page error 'fixture page error' are reported and retained.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "ebabbf3f-159",
+        "eeb2c18d-a25",
+        "de56a517-071",
+        "b2efd37d-483"
+      ],
+      "observed": "On /error, console reported fixture console error with type error, and errors reported Error: fixture page error at /error:1:154. Both outputs are retained in linked steps.",
+      "artifacts": [
+        "b2efd37d-483-1-proof-error-page.png",
+        "b2efd37d-483-2-proof-error-page-snapshot.json",
+        "b2efd37d-483-3-proof-error-page-details.json"
+      ],
+      "inspections": []
+    }
+  ],
+  "gates": [],
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r1",
+      "failedStep": "0e1d9959-9a7",
+      "restoredStep": "0a7959ad-481",
+      "observedFailure": "Immediate follow-up GET after HTTP 202 returned pending; json status=complete failed with API_EXPECTATION_FAILED.",
+      "observedPass": "Later GET of the same control question returned complete with an answer; json status=complete passed.",
+      "claim": "question-completed",
+      "expectation": "The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.",
+      "assertion": "json status=complete",
+      "baseline": {
+        "run": "B-spyglass-r1",
+        "source": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "evidence": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1"
+      },
+      "outcome": "passed"
+    }
+  ],
+  "environment": [
+    {
+      "name": "source identity",
+      "status": "passed",
+      "detail": "Current source matches the baseline recorded at up."
+    },
+    {
+      "name": "artifact integrity",
+      "status": "passed",
+      "detail": "19 of 19 recorded artifacts match their checksums."
+    },
+    {
+      "name": "cleanup",
+      "status": "passed",
+      "detail": "Spyglass cleanup: true; external owner cleanup: true."
+    }
+  ],
+  "visualObservations": [
+    {
+      "id": "dashboard-mobile",
+      "viewport": "390x844",
+      "expected": "Heading, question field and Submit question button visible, readable and not clipped horizontally.",
+      "observed": "Opened the 390x844 image: Ask a question heading, Question label, empty textarea and green Submit question button are readable and fully inside the viewport. No horizontal clipping is visible.",
+      "artifact": "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+      "artifacts": [
+        "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png"
+      ]
+    }
+  ],
+  "cleanup": {
+    "runState": "stopped",
+    "spyglassResourcesCleaned": true,
+    "externalOwnerCleaned": "not required"
+  },
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+  ],
+  "attempts": [
+    {
+      "id": "ea8efb6f-976",
+      "command": "up",
+      "args": [],
+      "startedAt": "2026-11-03T15:11:52.333Z",
+      "durationMs": 157,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "ea8efb6f-976-1-profile.json",
+          "sha256": "d640184ee935b85e3020c7e1af12eb3d85318d83a96b22af81f6ca301855b58a",
+          "kind": "configuration",
+          "step": "ea8efb6f-976"
+        },
+        {
+          "path": "ea8efb6f-976-2-plan.json",
+          "sha256": "3c1ab8011b98065d848daf43787c369ea213e41f444573b8fa42b1a04f7c01b8",
+          "kind": "configuration",
+          "step": "ea8efb6f-976"
+        }
+      ],
+      "data": {
+        "id": "B-spyglass-r1",
+        "state": "ready",
+        "repo": "/private/tmp/m12/B-spyglass-r1/repo",
+        "evidence": ".spyglass/runs/B-spyglass-r1/spyglass",
+        "web": "http://127.0.0.1:53557",
+        "api": "http://127.0.0.1:53557/api",
+        "port": 53557,
+        "source": {
+          "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+          "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+          "fileCount": 7
+        },
+        "sourceChanges": [],
+        "profile": "/private/tmp/m12/B-spyglass-r1/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "completion-detects-pending",
+              "claim": "question-completed",
+              "expectation": "The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.",
+              "assertion": "json status=complete"
+            }
+          ],
+          "claims": [
+            {
+              "id": "signin-refused",
+              "behavior": "In the browser, a wrong password on /login is refused.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The page shows Sign in failed.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "login-dashboard",
+              "behavior": "In the browser, the demo user signs in with the correct password.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The browser reaches /dashboard and the heading reads Ask a question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "dashboard-mobile",
+              "behavior": "The signed-in dashboard fits a phone viewport.",
+              "entryPoint": "/dashboard at 390x844",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The heading, question field and Submit question button are visible, readable and not clipped horizontally.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "visual",
+              "required": true
+            },
+            {
+              "id": "question-accepted",
+              "behavior": "The API accepts a question for processing.",
+              "entryPoint": "POST /api/questions with a bearer [REDACTED]",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 202 with status pending and an id.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "question-completed",
+              "behavior": "An accepted question completes and is listed.",
+              "entryPoint": "GET /api/questions/<id> and GET /api/questions",
+              "precondition": "The demo app is running and ready.",
+              "expected": "A later separate read shows status complete with an answer, and the list contains the question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "side-effect",
+              "required": true
+            },
+            {
+              "id": "error-page-errors",
+              "behavior": "The error page reports its console and page errors.",
+              "entryPoint": "GET /error in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The console error 'fixture console error' and the page error 'fixture page error' are reported and retained.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+          ]
+        },
+        "result": ".spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=B-spyglass-r1",
+        "active": {
+          "pid": 38549,
+          "processStartedAt": "2026-11-03T15:11:52.246Z",
+          "command": "up",
+          "startedAt": "2026-11-03T15:11:52.332Z"
+        },
+        "activeSeat": "default",
+        "cleanup": false,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [],
+        "pendingClaims": [
+          "signin-refused",
+          "login-dashboard",
+          "dashboard-mobile",
+          "question-accepted",
+          "question-completed",
+          "error-page-errors"
+        ],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass result --file .spyglass/runs/B-spyglass-r1/spyglass/result.json --run B-spyglass-r1",
+        "resultRules": [
+          "A passed claim lists its successful steps from this run in steps and states what you saw in observed.",
+          "Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.",
+          "Behavior claims signin-refused, login-dashboard, question-accepted, error-page-errors: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.",
+          "Visual claims dashboard-mobile: fill inspections with the viewport, expected, observed and a screenshot artifact from a cited step.",
+          "Side-effect claims question-completed: list the action step and a later read in steps, and set independentRead to the read's step ID. An api read is a GET with a 2xx status other than 202; a db read is a read-only query that is not truncated.",
+          "Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control's claim passes and cites restoredStep.",
+          "Control completion-detects-pending: claim question-completed, assertion json status=complete."
+        ],
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "f653c520-3cf",
+      "command": "doctor",
+      "args": [],
+      "startedAt": "2026-11-03T15:11:52.526Z",
+      "durationMs": 108,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "ready": true,
+        "environment": {
+          "evidenceIgnored": true,
+          "tools": {
+            "node": "v24.11.1",
+            "spyglass": "1.3.1",
+            "browser": "agent-browser 0.38.2"
+          }
+        },
+        "id": "B-spyglass-r1",
+        "state": "ready",
+        "repo": "/private/tmp/m12/B-spyglass-r1/repo",
+        "evidence": ".spyglass/runs/B-spyglass-r1/spyglass",
+        "web": "http://127.0.0.1:53557",
+        "api": "http://127.0.0.1:53557/api",
+        "port": 53557,
+        "source": {
+          "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+          "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+          "fileCount": 7
+        },
+        "sourceChanges": [],
+        "profile": "/private/tmp/m12/B-spyglass-r1/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "completion-detects-pending",
+              "claim": "question-completed",
+              "expectation": "The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.",
+              "assertion": "json status=complete"
+            }
+          ],
+          "claims": [
+            {
+              "id": "signin-refused",
+              "behavior": "In the browser, a wrong password on /login is refused.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The page shows Sign in failed.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "login-dashboard",
+              "behavior": "In the browser, the demo user signs in with the correct password.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The browser reaches /dashboard and the heading reads Ask a question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "dashboard-mobile",
+              "behavior": "The signed-in dashboard fits a phone viewport.",
+              "entryPoint": "/dashboard at 390x844",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The heading, question field and Submit question button are visible, readable and not clipped horizontally.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "visual",
+              "required": true
+            },
+            {
+              "id": "question-accepted",
+              "behavior": "The API accepts a question for processing.",
+              "entryPoint": "POST /api/questions with a bearer [REDACTED]",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 202 with status pending and an id.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "question-completed",
+              "behavior": "An accepted question completes and is listed.",
+              "entryPoint": "GET /api/questions/<id> and GET /api/questions",
+              "precondition": "The demo app is running and ready.",
+              "expected": "A later separate read shows status complete with an answer, and the list contains the question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "side-effect",
+              "required": true
+            },
+            {
+              "id": "error-page-errors",
+              "behavior": "The error page reports its console and page errors.",
+              "entryPoint": "GET /error in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The console error 'fixture console error' and the page error 'fixture page error' are reported and retained.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+          ]
+        },
+        "result": ".spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=B-spyglass-r1",
+        "active": {
+          "pid": 38693,
+          "processStartedAt": "2026-11-03T15:11:52.507Z",
+          "command": "doctor",
+          "startedAt": "2026-11-03T15:11:52.526Z"
+        },
+        "activeSeat": "default",
+        "cleanup": false,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [],
+        "pendingClaims": [
+          "signin-refused",
+          "login-dashboard",
+          "dashboard-mobile",
+          "question-accepted",
+          "question-completed",
+          "error-page-errors"
+        ],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass result --file .spyglass/runs/B-spyglass-r1/spyglass/result.json --run B-spyglass-r1",
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "06579b39-e0b",
+      "command": "ui",
+      "args": [
+        "--seat",
+        "agent",
+        "verify",
+        "--open",
+        "/login",
+        "--do",
+        "find label Email fill agent@example.test",
+        "--do",
+        "find label Password fill deliberately-wrong-password",
+        "--do",
+        "find role button click --name \"Sign in\"",
+        "--expect",
+        "text=Sign in failed"
+      ],
+      "startedAt": "2026-11-03T15:11:59.861Z",
+      "durationMs": 1271,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "summary": "PASS open:passed do-1:passed do-2:passed do-3:passed expect-1:passed",
+        "observation": {
+          "url": "http://127.0.0.1:53557/login",
+          "focused": null,
+          "consoleErrors": 0,
+          "failedRequests": 2,
+          "interactiveCount": 0,
+          "changedLines": 1,
+          "artifacts": []
+        },
+        "seat": "agent",
+        "pageContent": true,
+        "passed": true,
+        "elapsedMs": 1193,
+        "subSteps": [
+          {
+            "id": "open",
+            "label": "open /login",
+            "status": "passed"
+          },
+          {
+            "id": "do-1",
+            "label": "find label Email fill agent@example.test",
+            "status": "passed"
+          },
+          {
+            "id": "do-2",
+            "label": "find label Password fill deliberately-wrong-password",
+            "status": "passed"
+          },
+          {
+            "id": "do-3",
+            "label": "find role button click --name \"Sign in\"",
+            "status": "passed"
+          },
+          {
+            "id": "expect-1",
+            "label": "text=Sign in failed",
+            "status": "passed"
+          }
+        ],
+        "claims": [
+          {
+            "id": "text=Sign in failed",
+            "ok": true,
+            "detail": "held"
+          },
+          {
+            "id": "open",
+            "ok": true,
+            "detail": "passed"
+          },
+          {
+            "id": "do-1",
+            "ok": true,
+            "detail": "passed"
+          },
+          {
+            "id": "do-2",
+            "ok": true,
+            "detail": "passed"
+          },
+          {
+            "id": "do-3",
+            "ok": true,
+            "detail": "passed"
+          }
+        ],
+        "lastObservation": {
+          "url": "http://127.0.0.1:53557/login"
+        },
+        "artifacts": [],
+        "linked": {
+          "claims": [
+            "signin-refused"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "095fcbd5-c87",
+      "command": "ui",
+      "args": [
+        "login",
+        "agent"
+      ],
+      "startedAt": "2026-11-03T15:12:01.176Z",
+      "durationMs": 159,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "seat": "agent",
+        "loggedIn": true,
+        "url": "http://127.0.0.1:53557/dashboard",
+        "pageContent": true,
+        "results": [
+          {
+            "command": [
+              "open",
+              "http://127.0.0.1:53557/login"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "targetId": "2D5434A9D17CB213BEA42CA41FA77EE8",
+              "title": "Spyglass demo",
+              "url": "http://127.0.0.1:53557/login"
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "find",
+              "label",
+              "Email",
+              "fill",
+              "[REDACTED]"
+            ],
+            "error": null,
+            "result": {
+              "filled": "[data-agent-browser-located='true']",
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              }
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "find",
+              "label",
+              "Password",
+              "fill",
+              "[REDACTED]"
+            ],
+            "error": null,
+            "result": {
+              "filled": "[data-agent-browser-located='true']",
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              }
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "find",
+              "role",
+              "button",
+              "click",
+              "--name",
+              "Sign in"
+            ],
+            "error": null,
+            "result": {
+              "clicked": "@e3",
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              }
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "wait",
+              "--url",
+              "**/dashboard**"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "url": "http://127.0.0.1:53557/dashboard"
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "get",
+              "url"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "url": "http://127.0.0.1:53557/dashboard"
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "get",
+              "title"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "title": "Questions"
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "snapshot",
+              "-i",
+              "-c",
+              "--delta"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "origin": "http://127.0.0.1:53557/dashboard",
+              "snapshot": {
+                "kind": "full",
+                "refs": {
+                  "e4": {
+                    "name": "Ask a question",
+                    "role": "heading"
+                  },
+                  "e5": {
+                    "name": "Question",
+                    "role": "textbox"
+                  },
+                  "e6": {
+                    "name": "Submit question",
+                    "role": "button"
+                  }
+                },
+                "revision": 1,
+                "tree": "- heading \"Ask a question\" [level=1, ref=e4]\n- textbox \"Question\" [required, ref=e5]\n- button \"Submit question\" [ref=e6]"
+              }
+            },
+            "success": true
+          }
+        ],
+        "session": {
+          "namespace": "sg-a5e98c15422e",
+          "name": "s-d4f0bc5a29de",
+          "isolatedSeat": "agent"
+        },
+        "linked": {
+          "claims": [
+            "login-dashboard"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "ff07fb05-956",
+      "command": "ui",
+      "args": [
+        "expect",
+        "--url",
+        "/dashboard",
+        "--text",
+        "Ask a question"
+      ],
+      "startedAt": "2026-11-03T15:12:01.376Z",
+      "durationMs": 15,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "ff07fb05-956-1-expect.json",
+          "sha256": "7e30ecdd6f3cbdc4941154573002a02e442cc246795b8687dd38ad606a5befd4",
+          "kind": "page-content",
+          "step": "ff07fb05-956"
+        }
+      ],
+      "data": {
+        "summary": "PASS url=/dashboard text=\"Ask a question\"",
+        "seat": "agent",
+        "pageContent": true,
+        "passed": true,
+        "elapsedMs": 8,
+        "polls": 1,
+        "timeoutMs": 5000,
+        "conditions": [
+          {
+            "id": "url=/dashboard",
+            "ok": true,
+            "observed": "http://127.0.0.1:53557/dashboard"
+          },
+          {
+            "id": "text=Ask a question",
+            "ok": true,
+            "observed": "found"
+          }
+        ],
+        "claims": [
+          {
+            "id": "url=/dashboard",
+            "ok": true,
+            "detail": "http://127.0.0.1:53557/dashboard"
+          },
+          {
+            "id": "text=Ask a question",
+            "ok": true,
+            "detail": "found"
+          }
+        ],
+        "lastObservation": {
+          "url": "http://127.0.0.1:53557/dashboard",
+          "title": "Questions"
+        },
+        "artifacts": [
+          {
+            "path": "ff07fb05-956-1-expect.json",
+            "sha256": "7e30ecdd6f3cbdc4941154573002a02e442cc246795b8687dd38ad606a5befd4",
+            "kind": "page-content",
+            "step": "ff07fb05-956"
+          }
+        ],
+        "linked": {
+          "claims": [
+            "login-dashboard"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "e43bf638-b2c",
+      "command": "ui",
+      "args": [
+        "proof",
+        "dashboard-mobile",
+        "--viewport",
+        "390x844",
+        "--expect",
+        "text=Ask a question",
+        "--expect",
+        "visible=textarea",
+        "--expect",
+        "text=Submit question"
+      ],
+      "startedAt": "2026-11-03T15:12:01.430Z",
+      "durationMs": 257,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+          "sha256": "e8fb4846f3a4fafdcca6f9462ba242b9c42c50fba141225c3c0b441ea69a79a8",
+          "kind": "image",
+          "step": "e43bf638-b2c"
+        },
+        {
+          "path": "e43bf638-b2c-2-proof-dashboard-mobile-390x844-snapshot.json",
+          "sha256": "c363500b44339e445805c592dde077bbeb94adf45b2b8a59929ad59e2aa968ba",
+          "kind": "page-snapshot",
+          "step": "e43bf638-b2c"
+        },
+        {
+          "path": "e43bf638-b2c-3-proof-dashboard-mobile-390x844-details.json",
+          "sha256": "606c61f693e53d3818cc57469730f780cdb2ebf636ef10cbc80b70994dcd703d",
+          "kind": "page-content",
+          "step": "e43bf638-b2c"
+        }
+      ],
+      "data": {
+        "summary": "PASS proof-390x844:passed",
+        "observation": {
+          "url": "http://127.0.0.1:53557/dashboard",
+          "title": "Questions",
+          "focused": null,
+          "consoleErrors": 0,
+          "failedRequests": 2,
+          "interactiveCount": 0,
+          "changedLines": 0,
+          "artifacts": [
+            "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+            "e43bf638-b2c-2-proof-dashboard-mobile-390x844-snapshot.json",
+            "e43bf638-b2c-3-proof-dashboard-mobile-390x844-details.json"
+          ]
+        },
+        "seat": "agent",
+        "pageContent": true,
+        "passed": true,
+        "elapsedMs": 249,
+        "subSteps": [
+          {
+            "id": "proof-390x844",
+            "label": "proof dashboard-mobile at 390x844",
+            "status": "passed"
+          }
+        ],
+        "claims": [
+          {
+            "id": "proof-390x844",
+            "ok": true,
+            "detail": "passed"
+          }
+        ],
+        "viewports": [
+          {
+            "viewport": "390x844",
+            "artifact": "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png"
+          }
+        ],
+        "lastObservation": {
+          "url": "http://127.0.0.1:53557/dashboard",
+          "title": "Questions"
+        },
+        "artifacts": [
+          {
+            "path": "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+            "sha256": "e8fb4846f3a4fafdcca6f9462ba242b9c42c50fba141225c3c0b441ea69a79a8",
+            "kind": "image",
+            "step": "e43bf638-b2c"
+          },
+          {
+            "path": "e43bf638-b2c-2-proof-dashboard-mobile-390x844-snapshot.json",
+            "sha256": "c363500b44339e445805c592dde077bbeb94adf45b2b8a59929ad59e2aa968ba",
+            "kind": "page-snapshot",
+            "step": "e43bf638-b2c"
+          },
+          {
+            "path": "e43bf638-b2c-3-proof-dashboard-mobile-390x844-details.json",
+            "sha256": "606c61f693e53d3818cc57469730f780cdb2ebf636ef10cbc80b70994dcd703d",
+            "kind": "page-content",
+            "step": "e43bf638-b2c"
+          }
+        ],
+        "linked": {
+          "claims": [
+            "dashboard-mobile"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "8eae4f79-493",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "dashboard-mobile",
+        "--outcome",
+        "passed",
+        "--observed",
+        "Dashboard proof captured and opened with read.",
+        "--inspect",
+        "390x844:e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+        "--expected",
+        "Heading, question field and Submit question button visible, readable and not clipped horizontally.",
+        "--observed",
+        "Opened the 390x844 image: Ask a question heading, Question label, empty textarea and green Submit question button are readable and fully inside the viewport. No horizontal clipping is visible."
+      ],
+      "startedAt": "2026-11-03T15:12:15.860Z",
+      "durationMs": 35,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim dashboard-mobile",
+        "recorded": false,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --check --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "6d2489ed-3cd",
+      "command": "api",
+      "args": [
+        "POST",
+        "/questions",
+        "--seat",
+        "agent",
+        "--data",
+        "{\"question\":\"What does Spyglass retain?\"}",
+        "--expect",
+        "202",
+        "--expect-json",
+        "status=pending",
+        "--expect-json",
+        "id!=null"
+      ],
+      "startedAt": "2026-11-03T15:12:15.930Z",
+      "durationMs": 44,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "6d2489ed-3cd-1-api-response.json",
+          "sha256": "741e82860510e822a69507fec8b74c14f8a685556b5e2075cdffbb5593455970",
+          "kind": "api",
+          "step": "6d2489ed-3cd"
+        }
+      ],
+      "data": {
+        "method": "POST",
+        "url": "http://127.0.0.1:53557/api/questions",
+        "status": 202,
+        "body": {
+          "id": "39a9a740-c4db-43ae-a458-c3ba30e61c70",
+          "status": "pending"
+        },
+        "artifacts": [
+          {
+            "path": "6d2489ed-3cd-1-api-response.json",
+            "sha256": "741e82860510e822a69507fec8b74c14f8a685556b5e2075cdffbb5593455970",
+            "kind": "api",
+            "step": "6d2489ed-3cd"
+          }
+        ],
+        "claims": [
+          {
+            "id": "status=202",
+            "ok": true,
+            "detail": "HTTP 202"
+          },
+          {
+            "id": "json status=pending",
+            "ok": true,
+            "detail": "observed \"pending\""
+          },
+          {
+            "id": "json id!=null",
+            "ok": true,
+            "detail": "observed \"39a9a740-c4db-43ae-a458-c3ba30e61c70\""
+          }
+        ],
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [
+            "question-accepted"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "0e1d9959-9a7",
+      "command": "api",
+      "args": [
+        "POST",
+        "/questions",
+        "--seat",
+        "agent",
+        "--data",
+        "{\"question\":\"How is completion verified?\"}",
+        "--expect",
+        "202",
+        "--expect-json",
+        "status=pending",
+        "--then",
+        "GET",
+        "/questions/{body.id}",
+        "--then-expect-json",
+        "status=complete"
+      ],
+      "startedAt": "2026-11-03T15:12:16.012Z",
+      "durationMs": 36,
+      "exitCode": 1,
+      "commandExitCode": 1,
+      "status": "failed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "0e1d9959-9a7-1-api-response.json",
+          "sha256": "daed509c5f500e36c81f2ae7b9e3dc2aef776feb668b6bb36ae7d2346f5523b2",
+          "kind": "api",
+          "step": "0e1d9959-9a7"
+        },
+        {
+          "path": "0e1d9959-9a7-2-api-response.json",
+          "sha256": "dd47a4987c35f4a2df0a1da3f7cca794cd5bff0ad84da333dd8e71f3c707eb7b",
+          "kind": "api",
+          "step": "0e1d9959-9a7"
+        }
+      ],
+      "data": {
+        "followUp": {
+          "method": "GET",
+          "url": "http://127.0.0.1:53557/api/questions/777db197-03f5-4e15-8e1e-722c0b48263a",
+          "status": 200,
+          "body": {
+            "id": "777db197-03f5-4e15-8e1e-722c0b48263a",
+            "question": "How is completion verified?",
+            "status": "pending"
+          },
+          "artifacts": [
+            {
+              "path": "0e1d9959-9a7-2-api-response.json",
+              "sha256": "dd47a4987c35f4a2df0a1da3f7cca794cd5bff0ad84da333dd8e71f3c707eb7b",
+              "kind": "api",
+              "step": "0e1d9959-9a7"
+            }
+          ],
+          "claims": [
+            {
+              "id": "status=200",
+              "ok": true,
+              "detail": "HTTP 200"
+            },
+            {
+              "id": "json status=complete",
+              "ok": false,
+              "detail": "observed \"pending\""
+            }
+          ]
+        },
+        "method": "POST",
+        "url": "http://127.0.0.1:53557/api/questions",
+        "status": 202,
+        "body": {
+          "id": "777db197-03f5-4e15-8e1e-722c0b48263a",
+          "status": "pending"
+        },
+        "artifacts": [
+          {
+            "path": "0e1d9959-9a7-1-api-response.json",
+            "sha256": "daed509c5f500e36c81f2ae7b9e3dc2aef776feb668b6bb36ae7d2346f5523b2",
+            "kind": "api",
+            "step": "0e1d9959-9a7"
+          },
+          {
+            "path": "0e1d9959-9a7-2-api-response.json",
+            "sha256": "dd47a4987c35f4a2df0a1da3f7cca794cd5bff0ad84da333dd8e71f3c707eb7b",
+            "kind": "api",
+            "step": "0e1d9959-9a7"
+          }
+        ],
+        "claims": [
+          {
+            "id": "write success",
+            "ok": true,
+            "detail": "HTTP 202"
+          },
+          {
+            "id": "write status=202",
+            "ok": true,
+            "detail": "HTTP 202"
+          },
+          {
+            "id": "write json status=pending",
+            "ok": true,
+            "detail": "observed \"pending\""
+          },
+          {
+            "id": "status=200",
+            "ok": true,
+            "detail": "HTTP 200"
+          },
+          {
+            "id": "json status=complete",
+            "ok": false,
+            "detail": "observed \"pending\""
+          }
+        ],
+        "passed": false,
+        "error": {
+          "code": "API_EXPECTATION_FAILED",
+          "message": "API expectation failed: json status=complete (observed \"pending\")."
+        },
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [],
+          "controls": [
+            "completion-detects-pending:failed"
+          ],
+          "gates": [],
+          "skipped": [
+            "claim question-completed: the step failed, so it is not cited"
+          ]
+        }
+      }
+    },
+    {
+      "id": "0a7959ad-481",
+      "command": "api",
+      "args": [
+        "GET",
+        "/questions/777db197-03f5-4e15-8e1e-722c0b48263a",
+        "--seat",
+        "agent",
+        "--expect",
+        "200",
+        "--expect-json",
+        "status=complete",
+        "--expect-json",
+        "answer!=null"
+      ],
+      "startedAt": "2026-11-03T15:12:25.491Z",
+      "durationMs": 36,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "0a7959ad-481-1-api-response.json",
+          "sha256": "ad32ad0b6271d903af4830bfd700bd988d87b0bd6e5e5823d8a0594e6630e809",
+          "kind": "api",
+          "step": "0a7959ad-481"
+        }
+      ],
+      "data": {
+        "method": "GET",
+        "url": "http://127.0.0.1:53557/api/questions/777db197-03f5-4e15-8e1e-722c0b48263a",
+        "status": 200,
+        "body": {
+          "id": "777db197-03f5-4e15-8e1e-722c0b48263a",
+          "question": "How is completion verified?",
+          "status": "complete",
+          "answer": "Thanks. We received your question."
+        },
+        "artifacts": [
+          {
+            "path": "0a7959ad-481-1-api-response.json",
+            "sha256": "ad32ad0b6271d903af4830bfd700bd988d87b0bd6e5e5823d8a0594e6630e809",
+            "kind": "api",
+            "step": "0a7959ad-481"
+          }
+        ],
+        "claims": [
+          {
+            "id": "status=200",
+            "ok": true,
+            "detail": "HTTP 200"
+          },
+          {
+            "id": "json status=complete",
+            "ok": true,
+            "detail": "observed \"complete\""
+          },
+          {
+            "id": "json answer!=null",
+            "ok": true,
+            "detail": "observed \"Thanks. We received your question.\""
+          }
+        ],
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [
+            "question-completed"
+          ],
+          "controls": [
+            "completion-detects-pending:restored"
+          ],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "5b9f57b6-e30",
+      "command": "api",
+      "args": [
+        "GET",
+        "/questions/39a9a740-c4db-43ae-a458-c3ba30e61c70",
+        "--seat",
+        "agent",
+        "--expect",
+        "200",
+        "--expect-json",
+        "status=complete",
+        "--expect-json",
+        "answer!=null"
+      ],
+      "startedAt": "2026-11-03T15:12:25.566Z",
+      "durationMs": 33,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "5b9f57b6-e30-1-api-response.json",
+          "sha256": "fdae9258ccfee68630bef4fb07e9e489ad56209e117ca3f08aaae561043104ac",
+          "kind": "api",
+          "step": "5b9f57b6-e30"
+        }
+      ],
+      "data": {
+        "method": "GET",
+        "url": "http://127.0.0.1:53557/api/questions/39a9a740-c4db-43ae-a458-c3ba30e61c70",
+        "status": 200,
+        "body": {
+          "id": "39a9a740-c4db-43ae-a458-c3ba30e61c70",
+          "question": "What does Spyglass retain?",
+          "status": "complete",
+          "answer": "Thanks. We received your question."
+        },
+        "artifacts": [
+          {
+            "path": "5b9f57b6-e30-1-api-response.json",
+            "sha256": "fdae9258ccfee68630bef4fb07e9e489ad56209e117ca3f08aaae561043104ac",
+            "kind": "api",
+            "step": "5b9f57b6-e30"
+          }
+        ],
+        "claims": [
+          {
+            "id": "status=200",
+            "ok": true,
+            "detail": "HTTP 200"
+          },
+          {
+            "id": "json status=complete",
+            "ok": true,
+            "detail": "observed \"complete\""
+          },
+          {
+            "id": "json answer!=null",
+            "ok": true,
+            "detail": "observed \"Thanks. We received your question.\""
+          }
+        ],
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [
+            "question-completed"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "ed096c7c-f86",
+      "command": "api",
+      "args": [
+        "GET",
+        "/questions",
+        "--seat",
+        "agent",
+        "--expect",
+        "200",
+        "--expect-body-contains",
+        "39a9a740-c4db-43ae-a458-c3ba30e61c70",
+        "--expect-body-contains",
+        "777db197-03f5-4e15-8e1e-722c0b48263a"
+      ],
+      "startedAt": "2026-11-03T15:12:25.635Z",
+      "durationMs": 34,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "ed096c7c-f86-1-api-response.json",
+          "sha256": "087065376706a227b23b1152dff0f1004f34fc63b09a0ea6b61211b6834dc50d",
+          "kind": "api",
+          "step": "ed096c7c-f86"
+        }
+      ],
+      "data": {
+        "method": "GET",
+        "url": "http://127.0.0.1:53557/api/questions",
+        "status": 200,
+        "body": [
+          {
+            "id": "39a9a740-c4db-43ae-a458-c3ba30e61c70",
+            "question": "What does Spyglass retain?",
+            "status": "complete",
+            "answer": "Thanks. We received your question."
+          },
+          {
+            "id": "777db197-03f5-4e15-8e1e-722c0b48263a",
+            "question": "How is completion verified?",
+            "status": "complete",
+            "answer": "Thanks. We received your question."
+          }
+        ],
+        "artifacts": [
+          {
+            "path": "ed096c7c-f86-1-api-response.json",
+            "sha256": "087065376706a227b23b1152dff0f1004f34fc63b09a0ea6b61211b6834dc50d",
+            "kind": "api",
+            "step": "ed096c7c-f86"
+          }
+        ],
+        "claims": [
+          {
+            "id": "status=200",
+            "ok": true,
+            "detail": "HTTP 200"
+          },
+          {
+            "id": "body-contains 39a9a740-c4db-43ae-a458-c3ba30e61c70",
+            "ok": true,
+            "detail": "found"
+          },
+          {
+            "id": "body-contains 777db197-03f5-4e15-8e1e-722c0b48263a",
+            "ok": true,
+            "detail": "found"
+          }
+        ],
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [
+            "question-completed"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "ebabbf3f-159",
+      "command": "ui",
+      "args": [
+        "open",
+        "/error"
+      ],
+      "startedAt": "2026-11-03T15:12:25.705Z",
+      "durationMs": 34,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "seat": "agent",
+        "pageContent": true,
+        "currentUrl": "http://127.0.0.1:53557/error",
+        "results": [
+          {
+            "command": [
+              "open",
+              "http://127.0.0.1:53557/error"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "targetId": "2D5434A9D17CB213BEA42CA41FA77EE8",
+              "title": "Error page",
+              "url": "http://127.0.0.1:53557/error"
+            },
+            "success": true
+          },
+          {
+            "command": [
+              "get",
+              "url"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "url": "http://127.0.0.1:53557/error"
+            },
+            "success": true
+          }
+        ],
+        "session": {
+          "namespace": "sg-a5e98c15422e",
+          "name": "s-d4f0bc5a29de",
+          "isolatedSeat": "agent"
+        },
+        "linked": {
+          "claims": [
+            "error-page-errors"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "eeb2c18d-a25",
+      "command": "ui",
+      "args": [
+        "console"
+      ],
+      "startedAt": "2026-11-03T15:12:25.778Z",
+      "durationMs": 12,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "seat": "agent",
+        "pageContent": true,
+        "results": [
+          {
+            "command": [
+              "console"
+            ],
+            "error": null,
+            "result": {
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              },
+              "messages": [
+                {
+                  "args": [
+                    {
+                      "type": "string",
+                      "value": "fixture console error"
+                    }
+                  ],
+                  "text": "fixture console error",
+                  "type": "error"
+                }
+              ]
+            },
+            "success": true
+          }
+        ],
+        "session": {
+          "namespace": "sg-a5e98c15422e",
+          "name": "s-d4f0bc5a29de",
+          "isolatedSeat": "agent"
+        },
+        "linked": {
+          "claims": [
+            "error-page-errors"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "de56a517-071",
+      "command": "ui",
+      "args": [
+        "errors"
+      ],
+      "startedAt": "2026-11-03T15:12:25.826Z",
+      "durationMs": 12,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "seat": "agent",
+        "pageContent": true,
+        "results": [
+          {
+            "command": [
+              "errors"
+            ],
+            "error": null,
+            "result": {
+              "errors": [
+                {
+                  "column": 153,
+                  "line": 0,
+                  "text": "Error: fixture page error\n    at http://127.0.0.1:53557/error:1:154",
+                  "url": null
+                }
+              ],
+              "lifecycle": {
+                "effectiveLaunch": {
+                  "browserLaunched": true,
+                  "engine": "chrome",
+                  "launchHash": 5990918832389715000
+                },
+                "launched": false,
+                "relaunchedBrowser": false,
+                "restartedBackground": false,
+                "restoreStatus": "not_configured",
+                "reused": true,
+                "saveStatus": "not_attempted"
+              }
+            },
+            "success": true
+          }
+        ],
+        "session": {
+          "namespace": "sg-a5e98c15422e",
+          "name": "s-d4f0bc5a29de",
+          "isolatedSeat": "agent"
+        },
+        "linked": {
+          "claims": [
+            "error-page-errors"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "7eb64b92-02f",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "signin-refused",
+        "--outcome",
+        "passed",
+        "--observed",
+        "Submitting the demo email with a deliberately wrong password showed Sign in failed."
+      ],
+      "startedAt": "2026-11-03T15:12:37.027Z",
+      "durationMs": 34,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim signin-refused",
+        "recorded": false,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --check --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "414b2f44-73f",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "login-dashboard",
+        "--outcome",
+        "passed",
+        "--observed",
+        "Seat agent signed in using its secret reference, reached /dashboard and the Ask a question heading expectation passed."
+      ],
+      "startedAt": "2026-11-03T15:12:37.096Z",
+      "durationMs": 18,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim login-dashboard",
+        "recorded": false,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --check --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "588d1658-597",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "question-accepted",
+        "--outcome",
+        "passed",
+        "--observed",
+        "POST returned HTTP 202, status pending and question id 39a9a740-c4db-43ae-a458-c3ba30e61c70."
+      ],
+      "startedAt": "2026-11-03T15:12:37.151Z",
+      "durationMs": 18,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim question-accepted",
+        "recorded": false,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --check --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "f86c9052-6d0",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "question-completed",
+        "--outcome",
+        "passed",
+        "--step",
+        "6d2489ed-3cd",
+        "--observed",
+        "After the accepted POST, a separate later GET of 39a9a740-c4db-43ae-a458-c3ba30e61c70 returned HTTP 200, complete and a nonempty answer. The list contained both questions complete with answers. The control question also completed on the restored GET."
+      ],
+      "startedAt": "2026-11-03T15:12:37.204Z",
+      "durationMs": 17,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim question-completed",
+        "recorded": false,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --check --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "4565dc7b-1b6",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "error-page-errors",
+        "--outcome",
+        "passed",
+        "--observed",
+        "On /error, console reported fixture console error with type error, and errors reported Error: fixture page error at /error:1:154. Both outputs are retained in linked steps."
+      ],
+      "startedAt": "2026-11-03T15:12:37.259Z",
+      "durationMs": 25,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim error-page-errors",
+        "recorded": false,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --check --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "1150f5e1-dd5",
+      "command": "result",
+      "args": [
+        "set",
+        "--control",
+        "completion-detects-pending",
+        "--observed-failure",
+        "Immediate follow-up GET after HTTP 202 returned pending; json status=complete failed with API_EXPECTATION_FAILED.",
+        "--observed-pass",
+        "Later GET of the same control question returned complete with an answer; json status=complete passed."
+      ],
+      "startedAt": "2026-11-03T15:12:37.334Z",
+      "durationMs": 18,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "control completion-detects-pending",
+        "recorded": false,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --check --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "d1a58b84-4de",
+      "command": "result",
+      "args": [
+        "--check"
+      ],
+      "startedAt": "2026-11-03T15:12:37.389Z",
+      "durationMs": 22,
+      "exitCode": 1,
+      "commandExitCode": 1,
+      "status": "failed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "findings": [
+          {
+            "code": "MISSING_EVIDENCE",
+            "message": "Claim signin-refused cannot pass without existing evidence attached to its steps.",
+            "claim": "signin-refused",
+            "repair": "Cite a step that kept evidence. Run it again with --claim signin-refused and Spyglass links its artifacts.",
+            "blocking": true
+          },
+          {
+            "code": "BEHAVIOR_EVIDENCE_MISSING",
+            "message": "Behavior claim signin-refused needs retained non-image evidence; a screenshot alone cannot prove behavior.",
+            "claim": "signin-refused",
+            "repair": "Cite a step that kept non-image evidence, such as ui proof, api or check output. A screenshot alone proves no behavior.",
+            "blocking": true
+          },
+          {
+            "code": "MISSING_EVIDENCE",
+            "message": "Claim error-page-errors cannot pass without existing evidence attached to its steps.",
+            "claim": "error-page-errors",
+            "repair": "Cite a step that kept evidence. Run it again with --claim error-page-errors and Spyglass links its artifacts.",
+            "blocking": true
+          },
+          {
+            "code": "BEHAVIOR_EVIDENCE_MISSING",
+            "message": "Behavior claim error-page-errors needs retained non-image evidence; a screenshot alone cannot prove behavior.",
+            "claim": "error-page-errors",
+            "repair": "Cite a step that kept non-image evidence, such as ui proof, api or check output. A screenshot alone proves no behavior.",
+            "blocking": true
+          }
+        ],
+        "blocking": 4,
+        "checked": true,
+        "passed": false,
+        "error": {
+          "code": "PROOF_INCOMPLETE",
+          "message": "Claim signin-refused cannot pass without existing evidence attached to its steps. 3 more blocking findings are in data.findings."
+        }
+      }
+    },
+    {
+      "id": "b2efd37d-483",
+      "command": "ui",
+      "args": [
+        "proof",
+        "error-page",
+        "--expect",
+        "url=/error"
+      ],
+      "startedAt": "2026-11-03T15:12:44.331Z",
+      "durationMs": 92,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "b2efd37d-483-1-proof-error-page.png",
+          "sha256": "910ed90afc2e63a14465dc895c9290c04350e117f7f859ae13542cb39d27420b",
+          "kind": "image",
+          "step": "b2efd37d-483"
+        },
+        {
+          "path": "b2efd37d-483-2-proof-error-page-snapshot.json",
+          "sha256": "2735116172588766beaade5b8b349eb1cf04bb6286adc6a859fe38b91eb8d90c",
+          "kind": "page-snapshot",
+          "step": "b2efd37d-483"
+        },
+        {
+          "path": "b2efd37d-483-3-proof-error-page-details.json",
+          "sha256": "26ff911a43dabb226523c356b0f268b0aa98bbf1f19ea764402ba7e68f0c0a35",
+          "kind": "page-content",
+          "step": "b2efd37d-483"
+        }
+      ],
+      "data": {
+        "summary": "PASS expect-1:passed proof:passed",
+        "observation": {
+          "url": "http://127.0.0.1:53557/error",
+          "title": "Error page",
+          "focused": null,
+          "consoleErrors": 2,
+          "failedRequests": 0,
+          "interactiveCount": 0,
+          "changedLines": 1,
+          "artifacts": [
+            "b2efd37d-483-1-proof-error-page.png",
+            "b2efd37d-483-2-proof-error-page-snapshot.json",
+            "b2efd37d-483-3-proof-error-page-details.json"
+          ]
+        },
+        "seat": "agent",
+        "pageContent": true,
+        "passed": true,
+        "elapsedMs": 85,
+        "subSteps": [
+          {
+            "id": "expect-1",
+            "label": "url=/error",
+            "status": "passed"
+          },
+          {
+            "id": "proof",
+            "label": "proof error-page",
+            "status": "passed"
+          }
+        ],
+        "claims": [
+          {
+            "id": "url=/error",
+            "ok": true,
+            "detail": "held"
+          },
+          {
+            "id": "proof",
+            "ok": true,
+            "detail": "passed"
+          }
+        ],
+        "lastObservation": {
+          "url": "http://127.0.0.1:53557/error",
+          "title": "Error page"
+        },
+        "artifacts": [
+          {
+            "path": "b2efd37d-483-1-proof-error-page.png",
+            "sha256": "910ed90afc2e63a14465dc895c9290c04350e117f7f859ae13542cb39d27420b",
+            "kind": "image",
+            "step": "b2efd37d-483"
+          },
+          {
+            "path": "b2efd37d-483-2-proof-error-page-snapshot.json",
+            "sha256": "2735116172588766beaade5b8b349eb1cf04bb6286adc6a859fe38b91eb8d90c",
+            "kind": "page-snapshot",
+            "step": "b2efd37d-483"
+          },
+          {
+            "path": "b2efd37d-483-3-proof-error-page-details.json",
+            "sha256": "26ff911a43dabb226523c356b0f268b0aa98bbf1f19ea764402ba7e68f0c0a35",
+            "kind": "page-content",
+            "step": "b2efd37d-483"
+          }
+        ],
+        "linked": {
+          "claims": [
+            "error-page-errors"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "fd85fe1c-8fa",
+      "command": "ui",
+      "args": [
+        "verify",
+        "--open",
+        "/login",
+        "--do",
+        "find label Email fill agent@example.test",
+        "--do",
+        "find label Password fill deliberately-wrong-password",
+        "--do",
+        "find role button click --name \"Sign in\"",
+        "--expect",
+        "text=Sign in failed",
+        "--proof",
+        "signin-refused"
+      ],
+      "startedAt": "2026-11-03T15:12:44.469Z",
+      "durationMs": 701,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "fd85fe1c-8fa-1-proof-signin-refused.png",
+          "sha256": "cee513617b0d1d375a4d940ddf15fcbfdeceffa8e3f54ba5ccde79f5619791b6",
+          "kind": "image",
+          "step": "fd85fe1c-8fa"
+        },
+        {
+          "path": "fd85fe1c-8fa-2-proof-signin-refused-snapshot.json",
+          "sha256": "a68bd9399f8f37478c83c1bc9ed0e203d40dae18cc5beaa8d431c078b0d07a10",
+          "kind": "page-snapshot",
+          "step": "fd85fe1c-8fa"
+        },
+        {
+          "path": "fd85fe1c-8fa-3-proof-signin-refused-details.json",
+          "sha256": "f0c4ba7d975aa37d4058db8acc51da5668b71a4e9875ab0e19b223ebfb45a77d",
+          "kind": "page-content",
+          "step": "fd85fe1c-8fa"
+        }
+      ],
+      "data": {
+        "summary": "PASS open:passed do-1:passed do-2:passed do-3:passed expect-1:passed proof:passed",
+        "observation": {
+          "url": "http://127.0.0.1:53557/login",
+          "focused": null,
+          "consoleErrors": 1,
+          "failedRequests": 1,
+          "interactiveCount": 0,
+          "changedLines": 1,
+          "artifacts": [
+            "fd85fe1c-8fa-1-proof-signin-refused.png",
+            "fd85fe1c-8fa-2-proof-signin-refused-snapshot.json",
+            "fd85fe1c-8fa-3-proof-signin-refused-details.json"
+          ]
+        },
+        "seat": "agent",
+        "pageContent": true,
+        "passed": true,
+        "elapsedMs": 694,
+        "subSteps": [
+          {
+            "id": "open",
+            "label": "open /login",
+            "status": "passed"
+          },
+          {
+            "id": "do-1",
+            "label": "find label Email fill agent@example.test",
+            "status": "passed"
+          },
+          {
+            "id": "do-2",
+            "label": "find label Password fill deliberately-wrong-password",
+            "status": "passed"
+          },
+          {
+            "id": "do-3",
+            "label": "find role button click --name \"Sign in\"",
+            "status": "passed"
+          },
+          {
+            "id": "expect-1",
+            "label": "text=Sign in failed",
+            "status": "passed"
+          },
+          {
+            "id": "proof",
+            "label": "proof signin-refused",
+            "status": "passed"
+          }
+        ],
+        "claims": [
+          {
+            "id": "text=Sign in failed",
+            "ok": true,
+            "detail": "held"
+          },
+          {
+            "id": "open",
+            "ok": true,
+            "detail": "passed"
+          },
+          {
+            "id": "do-1",
+            "ok": true,
+            "detail": "passed"
+          },
+          {
+            "id": "do-2",
+            "ok": true,
+            "detail": "passed"
+          },
+          {
+            "id": "do-3",
+            "ok": true,
+            "detail": "passed"
+          },
+          {
+            "id": "proof",
+            "ok": true,
+            "detail": "passed"
+          }
+        ],
+        "lastObservation": {
+          "url": "http://127.0.0.1:53557/login"
+        },
+        "artifacts": [
+          {
+            "path": "fd85fe1c-8fa-1-proof-signin-refused.png",
+            "sha256": "cee513617b0d1d375a4d940ddf15fcbfdeceffa8e3f54ba5ccde79f5619791b6",
+            "kind": "image",
+            "step": "fd85fe1c-8fa"
+          },
+          {
+            "path": "fd85fe1c-8fa-2-proof-signin-refused-snapshot.json",
+            "sha256": "a68bd9399f8f37478c83c1bc9ed0e203d40dae18cc5beaa8d431c078b0d07a10",
+            "kind": "page-snapshot",
+            "step": "fd85fe1c-8fa"
+          },
+          {
+            "path": "fd85fe1c-8fa-3-proof-signin-refused-details.json",
+            "sha256": "f0c4ba7d975aa37d4058db8acc51da5668b71a4e9875ab0e19b223ebfb45a77d",
+            "kind": "page-content",
+            "step": "fd85fe1c-8fa"
+          }
+        ],
+        "linked": {
+          "claims": [
+            "signin-refused"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "882f95c5-9e3",
+      "command": "result",
+      "args": [
+        "--check"
+      ],
+      "startedAt": "2026-11-03T15:12:45.214Z",
+      "durationMs": 22,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "checked": true,
+        "valid": true,
+        "recorded": false,
+        "operator": "agent",
+        "claims": 6,
+        "gates": 0,
+        "controls": 1,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "next": "spyglass result --run B-spyglass-r1"
+      }
+    },
+    {
+      "id": "b6369c8c-b02",
+      "command": "result",
+      "args": [],
+      "startedAt": "2026-11-03T15:12:49.673Z",
+      "durationMs": 5,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "checked": false,
+        "valid": true,
+        "recorded": true,
+        "operator": "agent",
+        "claims": 6,
+        "gates": 0,
+        "controls": 1,
+        "resultPath": "/private/tmp/m12/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/result.json"
+      }
+    },
+    {
+      "id": "cd623a8e-c59",
+      "command": "doctor",
+      "args": [],
+      "startedAt": "2026-11-03T15:12:49.678Z",
+      "durationMs": 103,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "ready": true,
+        "environment": {
+          "evidenceIgnored": true,
+          "tools": {
+            "node": "v24.11.1",
+            "spyglass": "1.3.1",
+            "browser": "agent-browser 0.38.2"
+          }
+        },
+        "id": "B-spyglass-r1",
+        "state": "ready",
+        "repo": "/private/tmp/m12/B-spyglass-r1/repo",
+        "evidence": ".spyglass/runs/B-spyglass-r1/spyglass",
+        "web": "http://127.0.0.1:53557",
+        "api": "http://127.0.0.1:53557/api",
+        "port": 53557,
+        "source": {
+          "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+          "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+          "fileCount": 7
+        },
+        "sourceChanges": [],
+        "profile": "/private/tmp/m12/B-spyglass-r1/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "completion-detects-pending",
+              "claim": "question-completed",
+              "expectation": "The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.",
+              "assertion": "json status=complete"
+            }
+          ],
+          "claims": [
+            {
+              "id": "signin-refused",
+              "behavior": "In the browser, a wrong password on /login is refused.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The page shows Sign in failed.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "login-dashboard",
+              "behavior": "In the browser, the demo user signs in with the correct password.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The browser reaches /dashboard and the heading reads Ask a question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "dashboard-mobile",
+              "behavior": "The signed-in dashboard fits a phone viewport.",
+              "entryPoint": "/dashboard at 390x844",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The heading, question field and Submit question button are visible, readable and not clipped horizontally.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "visual",
+              "required": true
+            },
+            {
+              "id": "question-accepted",
+              "behavior": "The API accepts a question for processing.",
+              "entryPoint": "POST /api/questions with a bearer [REDACTED]",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 202 with status pending and an id.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "question-completed",
+              "behavior": "An accepted question completes and is listed.",
+              "entryPoint": "GET /api/questions/<id> and GET /api/questions",
+              "precondition": "The demo app is running and ready.",
+              "expected": "A later separate read shows status complete with an answer, and the list contains the question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "side-effect",
+              "required": true
+            },
+            {
+              "id": "error-page-errors",
+              "behavior": "The error page reports its console and page errors.",
+              "entryPoint": "GET /error in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The console error 'fixture console error' and the page error 'fixture page error' are reported and retained.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+          ]
+        },
+        "result": ".spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=B-spyglass-r1",
+        "active": {
+          "pid": 39636,
+          "processStartedAt": "2026-11-03T15:12:49.626Z",
+          "command": "finish",
+          "startedAt": "2026-11-03T15:12:49.653Z"
+        },
+        "activeSeat": "agent",
+        "cleanup": false,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [],
+        "pendingClaims": [],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass down --run B-spyglass-r1",
+        "browser": {
+          "proxy": {
+            "available": true,
+            "healthy": true,
+            "originCount": 1
+          },
+          "sessions": [
+            {
+              "seat": "agent",
+              "namespace": "sg-a5e98c15422e",
+              "session": "s-d4f0bc5a29de",
+              "active": true
+            }
+          ]
+        },
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "61974bd0-4ad",
+      "command": "down",
+      "args": [],
+      "startedAt": "2026-11-03T15:12:49.781Z",
+      "durationMs": 1172,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+        "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "GLOSSARY.md": "b3d79a9d500d8cb107a52ce0531e73a26ff02bc07761820867111eeed96842a4",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "61974bd0-4ad-1-launch-final.log",
+          "sha256": "6f03130710872f97d242197ab10bbd228eaa600e3ca4da73ecce30a637010adf",
+          "kind": "text",
+          "step": "61974bd0-4ad"
+        }
+      ],
+      "data": {
+        "id": "B-spyglass-r1",
+        "state": "stopped",
+        "repo": "/private/tmp/m12/B-spyglass-r1/repo",
+        "evidence": ".spyglass/runs/B-spyglass-r1/spyglass",
+        "web": "http://127.0.0.1:53557",
+        "api": "http://127.0.0.1:53557/api",
+        "port": 53557,
+        "source": {
+          "commit": "b35215e58a3f4196c7120f97995e34c2d9757454",
+          "hash": "60bb5e665d63bd40f514554cebce89d7125394985598a40112744c3a8ac54426",
+          "fileCount": 7
+        },
+        "sourceChanges": [],
+        "profile": "/private/tmp/m12/B-spyglass-r1/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "completion-detects-pending",
+              "claim": "question-completed",
+              "expectation": "The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.",
+              "assertion": "json status=complete"
+            }
+          ],
+          "claims": [
+            {
+              "id": "signin-refused",
+              "behavior": "In the browser, a wrong password on /login is refused.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The page shows Sign in failed.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "login-dashboard",
+              "behavior": "In the browser, the demo user signs in with the correct password.",
+              "entryPoint": "GET /login in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The browser reaches /dashboard and the heading reads Ask a question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "dashboard-mobile",
+              "behavior": "The signed-in dashboard fits a phone viewport.",
+              "entryPoint": "/dashboard at 390x844",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The heading, question field and Submit question button are visible, readable and not clipped horizontally.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "visual",
+              "required": true
+            },
+            {
+              "id": "question-accepted",
+              "behavior": "The API accepts a question for processing.",
+              "entryPoint": "POST /api/questions with a bearer [REDACTED]",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 202 with status pending and an id.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "question-completed",
+              "behavior": "An accepted question completes and is listed.",
+              "entryPoint": "GET /api/questions/<id> and GET /api/questions",
+              "precondition": "The demo app is running and ready.",
+              "expected": "A later separate read shows status complete with an answer, and the list contains the question.",
+              "case": "Valid demo input.",
+              "checks": [
+                "api"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "side-effect",
+              "required": true
+            },
+            {
+              "id": "error-page-errors",
+              "behavior": "The error page reports its console and page errors.",
+              "entryPoint": "GET /error in the browser",
+              "precondition": "The demo app is running and ready.",
+              "expected": "The console error 'fixture console error' and the page error 'fixture page error' are reported and retained.",
+              "case": "Valid demo input.",
+              "checks": [
+                "browser"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+          ]
+        },
+        "result": ".spyglass/runs/B-spyglass-r1/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=B-spyglass-r1",
+        "active": {
+          "pid": 39636,
+          "processStartedAt": "2026-11-03T15:12:49.626Z",
+          "command": "finish",
+          "startedAt": "2026-11-03T15:12:49.653Z"
+        },
+        "activeSeat": "default",
+        "cleanup": true,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [],
+        "pendingClaims": [],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass report --run B-spyglass-r1",
+        "ownerCleanupRequired": false,
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 7,
+          "rehashed": 0
+        }
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "ea8efb6f-976-1-profile.json",
+      "sha256": "d640184ee935b85e3020c7e1af12eb3d85318d83a96b22af81f6ca301855b58a",
+      "kind": "configuration",
+      "step": "ea8efb6f-976",
+      "valid": true,
+      "sourceStep": "ea8efb6f-976"
+    },
+    {
+      "path": "ea8efb6f-976-2-plan.json",
+      "sha256": "3c1ab8011b98065d848daf43787c369ea213e41f444573b8fa42b1a04f7c01b8",
+      "kind": "configuration",
+      "step": "ea8efb6f-976",
+      "valid": true,
+      "sourceStep": "ea8efb6f-976"
+    },
+    {
+      "path": "ff07fb05-956-1-expect.json",
+      "sha256": "7e30ecdd6f3cbdc4941154573002a02e442cc246795b8687dd38ad606a5befd4",
+      "kind": "page-content",
+      "step": "ff07fb05-956",
+      "valid": true,
+      "sourceStep": "ff07fb05-956"
+    },
+    {
+      "path": "e43bf638-b2c-1-proof-dashboard-mobile-390x844.png",
+      "sha256": "e8fb4846f3a4fafdcca6f9462ba242b9c42c50fba141225c3c0b441ea69a79a8",
+      "kind": "image",
+      "step": "e43bf638-b2c",
+      "valid": true,
+      "sourceStep": "e43bf638-b2c"
+    },
+    {
+      "path": "e43bf638-b2c-2-proof-dashboard-mobile-390x844-snapshot.json",
+      "sha256": "c363500b44339e445805c592dde077bbeb94adf45b2b8a59929ad59e2aa968ba",
+      "kind": "page-snapshot",
+      "step": "e43bf638-b2c",
+      "valid": true,
+      "sourceStep": "e43bf638-b2c"
+    },
+    {
+      "path": "e43bf638-b2c-3-proof-dashboard-mobile-390x844-details.json",
+      "sha256": "606c61f693e53d3818cc57469730f780cdb2ebf636ef10cbc80b70994dcd703d",
+      "kind": "page-content",
+      "step": "e43bf638-b2c",
+      "valid": true,
+      "sourceStep": "e43bf638-b2c"
+    },
+    {
+      "path": "6d2489ed-3cd-1-api-response.json",
+      "sha256": "741e82860510e822a69507fec8b74c14f8a685556b5e2075cdffbb5593455970",
+      "kind": "api",
+      "step": "6d2489ed-3cd",
+      "valid": true,
+      "sourceStep": "6d2489ed-3cd"
+    },
+    {
+      "path": "0e1d9959-9a7-1-api-response.json",
+      "sha256": "daed509c5f500e36c81f2ae7b9e3dc2aef776feb668b6bb36ae7d2346f5523b2",
+      "kind": "api",
+      "step": "0e1d9959-9a7",
+      "valid": true,
+      "sourceStep": "0e1d9959-9a7"
+    },
+    {
+      "path": "0e1d9959-9a7-2-api-response.json",
+      "sha256": "dd47a4987c35f4a2df0a1da3f7cca794cd5bff0ad84da333dd8e71f3c707eb7b",
+      "kind": "api",
+      "step": "0e1d9959-9a7",
+      "valid": true,
+      "sourceStep": "0e1d9959-9a7"
+    },
+    {
+      "path": "0a7959ad-481-1-api-response.json",
+      "sha256": "ad32ad0b6271d903af4830bfd700bd988d87b0bd6e5e5823d8a0594e6630e809",
+      "kind": "api",
+      "step": "0a7959ad-481",
+      "valid": true,
+      "sourceStep": "0a7959ad-481"
+    },
+    {
+      "path": "5b9f57b6-e30-1-api-response.json",
+      "sha256": "fdae9258ccfee68630bef4fb07e9e489ad56209e117ca3f08aaae561043104ac",
+      "kind": "api",
+      "step": "5b9f57b6-e30",
+      "valid": true,
+      "sourceStep": "5b9f57b6-e30"
+    },
+    {
+      "path": "ed096c7c-f86-1-api-response.json",
+      "sha256": "087065376706a227b23b1152dff0f1004f34fc63b09a0ea6b61211b6834dc50d",
+      "kind": "api",
+      "step": "ed096c7c-f86",
+      "valid": true,
+      "sourceStep": "ed096c7c-f86"
+    },
+    {
+      "path": "b2efd37d-483-1-proof-error-page.png",
+      "sha256": "910ed90afc2e63a14465dc895c9290c04350e117f7f859ae13542cb39d27420b",
+      "kind": "image",
+      "step": "b2efd37d-483",
+      "valid": true,
+      "sourceStep": "b2efd37d-483"
+    },
+    {
+      "path": "b2efd37d-483-2-proof-error-page-snapshot.json",
+      "sha256": "2735116172588766beaade5b8b349eb1cf04bb6286adc6a859fe38b91eb8d90c",
+      "kind": "page-snapshot",
+      "step": "b2efd37d-483",
+      "valid": true,
+      "sourceStep": "b2efd37d-483"
+    },
+    {
+      "path": "b2efd37d-483-3-proof-error-page-details.json",
+      "sha256": "26ff911a43dabb226523c356b0f268b0aa98bbf1f19ea764402ba7e68f0c0a35",
+      "kind": "page-content",
+      "step": "b2efd37d-483",
+      "valid": true,
+      "sourceStep": "b2efd37d-483"
+    },
+    {
+      "path": "fd85fe1c-8fa-1-proof-signin-refused.png",
+      "sha256": "cee513617b0d1d375a4d940ddf15fcbfdeceffa8e3f54ba5ccde79f5619791b6",
+      "kind": "image",
+      "step": "fd85fe1c-8fa",
+      "valid": true,
+      "sourceStep": "fd85fe1c-8fa"
+    },
+    {
+      "path": "fd85fe1c-8fa-2-proof-signin-refused-snapshot.json",
+      "sha256": "a68bd9399f8f37478c83c1bc9ed0e203d40dae18cc5beaa8d431c078b0d07a10",
+      "kind": "page-snapshot",
+      "step": "fd85fe1c-8fa",
+      "valid": true,
+      "sourceStep": "fd85fe1c-8fa"
+    },
+    {
+      "path": "fd85fe1c-8fa-3-proof-signin-refused-details.json",
+      "sha256": "f0c4ba7d975aa37d4058db8acc51da5668b71a4e9875ab0e19b223ebfb45a77d",
+      "kind": "page-content",
+      "step": "fd85fe1c-8fa",
+      "valid": true,
+      "sourceStep": "fd85fe1c-8fa"
+    },
+    {
+      "path": "61974bd0-4ad-1-launch-final.log",
+      "sha256": "6f03130710872f97d242197ab10bbd228eaa600e3ca4da73ecce30a637010adf",
+      "kind": "text",
+      "step": "61974bd0-4ad",
+      "valid": true,
+      "sourceStep": "61974bd0-4ad"
+    }
+  ],
+  "findings": [],
+  "report": {
+    "page": {
+      "path": "72b74449-5e5-1-index.html",
+      "sha256": "7454820fbdc35c6219913ff75729163216f542953eaef30b8d2ed3aab3244722"
+    },
+    "summary": {
+      "path": "72b74449-5e5-2-summary.json"
+    }
+  }
+}

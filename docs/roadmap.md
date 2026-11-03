@@ -35,8 +35,8 @@ release: see [operator comparison](operator-comparison.md).
 
 | Priority | Milestone                             | Status        | Depends on                           |
 | -------- | ------------------------------------- | ------------- | ------------------------------------ |
-| Now      | M1. Prove the current workflow        | M1.1 done     | Current CLI and public fixtures      |
-| Next     | M2. Reduce first-adoption work        | Proposed      | M1 findings; fresh adoption attempts |
+| Done     | M1. Prove the current workflow        | Done, with limits | Current CLI and public fixtures      |
+| Now      | M2. Reduce first-adoption work        | Ready to start | M1 findings; fresh adoption attempts |
 | Next     | M3. Support review and CI             | Proposed      | M1; a repeatable adoption recipe     |
 | Later    | M4. Expand from repeated adapter gaps | Demand-led    | Evidence from adoption               |
 | Later    | M5. Evaluate shared evidence services | Not committed | Demonstrated team needs after M3     |
@@ -131,12 +131,29 @@ general speed claim.
 The [Claude Code Cloud task prompt](prompts/current-version-comparison.md) defines
 the scope and execution boundaries for this task.
 
-### M1.2 — next task: repair measured friction
+### M1.2 — repair measured friction
 
 Select the highest-value bounded improvement from M1.1. Write its failure
 case and extend an existing E2E test before implementation. Repeat affected
 comparisons on the delivered source. Keep coverage and safety unchanged.
 If a new test file is necessary, obtain approval first.
+
+**M1.2 status: done, with limits.** One API write can now make an immediate
+follow-up GET, retaining both requests and distinct assertions in one step.
+It cannot count as the side-effect claim's later independent read. The
+failure case and existing E2E file were extended before implementation.
+An independent review found two template safety defects; both were repaired
+and rechecked. The full suite passed (87 checks), and all 25 opt-in surface
+checks passed on a stable build.
+
+The [M1.2 comparison](operator-comparison-m1.2.md) retains three fresh
+browser/API pairs. All six runs met the six claims and the original control;
+every Spyglass operator used the immediate GET without helper scripts or a
+modified fixture. One broken preparation pair was superseded and retained.
+This study used a fixed order, another model/harness and another platform
+than M1.1; it supplies no general speed claim or cross-study speed estimate.
+The M1.1 cloud overhead and first-frame failures remain open. A repeated
+browser-evidence retention problem is recorded as a proposed follow-up.
 
 **M1 completion:** evidence supports a bounded statement about current agent
 work, and any selected repair has repeated proof. A target that is missed

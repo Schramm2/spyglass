@@ -1,0 +1,110 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r3-v2",
+      "failedStep": "0660ae56-eda",
+      "restoredStep": "d6bc6fe5-d56",
+      "observedFailure": "Immediate follow-up GET returned HTTP 200 with pending; json status=complete failed, retaining both write and read.",
+      "observedPass": "Later GET of the same control id returned complete and an answer; the identical json status=complete assertion passed."
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "outcome": "passed",
+      "steps": [
+        "420fb04a-9bd",
+        "f71c546a-bfa"
+      ],
+      "observed": "Browser submitted demo email with an intentionally wrong password and showed Sign in failed.",
+      "artifacts": [
+        "f71c546a-bfa-1-proof-signin-refused.png",
+        "f71c546a-bfa-2-proof-signin-refused-snapshot.json",
+        "f71c546a-bfa-3-proof-signin-refused-details.json"
+      ]
+    },
+    {
+      "id": "login-dashboard",
+      "outcome": "passed",
+      "steps": [
+        "2aefe173-568",
+        "37f05318-9c0"
+      ],
+      "observed": "Seat agent signed in using the private credential reference, reached /dashboard and showed Ask a question.",
+      "artifacts": [
+        "37f05318-9c0-1-expect.json"
+      ]
+    },
+    {
+      "id": "dashboard-mobile",
+      "outcome": "passed",
+      "steps": [
+        "1bbbf767-b73"
+      ],
+      "observed": "The signed-in dashboard fits the phone viewport.",
+      "artifacts": [
+        "1bbbf767-b73-1-proof-dashboard-mobile-390x844.png",
+        "1bbbf767-b73-2-proof-dashboard-mobile-390x844-snapshot.json",
+        "1bbbf767-b73-3-proof-dashboard-mobile-390x844-details.json"
+      ],
+      "inspections": [
+        {
+          "viewport": "390x844",
+          "expected": "Heading, question field and Submit question button visible, readable and not clipped horizontally.",
+          "observed": "Opened the 390x844 image: the Ask a question heading, Question label and textarea, and green Submit question button are readable and fully inside the viewport with no horizontal clipping.",
+          "artifact": "1bbbf767-b73-1-proof-dashboard-mobile-390x844.png"
+        }
+      ]
+    },
+    {
+      "id": "question-accepted",
+      "outcome": "passed",
+      "steps": [
+        "194d6311-ce0"
+      ],
+      "observed": "Authenticated POST returned HTTP 202, status pending and a non-null question id.",
+      "artifacts": [
+        "194d6311-ce0-1-api-response.json"
+      ]
+    },
+    {
+      "id": "question-completed",
+      "outcome": "passed",
+      "steps": [
+        "d6bc6fe5-d56",
+        "43baec8d-bef",
+        "0c3a27f8-9e4",
+        "194d6311-ce0"
+      ],
+      "observed": "After accepted POST, separate later GET returned complete and the expected answer; GET /questions contained the same id and question, and the control question was also complete and listed.",
+      "artifacts": [
+        "d6bc6fe5-d56-1-api-response.json",
+        "43baec8d-bef-1-api-response.json",
+        "0c3a27f8-9e4-1-api-response.json"
+      ],
+      "independentRead": "43baec8d-bef"
+    },
+    {
+      "id": "error-page-errors",
+      "outcome": "passed",
+      "steps": [
+        "1b9a6458-a7e",
+        "8edf8cbc-f66",
+        "489e5df9-b63",
+        "66dc8b9e-5c0"
+      ],
+      "observed": "On /error, console reported fixture console error and errors reported Error: fixture page error with its stack; both outputs are retained in the linked steps.",
+      "artifacts": [
+        "66dc8b9e-5c0-1-proof-error-page.png",
+        "66dc8b9e-5c0-2-proof-error-page-snapshot.json",
+        "66dc8b9e-5c0-3-proof-error-page-details.json"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+  ]
+}
