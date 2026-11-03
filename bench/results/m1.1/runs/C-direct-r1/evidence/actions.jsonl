@@ -1,0 +1,12 @@
+{"type":"command","command":"git rev-parse HEAD","cwd":"/tmp/m11/C-direct-r1/repo","exit":0,"stdout":"b3fedcd1b59c026b4135d2dab3ffe27b3d5805ef\n","stderr":"","n":1,"time":"2026-11-03T14:23:47.405Z"}
+{"type":"command","command":"git status --porcelain --untracked-files=all","cwd":"/tmp/m11/C-direct-r1/repo","exit":0,"stdout":"","stderr":"","n":2,"time":"2026-11-03T14:23:47.414Z"}
+{"type":"http","request":"GET http://127.0.0.1:47104/health","status":null,"error":"ECONNREFUSED","n":3,"time":"2026-11-03T14:23:47.491Z"}
+{"type":"process","command":"PORT=47104 node fixtures/demo-app/server.mjs","pid":2719,"n":4,"time":"2026-11-03T14:23:47.497Z"}
+{"type":"http","request":"GET http://127.0.0.1:47104/health","status":200,"body":"{\"status\":\"ok\"}","n":5,"time":"2026-11-03T14:23:47.731Z"}
+{"type":"command","command":"node /tmp/m11/C-direct-r1/repo/fixtures/demo-app/check.mjs fail","cwd":"/tmp/m11/C-direct-r1/repo/evidence/work","exit":0,"stdout":"{\"ok\":false,\"claims\":[{\"id\":\"demo-check\",\"ok\":false,\"detail\":\"the demo assertion failed\"}],\"artifacts\":[\"check-output.json\"],\"skips\":[\"demo-required-case\"]}\n","stderr":"","n":6,"time":"2026-11-03T14:23:47.793Z"}
+{"type":"command","command":"node /tmp/m11/C-direct-r1/repo/fixtures/demo-app/check.mjs pass","cwd":"/tmp/m11/C-direct-r1/repo/evidence/work","exit":0,"stdout":"{\"ok\":true,\"claims\":[{\"id\":\"demo-check\",\"ok\":true,\"detail\":\"the demo check passed\"}],\"artifacts\":[\"check-output.json\"],\"skips\":[]}\n","stderr":"","n":7,"time":"2026-11-03T14:23:47.855Z"}
+{"type":"process","event":"app exited","code":0,"signal":null,"output":"demo app listening on 127.0.0.1:47104\n","n":8,"time":"2026-11-03T14:23:47.865Z"}
+{"type":"http","request":"GET http://127.0.0.1:47104/health","status":null,"error":"ECONNREFUSED","n":9,"time":"2026-11-03T14:23:47.867Z"}
+{"type":"command","command":"agent-browser --session C-direct-r1 close","cwd":"/tmp/m11/C-direct-r1/repo","exit":0,"stdout":"✓ Browser closed\n","stderr":"","n":10,"time":"2026-11-03T14:23:48.858Z"}
+{"type":"command","command":"git rev-parse HEAD","cwd":"/tmp/m11/C-direct-r1/repo","exit":0,"stdout":"b3fedcd1b59c026b4135d2dab3ffe27b3d5805ef\n","stderr":"","n":11,"time":"2026-11-03T14:23:48.865Z"}
+{"type":"command","command":"git status --porcelain --untracked-files=all","cwd":"/tmp/m11/C-direct-r1/repo","exit":0,"stdout":"","stderr":"","n":12,"time":"2026-11-03T14:23:48.872Z"}

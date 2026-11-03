@@ -1,0 +1,3 @@
+[{"id":"769c4cb7-fa44-470b-88e9-32f5d6926dad","question":"Does verification work?","status":"complete","answer":"Thanks. We received your question."}]
+HTTP_STATUS=200
+ASSERT list contains 769c4cb7-fa44-470b-88e9-32f5d6926dad: PASS

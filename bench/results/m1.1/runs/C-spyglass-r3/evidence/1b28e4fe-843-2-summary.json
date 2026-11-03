@@ -1,0 +1,1467 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "complete": true,
+  "run": "C-spyglass-r3",
+  "app": "spyglass-demo",
+  "operator": "agent",
+  "generatedAt": "2026-11-03T14:27:21.813Z",
+  "source": {
+    "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+    "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+    "currentHash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+    "changed": []
+  },
+  "claims": [
+    {
+      "id": "health-ready",
+      "kind": "behavior",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "With the app running, the health request succeeds.",
+      "entryPoint": "GET /health",
+      "precondition": "The demo app is running and ready.",
+      "expected": "HTTP 200 with status ok.",
+      "case": "Valid demo input.",
+      "checks": [
+        "health"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "0e20561b-cc0"
+      ],
+      "observed": "Step 0e20561b-cc0: check health exit 0; GET /health returned HTTP 200 with body {\"status\":\"ok\"}.",
+      "artifacts": [
+        "0e20561b-cc0-1-health-output.txt"
+      ],
+      "inspections": []
+    },
+    {
+      "id": "demo-check-pass",
+      "kind": "behavior",
+      "required": true,
+      "outcome": "passed",
+      "behavior": "The demo check passes.",
+      "entryPoint": "node fixtures/demo-app/check.mjs pass",
+      "precondition": "The demo app is running and ready.",
+      "expected": "Exit 0; JSON output has ok true, assertion demo-check ok true and an empty skips list.",
+      "case": "Valid demo input.",
+      "checks": [
+        "pass"
+      ],
+      "requiredEvidence": [
+        "Retained step evidence"
+      ],
+      "steps": [
+        "17c3d9c6-e69"
+      ],
+      "observed": "Step 17c3d9c6-e69: check.mjs pass exit 0; JSON ok true, assertion demo-check ok true, skips [].",
+      "artifacts": [
+        "17c3d9c6-e69-1-pass-output.txt"
+      ],
+      "inspections": []
+    }
+  ],
+  "gates": [],
+  "controls": [
+    {
+      "id": "demo-check-detects-failure",
+      "failedRun": "C-spyglass-r3",
+      "failedStep": "0c6ce199-8bb",
+      "restoredStep": "17c3d9c6-e69",
+      "observedFailure": "Step 0c6ce199-8bb: check.mjs fail gave ok false, assertion demo-check ok false ('the demo assertion failed'), skips [demo-required-case]; Spyglass CHECK_FAILED although child exit code was 0.",
+      "observedPass": "Step 17c3d9c6-e69: check.mjs pass gave demo-check ok true, ok true, skips [].",
+      "claim": "demo-check-pass",
+      "expectation": "The same demo-check assertion fails with check.mjs fail and passes with check.mjs pass.",
+      "assertion": "demo-check",
+      "baseline": {
+        "run": "C-spyglass-r3",
+        "source": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "evidence": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3"
+      },
+      "outcome": "passed"
+    }
+  ],
+  "environment": [
+    {
+      "name": "source identity",
+      "status": "passed",
+      "detail": "Current source matches the baseline recorded at up."
+    },
+    {
+      "name": "artifact integrity",
+      "status": "passed",
+      "detail": "8 of 8 recorded artifacts match their checksums."
+    },
+    {
+      "name": "cleanup",
+      "status": "passed",
+      "detail": "Spyglass cleanup: true; external owner cleanup: true."
+    }
+  ],
+  "visualObservations": [],
+  "cleanup": {
+    "runState": "stopped",
+    "spyglassResourcesCleaned": true,
+    "externalOwnerCleaned": "not required"
+  },
+  "limits": [
+    "The journey proves the demo app's health request and demo check only."
+  ],
+  "attempts": [
+    {
+      "id": "66fe0def-3cb",
+      "command": "up",
+      "args": [],
+      "startedAt": "2026-11-03T14:16:44.717Z",
+      "durationMs": 383,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "66fe0def-3cb-1-profile.json",
+          "sha256": "b06990a323b88884c5a157bea94078e4445e4d206c2a3f488524d98828c4218f",
+          "kind": "configuration",
+          "step": "66fe0def-3cb"
+        },
+        {
+          "path": "66fe0def-3cb-2-plan.json",
+          "sha256": "65edd7e11652ce3c0e65af965030da07e724606f1ad366e181d3ea477b1f4578",
+          "kind": "configuration",
+          "step": "66fe0def-3cb"
+        }
+      ],
+      "data": {
+        "id": "C-spyglass-r3",
+        "state": "ready",
+        "repo": "/tmp/m11/C-spyglass-r3/repo",
+        "evidence": ".spyglass/runs/C-spyglass-r3/spyglass",
+        "web": "http://127.0.0.1:33275",
+        "api": "http://127.0.0.1:33275/api",
+        "port": 33275,
+        "source": {
+          "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+          "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+          "fileCount": 6
+        },
+        "sourceChanges": [],
+        "profile": "/tmp/m11/C-spyglass-r3/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "demo-check-detects-failure",
+              "claim": "demo-check-pass",
+              "expectation": "The same demo-check assertion fails with check.mjs fail and passes with check.mjs pass.",
+              "assertion": "demo-check"
+            }
+          ],
+          "claims": [
+            {
+              "id": "health-ready",
+              "behavior": "With the app running, the health request succeeds.",
+              "entryPoint": "GET /health",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 200 with status ok.",
+              "case": "Valid demo input.",
+              "checks": [
+                "health"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "demo-check-pass",
+              "behavior": "The demo check passes.",
+              "entryPoint": "node fixtures/demo-app/check.mjs pass",
+              "precondition": "The demo app is running and ready.",
+              "expected": "Exit 0; JSON output has ok true, assertion demo-check ok true and an empty skips list.",
+              "case": "Valid demo input.",
+              "checks": [
+                "pass"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's health request and demo check only."
+          ]
+        },
+        "result": ".spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=C-spyglass-r3",
+        "active": {
+          "pid": 29402,
+          "processStartedAt": "2026-11-03T14:16:44.511Z",
+          "command": "up",
+          "startedAt": "2026-11-03T14:16:44.716Z"
+        },
+        "activeSeat": "default",
+        "cleanup": false,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [],
+        "pendingClaims": [
+          "health-ready",
+          "demo-check-pass"
+        ],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass result --file .spyglass/runs/C-spyglass-r3/spyglass/result.json --run C-spyglass-r3",
+        "resultRules": [
+          "A passed claim lists its successful steps from this run in steps and states what you saw in observed.",
+          "Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.",
+          "Claims health-ready: cite a successful step of check health.",
+          "Claims demo-check-pass: cite a successful step of check pass.",
+          "Behavior claims health-ready, demo-check-pass: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.",
+          "Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control's claim passes and cites restoredStep.",
+          "Control demo-check-detects-failure: claim demo-check-pass, assertion demo-check."
+        ],
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 6,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "03af4472-04e",
+      "command": "doctor",
+      "args": [],
+      "startedAt": "2026-11-03T14:16:45.214Z",
+      "durationMs": 260,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "ready": true,
+        "environment": {
+          "evidenceIgnored": true,
+          "tools": {
+            "node": "v24.22.2",
+            "spyglass": "1.3.1",
+            "browser": "agent-browser 0.38.2"
+          }
+        },
+        "id": "C-spyglass-r3",
+        "state": "ready",
+        "repo": "/tmp/m11/C-spyglass-r3/repo",
+        "evidence": ".spyglass/runs/C-spyglass-r3/spyglass",
+        "web": "http://127.0.0.1:33275",
+        "api": "http://127.0.0.1:33275/api",
+        "port": 33275,
+        "source": {
+          "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+          "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+          "fileCount": 6
+        },
+        "sourceChanges": [],
+        "profile": "/tmp/m11/C-spyglass-r3/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "demo-check-detects-failure",
+              "claim": "demo-check-pass",
+              "expectation": "The same demo-check assertion fails with check.mjs fail and passes with check.mjs pass.",
+              "assertion": "demo-check"
+            }
+          ],
+          "claims": [
+            {
+              "id": "health-ready",
+              "behavior": "With the app running, the health request succeeds.",
+              "entryPoint": "GET /health",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 200 with status ok.",
+              "case": "Valid demo input.",
+              "checks": [
+                "health"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "demo-check-pass",
+              "behavior": "The demo check passes.",
+              "entryPoint": "node fixtures/demo-app/check.mjs pass",
+              "precondition": "The demo app is running and ready.",
+              "expected": "Exit 0; JSON output has ok true, assertion demo-check ok true and an empty skips list.",
+              "case": "Valid demo input.",
+              "checks": [
+                "pass"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's health request and demo check only."
+          ]
+        },
+        "result": ".spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=C-spyglass-r3",
+        "active": {
+          "pid": 29448,
+          "processStartedAt": "2026-11-03T14:16:45.135Z",
+          "command": "doctor",
+          "startedAt": "2026-11-03T14:16:45.212Z"
+        },
+        "activeSeat": "default",
+        "cleanup": false,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [],
+        "pendingClaims": [
+          "health-ready",
+          "demo-check-pass"
+        ],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass result --file .spyglass/runs/C-spyglass-r3/spyglass/result.json --run C-spyglass-r3",
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 6,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "0e20561b-cc0",
+      "command": "check",
+      "args": [
+        "health"
+      ],
+      "startedAt": "2026-11-03T14:16:49.237Z",
+      "durationMs": 281,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "0e20561b-cc0-1-health-output.txt",
+          "sha256": "d953bd6677d551bfeedbb683957c4b3d60e4c0a00c0d304b932a78f8c9c7403d",
+          "kind": "command-output",
+          "step": "0e20561b-cc0"
+        }
+      ],
+      "data": {
+        "check": "health",
+        "attempt": "0e20561b-cc0",
+        "command": [
+          "node",
+          "--input-type=module",
+          "-e",
+          "const r=await fetch(process.env.HEALTH_URL);const body=await r.json();const ok=r.status===200&&body.status==='ok';console.log(JSON.stringify({ok,claims:[{id:'health-ready',ok,detail:body}]}));process.exitCode=ok?0:1"
+        ],
+        "exitCode": 0,
+        "timedOut": false,
+        "stdout": "{\"ok\":true,\"claims\":[{\"id\":\"health-ready\",\"ok\":true,\"detail\":{\"status\":\"ok\"}}]}\n",
+        "stderr": "",
+        "claims": [
+          {
+            "id": "health-ready",
+            "ok": true,
+            "detail": {
+              "status": "ok"
+            }
+          }
+        ],
+        "skips": [],
+        "overall": true,
+        "malformedAssertions": 0,
+        "artifacts": [
+          {
+            "path": "0e20561b-cc0-1-health-output.txt",
+            "sha256": "d953bd6677d551bfeedbb683957c4b3d60e4c0a00c0d304b932a78f8c9c7403d",
+            "kind": "command-output",
+            "step": "0e20561b-cc0"
+          }
+        ],
+        "importErrors": [],
+        "passed": true,
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 6,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [
+            "health-ready"
+          ],
+          "controls": [],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "0c6ce199-8bb",
+      "command": "check",
+      "args": [
+        "fail"
+      ],
+      "startedAt": "2026-11-03T14:16:49.649Z",
+      "durationMs": 197,
+      "exitCode": 0,
+      "commandExitCode": 1,
+      "status": "failed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "0c6ce199-8bb-1-fail-output.txt",
+          "sha256": "ccb9cb81ce48a868af58a1ca4c3380f57315211fde4804f78a3916ab478fa04e",
+          "kind": "command-output",
+          "step": "0c6ce199-8bb"
+        }
+      ],
+      "data": {
+        "check": "fail",
+        "attempt": "0c6ce199-8bb",
+        "command": [
+          "node",
+          "fixtures/demo-app/check.mjs",
+          "fail"
+        ],
+        "exitCode": 0,
+        "timedOut": false,
+        "stdout": "{\"ok\":false,\"claims\":[{\"id\":\"demo-check\",\"ok\":false,\"detail\":\"the demo assertion failed\"}],\"artifacts\":[\"check-output.json\"],\"skips\":[\"demo-required-case\"]}\n",
+        "stderr": "",
+        "claims": [
+          {
+            "id": "demo-check",
+            "ok": false,
+            "detail": "the demo assertion failed"
+          }
+        ],
+        "skips": [
+          "demo-required-case"
+        ],
+        "overall": false,
+        "malformedAssertions": 0,
+        "artifacts": [
+          {
+            "path": "0c6ce199-8bb-1-fail-output.txt",
+            "sha256": "ccb9cb81ce48a868af58a1ca4c3380f57315211fde4804f78a3916ab478fa04e",
+            "kind": "command-output",
+            "step": "0c6ce199-8bb"
+          }
+        ],
+        "importErrors": [],
+        "passed": false,
+        "error": {
+          "code": "CHECK_FAILED",
+          "message": "Check fail failed: one or more assertions failed; skipped checks: demo-required-case; the structured result reports failure."
+        },
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 6,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [],
+          "controls": [
+            "demo-check-detects-failure:failed"
+          ],
+          "gates": [],
+          "skipped": [
+            "claim demo-check-pass: the step failed, so it is not cited"
+          ]
+        }
+      }
+    },
+    {
+      "id": "17c3d9c6-e69",
+      "command": "check",
+      "args": [
+        "pass"
+      ],
+      "startedAt": "2026-11-03T14:16:50.013Z",
+      "durationMs": 279,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "17c3d9c6-e69-1-pass-output.txt",
+          "sha256": "13d2f17a09176582330594b0cbab661c017f9198b321cd90a4837fad8d63906b",
+          "kind": "command-output",
+          "step": "17c3d9c6-e69"
+        }
+      ],
+      "data": {
+        "check": "pass",
+        "attempt": "17c3d9c6-e69",
+        "command": [
+          "node",
+          "fixtures/demo-app/check.mjs",
+          "pass"
+        ],
+        "exitCode": 0,
+        "timedOut": false,
+        "stdout": "{\"ok\":true,\"claims\":[{\"id\":\"demo-check\",\"ok\":true,\"detail\":\"the demo check passed\"}],\"artifacts\":[\"check-output.json\"],\"skips\":[]}\n",
+        "stderr": "",
+        "claims": [
+          {
+            "id": "demo-check",
+            "ok": true,
+            "detail": "the demo check passed"
+          }
+        ],
+        "skips": [],
+        "overall": true,
+        "malformedAssertions": 0,
+        "artifacts": [
+          {
+            "path": "17c3d9c6-e69-1-pass-output.txt",
+            "sha256": "13d2f17a09176582330594b0cbab661c017f9198b321cd90a4837fad8d63906b",
+            "kind": "command-output",
+            "step": "17c3d9c6-e69"
+          }
+        ],
+        "importErrors": [],
+        "passed": true,
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 6,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [
+            "demo-check-pass"
+          ],
+          "controls": [
+            "demo-check-detects-failure:restored"
+          ],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "8bba34c1-189",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "health-ready",
+        "--outcome",
+        "passed",
+        "--observed",
+        "Step 0e20561b-cc0: check health exit 0; GET /health returned HTTP 200 with body {\"status\":\"ok\"}."
+      ],
+      "startedAt": "2026-11-03T14:16:55.706Z",
+      "durationMs": 66,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim health-ready",
+        "recorded": false,
+        "resultPath": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "next": "spyglass result --check --run C-spyglass-r3"
+      }
+    },
+    {
+      "id": "ecb02cb5-9ad",
+      "command": "result",
+      "args": [
+        "set",
+        "--claim",
+        "demo-check-pass",
+        "--outcome",
+        "passed",
+        "--observed",
+        "Step 17c3d9c6-e69: check.mjs pass exit 0; JSON ok true, assertion demo-check ok true, skips []."
+      ],
+      "startedAt": "2026-11-03T14:16:55.866Z",
+      "durationMs": 115,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "claim demo-check-pass",
+        "recorded": false,
+        "resultPath": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "next": "spyglass result --check --run C-spyglass-r3"
+      }
+    },
+    {
+      "id": "6f6337ef-c32",
+      "command": "result",
+      "args": [
+        "set",
+        "--control",
+        "demo-check-detects-failure",
+        "--observed-failure",
+        "Step 0c6ce199-8bb: check.mjs fail gave ok false, assertion demo-check ok false ('the demo assertion failed'), skips [demo-required-case]; Spyglass CHECK_FAILED although child exit code was 0.",
+        "--observed-pass",
+        "Step 17c3d9c6-e69: check.mjs pass gave demo-check ok true, ok true, skips []."
+      ],
+      "startedAt": "2026-11-03T14:16:56.082Z",
+      "durationMs": 80,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "updated": "control demo-check-detects-failure",
+        "recorded": false,
+        "resultPath": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "next": "spyglass result --check --run C-spyglass-r3"
+      }
+    },
+    {
+      "id": "2f97e7b8-b57",
+      "command": "result",
+      "args": [
+        "--check"
+      ],
+      "startedAt": "2026-11-03T14:16:56.280Z",
+      "durationMs": 85,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "checked": true,
+        "valid": true,
+        "recorded": false,
+        "operator": "agent",
+        "claims": 2,
+        "gates": 0,
+        "controls": 1,
+        "resultPath": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "next": "spyglass result --run C-spyglass-r3"
+      }
+    },
+    {
+      "id": "00d6557b-27a",
+      "command": "result",
+      "args": [],
+      "startedAt": "2026-11-03T14:16:56.581Z",
+      "durationMs": 22,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "checked": false,
+        "valid": true,
+        "recorded": true,
+        "operator": "agent",
+        "claims": 2,
+        "gates": 0,
+        "controls": 1,
+        "resultPath": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3/spyglass/result.json"
+      }
+    },
+    {
+      "id": "ba47253c-d0f",
+      "command": "doctor",
+      "args": [],
+      "startedAt": "2026-11-03T14:16:56.605Z",
+      "durationMs": 191,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "ready": true,
+        "environment": {
+          "evidenceIgnored": true,
+          "tools": {
+            "node": "v24.22.2",
+            "spyglass": "1.3.1",
+            "browser": "agent-browser 0.38.2"
+          }
+        },
+        "id": "C-spyglass-r3",
+        "state": "ready",
+        "repo": "/tmp/m11/C-spyglass-r3/repo",
+        "evidence": ".spyglass/runs/C-spyglass-r3/spyglass",
+        "web": "http://127.0.0.1:33275",
+        "api": "http://127.0.0.1:33275/api",
+        "port": 33275,
+        "source": {
+          "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+          "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+          "fileCount": 6
+        },
+        "sourceChanges": [],
+        "profile": "/tmp/m11/C-spyglass-r3/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "demo-check-detects-failure",
+              "claim": "demo-check-pass",
+              "expectation": "The same demo-check assertion fails with check.mjs fail and passes with check.mjs pass.",
+              "assertion": "demo-check"
+            }
+          ],
+          "claims": [
+            {
+              "id": "health-ready",
+              "behavior": "With the app running, the health request succeeds.",
+              "entryPoint": "GET /health",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 200 with status ok.",
+              "case": "Valid demo input.",
+              "checks": [
+                "health"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "demo-check-pass",
+              "behavior": "The demo check passes.",
+              "entryPoint": "node fixtures/demo-app/check.mjs pass",
+              "precondition": "The demo app is running and ready.",
+              "expected": "Exit 0; JSON output has ok true, assertion demo-check ok true and an empty skips list.",
+              "case": "Valid demo input.",
+              "checks": [
+                "pass"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's health request and demo check only."
+          ]
+        },
+        "result": ".spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=C-spyglass-r3",
+        "active": {
+          "pid": 29657,
+          "processStartedAt": "2026-11-03T14:16:56.387Z",
+          "command": "finish",
+          "startedAt": "2026-11-03T14:16:56.468Z"
+        },
+        "activeSeat": "default",
+        "cleanup": false,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [
+          {
+            "name": "health",
+            "step": "0e20561b-cc0",
+            "exitCode": 0,
+            "commandExitCode": 0,
+            "childExitCode": 0,
+            "spyglassExitCode": 0,
+            "status": "passed"
+          },
+          {
+            "name": "fail",
+            "step": "0c6ce199-8bb",
+            "exitCode": 0,
+            "commandExitCode": 1,
+            "childExitCode": 0,
+            "spyglassExitCode": 1,
+            "status": "failed"
+          },
+          {
+            "name": "pass",
+            "step": "17c3d9c6-e69",
+            "exitCode": 0,
+            "commandExitCode": 0,
+            "childExitCode": 0,
+            "spyglassExitCode": 0,
+            "status": "passed"
+          }
+        ],
+        "pendingClaims": [],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass down --run C-spyglass-r3",
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 6,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "eeaeab9e-9d2",
+      "command": "down",
+      "args": [],
+      "startedAt": "2026-11-03T14:16:56.798Z",
+      "durationMs": 927,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "eeaeab9e-9d2-1-launch-final.log",
+          "sha256": "e1a7f4d00d44dc5c4ac7eead6876e11a1c90f0de5c7cede169e1835a5b9bc0e8",
+          "kind": "text",
+          "step": "eeaeab9e-9d2"
+        }
+      ],
+      "data": {
+        "id": "C-spyglass-r3",
+        "state": "stopped",
+        "repo": "/tmp/m11/C-spyglass-r3/repo",
+        "evidence": ".spyglass/runs/C-spyglass-r3/spyglass",
+        "web": "http://127.0.0.1:33275",
+        "api": "http://127.0.0.1:33275/api",
+        "port": 33275,
+        "source": {
+          "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+          "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+          "fileCount": 6
+        },
+        "sourceChanges": [],
+        "profile": "/tmp/m11/C-spyglass-r3/repo/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "demo-check-detects-failure",
+              "claim": "demo-check-pass",
+              "expectation": "The same demo-check assertion fails with check.mjs fail and passes with check.mjs pass.",
+              "assertion": "demo-check"
+            }
+          ],
+          "claims": [
+            {
+              "id": "health-ready",
+              "behavior": "With the app running, the health request succeeds.",
+              "entryPoint": "GET /health",
+              "precondition": "The demo app is running and ready.",
+              "expected": "HTTP 200 with status ok.",
+              "case": "Valid demo input.",
+              "checks": [
+                "health"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            },
+            {
+              "id": "demo-check-pass",
+              "behavior": "The demo check passes.",
+              "entryPoint": "node fixtures/demo-app/check.mjs pass",
+              "precondition": "The demo app is running and ready.",
+              "expected": "Exit 0; JSON output has ok true, assertion demo-check ok true and an empty skips list.",
+              "case": "Valid demo input.",
+              "checks": [
+                "pass"
+              ],
+              "evidence": [
+                "Retained step evidence"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "The journey proves the demo app's health request and demo check only."
+          ]
+        },
+        "result": ".spyglass/runs/C-spyglass-r3/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=C-spyglass-r3",
+        "active": {
+          "pid": 29657,
+          "processStartedAt": "2026-11-03T14:16:56.387Z",
+          "command": "finish",
+          "startedAt": "2026-11-03T14:16:56.468Z"
+        },
+        "activeSeat": "default",
+        "cleanup": true,
+        "capabilities": {
+          "ui": {
+            "available": true,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": true,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "health",
+              "pass",
+              "fail"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [
+          {
+            "name": "health",
+            "step": "0e20561b-cc0",
+            "exitCode": 0,
+            "commandExitCode": 0,
+            "childExitCode": 0,
+            "spyglassExitCode": 0,
+            "status": "passed"
+          },
+          {
+            "name": "fail",
+            "step": "0c6ce199-8bb",
+            "exitCode": 0,
+            "commandExitCode": 1,
+            "childExitCode": 0,
+            "spyglassExitCode": 1,
+            "status": "failed"
+          },
+          {
+            "name": "pass",
+            "step": "17c3d9c6-e69",
+            "exitCode": 0,
+            "commandExitCode": 0,
+            "childExitCode": 0,
+            "spyglassExitCode": 0,
+            "status": "passed"
+          }
+        ],
+        "pendingClaims": [],
+        "owner": {
+          "mode": "owned",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass report --run C-spyglass-r3",
+        "ownerCleanupRequired": false,
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 6,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "cb0c4a3f-d24",
+      "command": "report",
+      "args": [],
+      "startedAt": "2026-11-03T14:16:57.728Z",
+      "durationMs": 40,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+        "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+        "files": {
+          ".gitignore": "0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93",
+          "fixtures/demo-app/check.mjs": "79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547",
+          "fixtures/demo-app/compose.yaml": "764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033",
+          "fixtures/demo-app/server.mjs": "e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb",
+          "spyglass.json": "b76c8e09f67aeec7692bc09456fb3895fe667f0f07066ffe6fa580b65c729aa0",
+          "verification-plan.json": "bf63f61281deed2d432f190b81bd7cdcbbca4f2addbd07a4aef5f936496ace3b"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "cb0c4a3f-d24-1-index.html",
+          "sha256": "b1d0ef3e52b0a7617fae946f15ee08e6182e6a7a35f460e8bfed4b89ed16b670",
+          "kind": "report",
+          "step": "cb0c4a3f-d24"
+        },
+        {
+          "path": "cb0c4a3f-d24-2-summary.json",
+          "sha256": "90465d9583249d417754dd44984489d6e51c20de63184ab60ada794faf03c314",
+          "kind": "report-summary",
+          "step": "cb0c4a3f-d24"
+        }
+      ],
+      "data": {
+        "schemaVersion": 1,
+        "status": "passed",
+        "complete": true,
+        "run": "C-spyglass-r3",
+        "app": "spyglass-demo",
+        "operator": "agent",
+        "generatedAt": "2026-11-03T14:16:57.751Z",
+        "source": {
+          "commit": "63461999e18a44b8f77b8f24df302a3e8791293e",
+          "hash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+          "currentHash": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+          "changed": []
+        },
+        "claims": [
+          {
+            "id": "health-ready",
+            "kind": "behavior",
+            "required": true,
+            "outcome": "passed",
+            "behavior": "With the app running, the health request succeeds.",
+            "entryPoint": "GET /health",
+            "precondition": "The demo app is running and ready.",
+            "expected": "HTTP 200 with status ok.",
+            "case": "Valid demo input.",
+            "checks": [
+              "health"
+            ],
+            "requiredEvidence": [
+              "Retained step evidence"
+            ],
+            "steps": [
+              "0e20561b-cc0"
+            ],
+            "observed": "Step 0e20561b-cc0: check health exit 0; GET /health returned HTTP 200 with body {\"status\":\"ok\"}.",
+            "artifacts": [
+              "0e20561b-cc0-1-health-output.txt"
+            ],
+            "inspections": []
+          },
+          {
+            "id": "demo-check-pass",
+            "kind": "behavior",
+            "required": true,
+            "outcome": "passed",
+            "behavior": "The demo check passes.",
+            "entryPoint": "node fixtures/demo-app/check.mjs pass",
+            "precondition": "The demo app is running and ready.",
+            "expected": "Exit 0; JSON output has ok true, assertion demo-check ok true and an empty skips list.",
+            "case": "Valid demo input.",
+            "checks": [
+              "pass"
+            ],
+            "requiredEvidence": [
+              "Retained step evidence"
+            ],
+            "steps": [
+              "17c3d9c6-e69"
+            ],
+            "observed": "Step 17c3d9c6-e69: check.mjs pass exit 0; JSON ok true, assertion demo-check ok true, skips [].",
+            "artifacts": [
+              "17c3d9c6-e69-1-pass-output.txt"
+            ],
+            "inspections": []
+          }
+        ],
+        "gates": [],
+        "controls": [
+          {
+            "id": "demo-check-detects-failure",
+            "failedRun": "C-spyglass-r3",
+            "failedStep": "0c6ce199-8bb",
+            "restoredStep": "17c3d9c6-e69",
+            "observedFailure": "Step 0c6ce199-8bb: check.mjs fail gave ok false, assertion demo-check ok false ('the demo assertion failed'), skips [demo-required-case]; Spyglass CHECK_FAILED although child exit code was 0.",
+            "observedPass": "Step 17c3d9c6-e69: check.mjs pass gave demo-check ok true, ok true, skips [].",
+            "claim": "demo-check-pass",
+            "expectation": "The same demo-check assertion fails with check.mjs fail and passes with check.mjs pass.",
+            "assertion": "demo-check",
+            "baseline": {
+              "run": "C-spyglass-r3",
+              "source": "433d7dde85b74c563ccaa03bff98edb6b63353113c8ad54cd8f1efaeeb75c35c",
+              "evidence": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3"
+            },
+            "outcome": "passed"
+          }
+        ],
+        "environment": [
+          {
+            "name": "source identity",
+            "status": "passed",
+            "detail": "Current source matches the baseline recorded at up."
+          },
+          {
+            "name": "artifact integrity",
+            "status": "passed",
+            "detail": "6 of 6 recorded artifacts match their checksums."
+          },
+          {
+            "name": "cleanup",
+            "status": "passed",
+            "detail": "Spyglass cleanup: true; external owner cleanup: true."
+          }
+        ],
+        "visualObservations": [],
+        "cleanup": {
+          "runState": "stopped",
+          "spyglassResourcesCleaned": true,
+          "externalOwnerCleaned": "not required"
+        },
+        "limits": [
+          "The journey proves the demo app's health request and demo check only."
+        ],
+        "findings": [],
+        "report": {
+          "page": {
+            "path": "cb0c4a3f-d24-1-index.html",
+            "sha256": "b1d0ef3e52b0a7617fae946f15ee08e6182e6a7a35f460e8bfed4b89ed16b670",
+            "kind": "report",
+            "step": "cb0c4a3f-d24"
+          },
+          "summary": {
+            "path": "cb0c4a3f-d24-2-summary.json",
+            "sha256": "90465d9583249d417754dd44984489d6e51c20de63184ab60ada794faf03c314",
+            "kind": "report-summary",
+            "step": "cb0c4a3f-d24"
+          }
+        },
+        "attemptCount": 12,
+        "artifactCount": 6,
+        "reportPath": "/tmp/m11/C-spyglass-r3/repo/.spyglass/runs/C-spyglass-r3/spyglass/cb0c4a3f-d24-1-index.html"
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "66fe0def-3cb-1-profile.json",
+      "sha256": "b06990a323b88884c5a157bea94078e4445e4d206c2a3f488524d98828c4218f",
+      "kind": "configuration",
+      "step": "66fe0def-3cb",
+      "valid": true,
+      "sourceStep": "66fe0def-3cb"
+    },
+    {
+      "path": "66fe0def-3cb-2-plan.json",
+      "sha256": "65edd7e11652ce3c0e65af965030da07e724606f1ad366e181d3ea477b1f4578",
+      "kind": "configuration",
+      "step": "66fe0def-3cb",
+      "valid": true,
+      "sourceStep": "66fe0def-3cb"
+    },
+    {
+      "path": "0e20561b-cc0-1-health-output.txt",
+      "sha256": "d953bd6677d551bfeedbb683957c4b3d60e4c0a00c0d304b932a78f8c9c7403d",
+      "kind": "command-output",
+      "step": "0e20561b-cc0",
+      "valid": true,
+      "sourceStep": "0e20561b-cc0"
+    },
+    {
+      "path": "0c6ce199-8bb-1-fail-output.txt",
+      "sha256": "ccb9cb81ce48a868af58a1ca4c3380f57315211fde4804f78a3916ab478fa04e",
+      "kind": "command-output",
+      "step": "0c6ce199-8bb",
+      "valid": true,
+      "sourceStep": "0c6ce199-8bb"
+    },
+    {
+      "path": "17c3d9c6-e69-1-pass-output.txt",
+      "sha256": "13d2f17a09176582330594b0cbab661c017f9198b321cd90a4837fad8d63906b",
+      "kind": "command-output",
+      "step": "17c3d9c6-e69",
+      "valid": true,
+      "sourceStep": "17c3d9c6-e69"
+    },
+    {
+      "path": "eeaeab9e-9d2-1-launch-final.log",
+      "sha256": "e1a7f4d00d44dc5c4ac7eead6876e11a1c90f0de5c7cede169e1835a5b9bc0e8",
+      "kind": "text",
+      "step": "eeaeab9e-9d2",
+      "valid": true,
+      "sourceStep": "eeaeab9e-9d2"
+    },
+    {
+      "path": "cb0c4a3f-d24-1-index.html",
+      "sha256": "b1d0ef3e52b0a7617fae946f15ee08e6182e6a7a35f460e8bfed4b89ed16b670",
+      "kind": "report",
+      "step": "cb0c4a3f-d24",
+      "valid": true,
+      "sourceStep": "cb0c4a3f-d24"
+    },
+    {
+      "path": "cb0c4a3f-d24-2-summary.json",
+      "sha256": "90465d9583249d417754dd44984489d6e51c20de63184ab60ada794faf03c314",
+      "kind": "report-summary",
+      "step": "cb0c4a3f-d24",
+      "valid": true,
+      "sourceStep": "cb0c4a3f-d24"
+    }
+  ],
+  "findings": [],
+  "report": {
+    "page": {
+      "path": "1b28e4fe-843-1-index.html",
+      "sha256": "b077a2a6f6aae0b5678cfccf12ac3950654ba8c731e861dc2118e1bf50296f38"
+    },
+    "summary": {
+      "path": "1b28e4fe-843-2-summary.json"
+    }
+  }
+}

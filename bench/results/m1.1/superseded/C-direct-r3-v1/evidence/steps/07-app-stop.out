@@ -1,0 +1,3 @@
+STILL RUNNING
+curl: (7) Failed to connect to 127.0.0.1 port 47106 after 0 ms: Couldn't connect to server
+curl exit 7

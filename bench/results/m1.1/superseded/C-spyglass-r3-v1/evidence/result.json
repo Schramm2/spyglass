@@ -1,0 +1,41 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "demo-check-detects-failure",
+      "failedRun": "C-spyglass-r3",
+      "failedStep": "20eaaa6b-3d4",
+      "restoredStep": "be1cbc35-f2e",
+      "observedFailure": "check fail (step 20eaaa6b-3d4): assertion demo-check ok false ('the demo assertion failed'), skips [demo-required-case]; an earlier attempt 22018513-1b3 also failed and the following pass attempt ec478ec0-d7a stopped with STALE_SOURCE because check.mjs wrote untracked check-output.json in the repo root; fixed by removing that file and excluding it in .git/info/exclude (source hash returned to the start value).",
+      "observedPass": "check pass (step be1cbc35-f2e): assertion demo-check ok true, skips []."
+    }
+  ],
+  "claims": [
+    {
+      "id": "health-ready",
+      "outcome": "passed",
+      "steps": [
+        "319e0cc2-20b"
+      ],
+      "observed": "check health (step 319e0cc2-20b) exited 0; GET /health returned 200 with body {\"status\":\"ok\"}.",
+      "artifacts": [
+        "319e0cc2-20b-1-health-output.txt"
+      ]
+    },
+    {
+      "id": "demo-check-pass",
+      "outcome": "passed",
+      "steps": [
+        "be1cbc35-f2e"
+      ],
+      "observed": "check pass (step be1cbc35-f2e) exited 0; JSON ok true, assertion demo-check ok true, skips [].",
+      "artifacts": [
+        "be1cbc35-f2e-1-pass-output.txt"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's health request and demo check only."
+  ]
+}

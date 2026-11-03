@@ -1,0 +1,107 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:36299/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 14:12:46 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": [
+      {
+        "id": "a3a9869b-cee8-405f-bec6-4558c5fed3b2",
+        "question": "What is Spyglass?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "ba162a45-4cd0-410c-81ba-e339bd1f8e19",
+        "question": "Does completion work?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "9a2d3319-49e7-49e5-9160-65f2fc7b10ea",
+        "question": "Control attempt 2",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "f7f3e4fb-8484-40a8-9caf-0c48478a5699",
+        "question": "Control attempt 3",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "46f6b2f7-a96d-449d-9cbd-57d095e4f3da",
+        "question": "control read after 0 ms",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "4a70105a-b4c0-47f4-a91a-c19dfa08aaf9",
+        "question": "control read after 600 ms",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "b142a7d0-6e49-4b1a-88cc-b3260a00b5a6",
+        "question": "timing probe 0.10",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "46194b37-0a0e-46a9-a0e4-36b00d1cc93e",
+        "question": "timing probe 0.13",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "12bf60d9-1fb5-4510-90c9-d46b80917148",
+        "question": "timing probe 0.16",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "417c0e5a-25bc-4e11-b73b-aa4a5e775308",
+        "question": "timing probe parallel",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "fe1dd10f-9706-48d3-a909-f6e504896114",
+        "question": "control question",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "json 10.status=complete",
+      "ok": true,
+      "detail": "observed \"complete\""
+    },
+    {
+      "id": "body-contains fe1dd10f-9706-48d3-a909-f6e504896114",
+      "ok": true,
+      "detail": "found"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "demo-check-detects-failure",
+      "failedRun": "C-spyglass-r3",
+      "failedStep": "0c6ce199-8bb",
+      "restoredStep": "17c3d9c6-e69",
+      "observedFailure": "Step 0c6ce199-8bb: check.mjs fail gave ok false, assertion demo-check ok false ('the demo assertion failed'), skips [demo-required-case]; Spyglass CHECK_FAILED although child exit code was 0.",
+      "observedPass": "Step 17c3d9c6-e69: check.mjs pass gave demo-check ok true, ok true, skips []."
+    }
+  ],
+  "claims": [
+    {
+      "id": "health-ready",
+      "outcome": "passed",
+      "steps": [
+        "0e20561b-cc0"
+      ],
+      "observed": "Step 0e20561b-cc0: check health exit 0; GET /health returned HTTP 200 with body {\"status\":\"ok\"}.",
+      "artifacts": [
+        "0e20561b-cc0-1-health-output.txt"
+      ]
+    },
+    {
+      "id": "demo-check-pass",
+      "outcome": "passed",
+      "steps": [
+        "17c3d9c6-e69"
+      ],
+      "observed": "Step 17c3d9c6-e69: check.mjs pass exit 0; JSON ok true, assertion demo-check ok true, skips [].",
+      "artifacts": [
+        "17c3d9c6-e69-1-pass-output.txt"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's health request and demo check only."
+  ]
+}

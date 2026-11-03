@@ -1,0 +1,9 @@
+HTTP/1.1 202 Accepted
+content-type: application/json; charset=utf-8
+Date: Tue, 03 Nov 2026 14:10:29 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"id":"769c4cb7-fa44-470b-88e9-32f5d6926dad","status":"pending"}
+HTTP_STATUS=202

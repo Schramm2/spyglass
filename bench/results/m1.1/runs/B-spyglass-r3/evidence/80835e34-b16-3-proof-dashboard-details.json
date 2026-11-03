@@ -1,0 +1,375 @@
+{
+  "label": "dashboard",
+  "seat": "agent",
+  "step": "80835e34-b16",
+  "pageContent": true,
+  "results": [
+    {
+      "command": [
+        "snapshot",
+        "-i",
+        "-c",
+        "--delta"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:44597/dashboard",
+        "snapshot": {
+          "baseRevision": 3,
+          "kind": "unchanged",
+          "revision": 4
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "url"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "url": "http://127.0.0.1:44597/dashboard"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "title"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "title": "Questions"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "messages": []
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors"
+      ],
+      "error": null,
+      "result": {
+        "errors": [],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "errors": [],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "(() => {\n  const element = document.activeElement;\n  if (!element || element === document.body || element === document.documentElement) return null;\n  const text = (value) => (value || \"\").replace(/\\s+/g, \" \").trim();\n  const labelledBy = (element.getAttribute(\"aria-labelledby\") || \"\")\n    .split(/\\s+/).map((id) => document.getElementById(id)?.textContent || \"\").join(\" \");\n  // A wrapping label also holds its controls' option and default text.\n  const labelText = (label) => {\n    if (!label) return \"\";\n    const copy = label.cloneNode(true);\n    copy.querySelectorAll(\"input, select, textarea\").forEach((control) => control.remove());\n    return text(copy.textContent);\n  };\n  const tag = element.tagName.toLowerCase();\n  const type = tag === \"input\" ? element.type : element.getAttribute(\"type\") || undefined;\n  const inputRoles = { checkbox: \"checkbox\", radio: \"radio\", button: \"button\", submit: \"button\",\n    reset: \"button\", range: \"slider\", search: \"searchbox\", email: \"textbox\", tel: \"textbox\",\n    text: \"textbox\", url: \"textbox\" };\n  const implicit = tag === \"input\" ? (type ? inputRoles[type] : \"textbox\")\n    : { a: \"link\", button: \"button\", select: \"combobox\", textarea: \"textbox\" }[tag];\n  return {\n    tag,\n    type,\n    role: element.getAttribute(\"role\") || implicit,\n    label: text(element.getAttribute(\"aria-label\")) || text(labelledBy)\n      || labelText(element.labels?.[0]) || text(element.getAttribute(\"title\"))\n      || text(element.getAttribute(\"placeholder\"))\n      || (tag === \"button\" || tag === \"a\" ? text(element.textContent) : \"\"),\n    id: element.id || undefined,\n  };\n})()"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:44597/dashboard",
+        "result": null
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "requests": [
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "GET",
+            "mimeType": "text/html",
+            "requestId": "0EBF8237B628B1AA374ADC8A6D5F60F3",
+            "resourceType": "Document",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "Transfer-Encoding": "chunked",
+              "content-type": "text/html; charset=utf-8",
+              "date": "Tue, 03 Nov 2026 14:27:31 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793716052051,
+            "url": "http://127.0.0.1:44597/login"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Origin": "http://127.0.0.1:44597",
+              "Referer": "http://127.0.0.1:44597/login",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "POST",
+            "postData": "email=agent%40example.test&password=[REDACTED]",
+            "requestId": "FF7B976F971FC358A1959ECCF010FA9F",
+            "resourceType": "Document",
+            "timestamp": 1793716052234,
+            "url": "http://127.0.0.1:44597/login"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Origin": "http://127.0.0.1:44597",
+              "Referer": "http://127.0.0.1:44597/login",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "GET",
+            "mimeType": "text/html",
+            "requestId": "FF7B976F971FC358A1959ECCF010FA9F",
+            "resourceType": "Document",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "Transfer-Encoding": "chunked",
+              "content-type": "text/html; charset=utf-8",
+              "date": "Tue, 03 Nov 2026 14:27:32 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793716052234,
+            "url": "http://127.0.0.1:44597/dashboard"
+          }
+        ]
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:44597/dashboard",
+        "result": 477.1
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "screenshot",
+        "/tmp/m11/B-spyglass-r3/repo/.spyglass/runs/B-spyglass-r3/spyglass/browser-80835e34-b16-proof-dashboard-44b9b67c.png"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 11591725904081138000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "path": "/tmp/m11/B-spyglass-r3/repo/.spyglass/runs/B-spyglass-r3/spyglass/browser-80835e34-b16-proof-dashboard-44b9b67c.png"
+      },
+      "success": true
+    }
+  ]
+}

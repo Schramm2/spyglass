@@ -1,0 +1,42 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:43925/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 14:18:30 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": [
+      {
+        "id": "aee30e9a-19e3-4234-a2e4-4847be8339d5",
+        "question": "What is Spyglass?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "body-contains aee30e9a-19e3-4234-a2e4-4847be8339d5",
+      "ok": true,
+      "detail": "found"
+    }
+  ]
+}

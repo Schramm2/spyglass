@@ -1,0 +1,83 @@
+{
+  "claims": [
+    {
+      "id": "health-ready",
+      "expected": "HTTP 200 with status ok",
+      "observed": "HTTP 200, body {\"status\":\"ok\"}",
+      "actions": [
+        5
+      ],
+      "failedAttempts": [
+        3
+      ],
+      "outcome": "pass"
+    },
+    {
+      "id": "demo-check-pass",
+      "expected": "exit 0; ok true; demo-check ok true; skips []",
+      "observed": "exit 0; ok true; demo-check ok true; skips []",
+      "actions": [
+        7
+      ],
+      "outcome": "pass"
+    }
+  ],
+  "control": {
+    "id": "demo-check-detects-failure",
+    "failingAttempt": {
+      "action": 6,
+      "observed": "exit 0; ok false; demo-check ok false; skips [\"demo-required-case\"]"
+    },
+    "restoredAttempt": {
+      "action": 7,
+      "observed": "exit 0; ok true; demo-check ok true; skips []"
+    },
+    "outcome": "pass (assertion detects failure and passes when restored)"
+  },
+  "source": {
+    "start": {
+      "commit": "b3fedcd1b59c026b4135d2dab3ffe27b3d5805ef",
+      "status": "",
+      "actions": [
+        1,
+        2
+      ]
+    },
+    "end": {
+      "commit": "b3fedcd1b59c026b4135d2dab3ffe27b3d5805ef",
+      "status": "",
+      "actions": [
+        11,
+        12
+      ]
+    },
+    "unchanged": true
+  },
+  "failedAttempts": [
+    {
+      "n": 3,
+      "what": "GET http://127.0.0.1:47104/health",
+      "status": null,
+      "error": "ECONNREFUSED"
+    },
+    {
+      "n": 9,
+      "what": "GET http://127.0.0.1:47104/health",
+      "status": null,
+      "error": "ECONNREFUSED"
+    }
+  ],
+  "cleanup": {
+    "appExited": true,
+    "healthAfterStop": {
+      "action": 9,
+      "status": null,
+      "error": "ECONNREFUSED"
+    },
+    "browser": {
+      "action": 10,
+      "exit": 0,
+      "out": "✓ Browser closed"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "controls": [
+    {
+      "id": "demo-check-detects-failure",
+      "claim": "demo-check-pass",
+      "expectation": "The same demo-check assertion fails with check.mjs fail and passes with check.mjs pass.",
+      "assertion": "demo-check"
+    }
+  ],
+  "claims": [
+    {
+      "id": "health-ready",
+      "behavior": "With the app running, the health request succeeds.",
+      "entryPoint": "GET /health",
+      "precondition": "The demo app is running and ready.",
+      "expected": "HTTP 200 with status ok.",
+      "case": "Valid demo input.",
+      "checks": [
+        "health"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "behavior",
+      "required": true
+    },
+    {
+      "id": "demo-check-pass",
+      "behavior": "The demo check passes.",
+      "entryPoint": "node fixtures/demo-app/check.mjs pass",
+      "precondition": "The demo app is running and ready.",
+      "expected": "Exit 0; JSON output has ok true, assertion demo-check ok true and an empty skips list.",
+      "case": "Valid demo input.",
+      "checks": [
+        "pass"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "behavior",
+      "required": true
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's health request and demo check only."
+  ]
+}

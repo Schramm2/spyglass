@@ -1,0 +1,1 @@
+{"ok":true,"claims":[{"id":"demo-check","ok":true,"detail":"the demo check passed"}],"artifacts":["check-output.json"],"skips":[]}

@@ -1,0 +1,63 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r2-baseline",
+      "failedStep": "32ad10b6-560",
+      "restoredStep": "",
+      "observedFailure": "",
+      "observedPass": ""
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "outcome": "not run",
+      "steps": [],
+      "observed": "",
+      "artifacts": []
+    },
+    {
+      "id": "login-dashboard",
+      "outcome": "not run",
+      "steps": [],
+      "observed": "",
+      "artifacts": []
+    },
+    {
+      "id": "dashboard-mobile",
+      "outcome": "not run",
+      "steps": [],
+      "observed": "",
+      "artifacts": [],
+      "inspections": []
+    },
+    {
+      "id": "question-accepted",
+      "outcome": "not run",
+      "steps": [],
+      "observed": "",
+      "artifacts": []
+    },
+    {
+      "id": "question-completed",
+      "outcome": "not run",
+      "steps": [],
+      "observed": "",
+      "artifacts": [],
+      "independentRead": ""
+    },
+    {
+      "id": "error-page-errors",
+      "outcome": "not run",
+      "steps": [],
+      "observed": "",
+      "artifacts": []
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+  ]
+}

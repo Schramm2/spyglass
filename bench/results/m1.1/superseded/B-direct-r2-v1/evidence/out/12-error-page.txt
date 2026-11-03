@@ -1,0 +1,7 @@
+✓ Error page
+  http://127.0.0.1:47102/error
+✓ Done
+--console--
+[error] fixture console error
+--errors--
+✗ 

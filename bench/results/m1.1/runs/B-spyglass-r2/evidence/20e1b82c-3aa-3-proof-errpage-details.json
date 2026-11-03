@@ -1,0 +1,360 @@
+{
+  "label": "errpage",
+  "seat": "agent",
+  "step": "20e1b82c-3aa",
+  "pageContent": true,
+  "results": [
+    {
+      "command": [
+        "snapshot",
+        "-i",
+        "-c",
+        "--delta"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:43925/error",
+        "snapshot": {
+          "kind": "full",
+          "refs": {
+            "e13": {
+              "name": "Error page",
+              "role": "heading"
+            }
+          },
+          "revision": 5,
+          "tree": "- heading \"Error page\" [level=1, ref=e13]"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "url"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "url": "http://127.0.0.1:43925/error"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "title"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "title": "Error page"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "messages": [
+          {
+            "args": [
+              {
+                "type": "string",
+                "value": "fixture console error"
+              }
+            ],
+            "text": "fixture console error",
+            "type": "error"
+          }
+        ]
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors"
+      ],
+      "error": null,
+      "result": {
+        "errors": [
+          {
+            "column": 153,
+            "line": 0,
+            "text": "Error: fixture page error\n    at http://127.0.0.1:43925/error:1:154",
+            "url": null
+          }
+        ],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "errors": [
+          {
+            "column": 153,
+            "line": 0,
+            "text": "Error: fixture page error\n    at http://127.0.0.1:43925/error:1:154",
+            "url": null
+          }
+        ],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "(() => {\n  const element = document.activeElement;\n  if (!element || element === document.body || element === document.documentElement) return null;\n  const text = (value) => (value || \"\").replace(/\\s+/g, \" \").trim();\n  const labelledBy = (element.getAttribute(\"aria-labelledby\") || \"\")\n    .split(/\\s+/).map((id) => document.getElementById(id)?.textContent || \"\").join(\" \");\n  // A wrapping label also holds its controls' option and default text.\n  const labelText = (label) => {\n    if (!label) return \"\";\n    const copy = label.cloneNode(true);\n    copy.querySelectorAll(\"input, select, textarea\").forEach((control) => control.remove());\n    return text(copy.textContent);\n  };\n  const tag = element.tagName.toLowerCase();\n  const type = tag === \"input\" ? element.type : element.getAttribute(\"type\") || undefined;\n  const inputRoles = { checkbox: \"checkbox\", radio: \"radio\", button: \"button\", submit: \"button\",\n    reset: \"button\", range: \"slider\", search: \"searchbox\", email: \"textbox\", tel: \"textbox\",\n    text: \"textbox\", url: \"textbox\" };\n  const implicit = tag === \"input\" ? (type ? inputRoles[type] : \"textbox\")\n    : { a: \"link\", button: \"button\", select: \"combobox\", textarea: \"textbox\" }[tag];\n  return {\n    tag,\n    type,\n    role: element.getAttribute(\"role\") || implicit,\n    label: text(element.getAttribute(\"aria-label\")) || text(labelledBy)\n      || labelText(element.labels?.[0]) || text(element.getAttribute(\"title\"))\n      || text(element.getAttribute(\"placeholder\"))\n      || (tag === \"button\" || tag === \"a\" ? text(element.textContent) : \"\"),\n    id: element.id || undefined,\n  };\n})()"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:43925/error",
+        "result": null
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "requests": [
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "GET",
+            "mimeType": "text/html",
+            "requestId": "F04A78DEA7B54A71D78E6E76F181FA72",
+            "resourceType": "Document",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "Transfer-Encoding": "chunked",
+              "content-type": "text/html; charset=utf-8",
+              "date": "Tue, 03 Nov 2026 14:18:11 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793715491641,
+            "url": "http://127.0.0.1:43925/error"
+          }
+        ]
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:43925/error",
+        "result": 111.1
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "screenshot",
+        "/tmp/m11/B-spyglass-r2/repo/.spyglass/runs/B-spyglass-r2/spyglass/browser-20e1b82c-3aa-proof-errpage-60b42298.png"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 3382934810527358500
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "path": "/tmp/m11/B-spyglass-r2/repo/.spyglass/runs/B-spyglass-r2/spyglass/browser-20e1b82c-3aa-proof-errpage-60b42298.png"
+      },
+      "success": true
+    }
+  ]
+}

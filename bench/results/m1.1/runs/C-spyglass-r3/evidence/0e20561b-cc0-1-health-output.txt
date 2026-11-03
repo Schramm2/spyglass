@@ -1,0 +1,4 @@
+stdout:
+{"ok":true,"claims":[{"id":"health-ready","ok":true,"detail":{"status":"ok"}}]}
+
+stderr:

@@ -1,0 +1,115 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r3",
+      "failedStep": "77ec267d-56f",
+      "restoredStep": "366b5faa-006",
+      "observedFailure": "Assertion json status=complete failed on the POST 202 response (observed pending), step 77ec267d-56f. Two earlier attempts to GET immediately after a POST (927154eb-18a, 92d79b13-570) already saw complete, because the app completes after 180 ms and a Spyglass call takes longer; those reads did not show the failure.",
+      "observedPass": "The same assertion passed on the later GET of the same question (366b5faa-006, observed complete)."
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "outcome": "passed",
+      "steps": [
+        "98d58b97-f19"
+      ],
+      "observed": "After filling agent@example.test with a wrong password and clicking Sign in, the page at /login shows 'Sign in failed' (step 98d58b97-f19, expect text held).",
+      "artifacts": [
+        "98d58b97-f19-1-proof-signin-refused.png",
+        "98d58b97-f19-2-proof-signin-refused-snapshot.json",
+        "98d58b97-f19-3-proof-signin-refused-details.json"
+      ]
+    },
+    {
+      "id": "login-dashboard",
+      "outcome": "passed",
+      "steps": [
+        "0fb8c3dd-129",
+        "80835e34-b16"
+      ],
+      "observed": "ui login with the seat's secret reference reached /dashboard (0fb8c3dd-129); verify 80835e34-b16 held url=/dashboard and text 'Ask a question', title Questions.",
+      "artifacts": [
+        "80835e34-b16-1-proof-dashboard.png",
+        "80835e34-b16-2-proof-dashboard-snapshot.json",
+        "80835e34-b16-3-proof-dashboard-details.json"
+      ]
+    },
+    {
+      "id": "dashboard-mobile",
+      "outcome": "passed",
+      "steps": [
+        "ffb6d6b2-67b"
+      ],
+      "observed": "At 390x844 the dashboard shows heading, question field and Submit question button, all within the viewport.",
+      "artifacts": [
+        "ffb6d6b2-67b-1-proof-dashboard-mobile-390x844.png",
+        "ffb6d6b2-67b-2-proof-dashboard-mobile-390x844-snapshot.json",
+        "ffb6d6b2-67b-3-proof-dashboard-mobile-390x844-details.json"
+      ],
+      "inspections": [
+        {
+          "viewport": "390x844",
+          "expected": "Heading, question field and Submit question button visible, readable, not clipped horizontally",
+          "observed": "Opened the PNG: heading 'Ask a question' in large bold text, 'Question' label with a textarea ending before the right edge (~365px of 390), green 'Submit question' button fully visible; no horizontal clipping or overflow; rest of page blank white.",
+          "artifact": "ffb6d6b2-67b-1-proof-dashboard-mobile-390x844.png"
+        }
+      ]
+    },
+    {
+      "id": "question-accepted",
+      "outcome": "passed",
+      "steps": [
+        "dc581796-60c"
+      ],
+      "observed": "POST /api/questions returned HTTP 202 with body {id: f74e141f-..., status: pending} (dc581796-60c).",
+      "artifacts": [
+        "dc581796-60c-1-api-response.json"
+      ]
+    },
+    {
+      "id": "question-completed",
+      "outcome": "passed",
+      "steps": [
+        "67ace017-bf8",
+        "a1494f0a-790",
+        "ee524ec8-3e5",
+        "366b5faa-006",
+        "5a1a9e75-394"
+      ],
+      "observed": "Control question 3 (6e720118-...) was pending in the 202 response (77ec267d-56f, failed control attempt); a later separate GET /api/questions/6e720118-... returned 200 status complete with answer 'Thanks. We received your question.' (366b5faa-006), and GET /api/questions lists it (5a1a9e75-394). Same for 5f1c367d-... (67ace017-bf8 POST, a1494f0a-790 read, ee524ec8-3e5 list).",
+      "artifacts": [
+        "67ace017-bf8-1-api-response.json",
+        "a1494f0a-790-1-api-response.json",
+        "ee524ec8-3e5-1-api-response.json",
+        "366b5faa-006-1-api-response.json",
+        "5a1a9e75-394-1-api-response.json"
+      ],
+      "independentRead": "366b5faa-006"
+    },
+    {
+      "id": "error-page-errors",
+      "outcome": "passed",
+      "steps": [
+        "b269d53e-049",
+        "17b89538-ee9",
+        "36b53aeb-508",
+        "49553328-df7"
+      ],
+      "observed": "After opening /error (b269d53e-049), ui errors reported 'Error: fixture page error' (17b89538-ee9), ui console reported error 'fixture console error' (36b53aeb-508), and ui proof 49553328-df7 retained both texts in 49553328-df7-3-proof-error-page-details.json (consoleErrors 2).",
+      "artifacts": [
+        "49553328-df7-1-proof-error-page.png",
+        "49553328-df7-2-proof-error-page-snapshot.json",
+        "49553328-df7-3-proof-error-page-details.json"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only.",
+    "Control failure was observed on the POST 202 response body, not on a separate GET: the app completes a question 180 ms after the POST, faster than a new Spyglass api step starts, so two immediate GETs (927154eb-18a, 92d79b13-570) already saw complete."
+  ]
+}

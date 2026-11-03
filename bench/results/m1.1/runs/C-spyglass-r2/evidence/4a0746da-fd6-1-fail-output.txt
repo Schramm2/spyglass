@@ -1,0 +1,4 @@
+stdout:
+{"ok":false,"claims":[{"id":"demo-check","ok":false,"detail":"the demo assertion failed"}],"artifacts":["check-output.json"],"skips":["demo-required-case"]}
+
+stderr:

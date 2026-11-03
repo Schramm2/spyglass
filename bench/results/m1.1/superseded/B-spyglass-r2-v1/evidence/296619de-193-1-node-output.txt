@@ -1,0 +1,4 @@
+stdout:
+{"ok":true,"postStatus":202,"accepted":{"id":"4a70105a-b4c0-47f4-a91a-c19dfa08aaf9","status":"pending"},"readAfterMs":709,"readStatus":200,"body":{"id":"4a70105a-b4c0-47f4-a91a-c19dfa08aaf9","question":"control read after 600 ms","status":"complete","answer":"Thanks. We received your question."},"claims":[{"id":"status equals complete","ok":true,"detail":"observed status complete"}]}
+
+stderr:

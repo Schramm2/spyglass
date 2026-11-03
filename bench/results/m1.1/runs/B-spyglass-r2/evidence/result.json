@@ -1,0 +1,128 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r2-baseline",
+      "failedStep": "32ad10b6-560",
+      "restoredStep": "86aaaf38-218",
+      "observedFailure": "Baseline run B-spyglass-r2-baseline (worktree wt-fault, same commit; launch adds fault-slow-timers.mjs that slows timers 100x; fixtures unchanged): GET /api/questions/<id> right after the POST returned 200 with status pending; assertion json status=complete failed (step 32ad10b6-560).",
+      "observedPass": "Candidate run, unmodified app: GET /api/questions/aee30e9a... returned status complete; the same assertion passed (step 86aaaf38-218). Earlier restored attempt f9e2f409-273 failed with SECRET_UNAVAILABLE (token env not loaded) and is kept, not cited."
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "outcome": "passed",
+      "steps": [
+        "2ee5b02f-b91"
+      ],
+      "observed": "Step 2ee5b02f-b91: filled Email agent@example.test and a wrong password, clicked Sign in; expect text 'Sign in failed' passed. Screenshot opened: page shows heading 'Sign in failed'.",
+      "artifacts": [
+        "2ee5b02f-b91-1-proof-refused.png",
+        "2ee5b02f-b91-2-proof-refused-snapshot.json",
+        "2ee5b02f-b91-3-proof-refused-details.json"
+      ]
+    },
+    {
+      "id": "login-dashboard",
+      "outcome": "passed",
+      "steps": [
+        "f1fbfe11-9ab",
+        "7a667294-648",
+        "db44f082-a39"
+      ],
+      "observed": "Step 7a667294-648 (ui login agent with the correct password from env reference) ended at http://127.0.0.1:43925/dashboard with loggedIn true; step db44f082-a39 then expected url /dashboard and text 'Ask a question', both passed.",
+      "artifacts": [
+        "f1fbfe11-9ab-1-proof-dash.png",
+        "f1fbfe11-9ab-2-proof-dash-snapshot.json",
+        "f1fbfe11-9ab-3-proof-dash-details.json",
+        "db44f082-a39-1-proof-after-login.png",
+        "db44f082-a39-2-proof-after-login-snapshot.json",
+        "db44f082-a39-3-proof-after-login-details.json"
+      ]
+    },
+    {
+      "id": "dashboard-mobile",
+      "outcome": "passed",
+      "steps": [
+        "c177eb58-f36"
+      ],
+      "observed": "Step c177eb58-f36 at 390x844: text 'Ask a question' and #question visible.",
+      "artifacts": [
+        "c177eb58-f36-1-proof-mobile-390x844.png",
+        "c177eb58-f36-2-proof-mobile-390x844-snapshot.json",
+        "c177eb58-f36-3-proof-mobile-390x844-details.json"
+      ],
+      "inspections": [
+        {
+          "viewport": "390x844",
+          "expected": "Heading, question field and Submit question button visible, readable, not clipped horizontally",
+          "observed": "Opened the PNG: heading 'Ask a question' in large bold text at top, 'Question' label with textarea to its right ending inside the 390px width, green 'Submit question' button below with white legible text; nothing cut off at the right edge; no horizontal overflow visible.",
+          "artifact": "c177eb58-f36-1-proof-mobile-390x844.png"
+        }
+      ]
+    },
+    {
+      "id": "question-accepted",
+      "outcome": "passed",
+      "steps": [
+        "955bff24-278"
+      ],
+      "observed": "Step 955bff24-278: POST /api/questions returned HTTP 202 with body status pending and id aee30e9a-19e3-4234-a2e4-4847be8339d5; all three assertions passed.",
+      "artifacts": [
+        "955bff24-278-1-api-response.json"
+      ]
+    },
+    {
+      "id": "question-completed",
+      "outcome": "passed",
+      "steps": [
+        "d3086e73-c74",
+        "bb827aef-104",
+        "3580d099-cb4",
+        "88ead45e-bae",
+        "de5a7761-4e1",
+        "955bff24-278",
+        "86aaaf38-218"
+      ],
+      "observed": "Action: POST 955bff24-278 returned 202 pending with id aee30e9a-19e3-4234-a2e4-4847be8339d5. Poll d3086e73-c74 reached complete; later separate read bb827aef-104 GET /api/questions/aee30e9a... returned 200, status complete, answer 'Thanks. We received your question.'; list read 3580d099-cb4 GET /api/questions contained the id; control restored read f9e2f409-273 status complete. Exec de5a7761-4e1 showed a fresh question complete 600 ms after its POST.",
+      "artifacts": [
+        "d3086e73-c74-1-api-response.json",
+        "bb827aef-104-1-api-response.json",
+        "3580d099-cb4-1-api-response.json",
+        "88ead45e-bae-1-api-response.json",
+        "de5a7761-4e1-1-node-output.txt",
+        "955bff24-278-1-api-response.json",
+        "86aaaf38-218-1-api-response.json"
+      ],
+      "independentRead": "bb827aef-104"
+    },
+    {
+      "id": "error-page-errors",
+      "outcome": "passed",
+      "steps": [
+        "20e1b82c-3aa",
+        "f9af6f40-6c4",
+        "638bfbee-9ae",
+        "45c05e1f-63d",
+        "7e3d020f-4b1",
+        "75242dc6-196"
+      ],
+      "observed": "On /error: console step 7e3d020f-4b1 reported error message 'fixture console error'; errors steps f9af6f40-6c4/75242dc6-196 reported 'Error: fixture page error'. Note an earlier console call 638bfbee-9ae (after other commands) returned no messages; the re-open then console captured it.",
+      "artifacts": [
+        "20e1b82c-3aa-1-proof-errpage.png",
+        "20e1b82c-3aa-2-proof-errpage-snapshot.json",
+        "20e1b82c-3aa-3-proof-errpage-details.json"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only.",
+    "Two attempted failed control reads via spyglass api (8cd01472-799, 24ba9fd2-681) did not fail: spyglass api startup exceeded the app's 180 ms completion delay, so the job was already complete. They are kept but not cited; the control failure used an exec script (control/completion.mjs outside the repo) that reads immediately.",
+    "Control failed attempts in this run: spyglass api reads 8cd01472-799, 24ba9fd2-681, d0f95701-a10, 9a1b0378-e22, fe8ff606-bf4, 8dba60d1-105, 01176057-6e3, c9d94101-65a all observed complete because CLI startup exceeds the app's 180 ms completion delay; exec fa978b12-611 observed pending but exec records no json assertion. The cited failure is in baseline run B-spyglass-r2-baseline with a timer-slowing launch fault.",
+    "Failed restored attempt f9e2f409-273 (SECRET_UNAVAILABLE: token env reference not loaded in that shell) is kept and not cited. Baseline worktree /tmp/m11/B-spyglass-r2/wt-fault holds the baseline run evidence and is left in place.",
+    "The first console read 638bfbee-9ae returned no messages; the console error was captured after reopening /error (7e3d020f-4b1)."
+  ]
+}

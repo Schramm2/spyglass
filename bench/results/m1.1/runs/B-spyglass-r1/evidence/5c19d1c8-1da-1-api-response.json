@@ -1,0 +1,41 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "http://127.0.0.1:37623/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "content-type": "application/json",
+      "authorization": "[REDACTED]"
+    },
+    "body": {
+      "question": "What is Spyglass?"
+    }
+  },
+  "response": {
+    "status": 202,
+    "statusText": "Accepted",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 14:24:44 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "640ce3a9-949e-4f5b-9b2f-088c5fa18ded",
+      "status": "pending"
+    }
+  },
+  "assertions": [
+    {
+      "id": "status=202",
+      "ok": true,
+      "detail": "HTTP 202"
+    },
+    {
+      "id": "json status=pending",
+      "ok": true,
+      "detail": "observed \"pending\""
+    }
+  ]
+}

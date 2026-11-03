@@ -1,0 +1,4 @@
+✓ Browser closed
+
+Active sessions:
+→ B-direct-r2

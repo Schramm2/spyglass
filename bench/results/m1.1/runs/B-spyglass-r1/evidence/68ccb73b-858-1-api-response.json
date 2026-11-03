@@ -1,0 +1,54 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:37623/api/questions/8511a8a5-9107-4378-a548-47e369551ecb",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 14:24:50 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "8511a8a5-9107-4378-a548-47e369551ecb",
+      "question": "Does it complete?",
+      "status": "complete",
+      "answer": "Thanks. We received your question."
+    }
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "wait-until status=complete",
+      "ok": true,
+      "detail": "reached after 1 poll"
+    },
+    {
+      "id": "fail-on status=failed",
+      "ok": true,
+      "detail": "not reached"
+    }
+  ],
+  "polling": {
+    "polls": 1,
+    "elapsedMs": 57,
+    "timeoutMs": 15000,
+    "intervalMs": 250,
+    "waitUntil": "status=complete",
+    "failOn": "status=failed",
+    "outcome": "reached"
+  }
+}

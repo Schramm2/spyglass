@@ -1,0 +1,43 @@
+{
+  "claims": {
+    "health-ready": {
+      "expected": "HTTP 200 with status ok",
+      "observed": "HTTP 200 body {\"status\":\"ok\"}",
+      "actions": [
+        4
+      ],
+      "outcome": "pass"
+    },
+    "demo-check-pass": {
+      "expected": "exit 0; ok true; demo-check ok true; skips []",
+      "observed": "exit 0; {\"ok\":true,\"claims\":[{\"id\":\"demo-check\",\"ok\":true,\"detail\":\"the demo check passed\"}],\"artifacts\":[\"check-output.json\"],\"skips\":[]}",
+      "actions": [
+        5
+      ],
+      "outcome": "pass"
+    }
+  },
+  "control": {
+    "id": "demo-check-detects-failure",
+    "fail": {
+      "action": 6,
+      "exit": 0,
+      "stdout": "{\"ok\":false,\"claims\":[{\"id\":\"demo-check\",\"ok\":false,\"detail\":\"the demo assertion failed\"}],\"artifacts\":[\"check-output.json\"],\"skips\":[\"demo-required-case\"]}",
+      "detected": true
+    },
+    "restored": {
+      "action": 7,
+      "exit": 0,
+      "passed": true
+    },
+    "outcome": "pass"
+  },
+  "source": {
+    "start": "ad1d3cb3a4e91ac6a8d296e183264808100ef6fb\n",
+    "end": "ad1d3cb3a4e91ac6a8d296e183264808100ef6fb\n",
+    "unchanged": true
+  },
+  "cleanup": {
+    "appStopped": true
+  }
+}

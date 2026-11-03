@@ -1,0 +1,11 @@
+No active sessions
+  close [--all]              Close browser (--all closes every session)
+  storage <local|session>    Manage web storage
+  tab [new|list|close|<n>]   Manage tabs
+  stream enable [--port <n>] Start runtime WebSocket streaming for this session
+  removeinitscript <id>      Remove a registered script from every tab in the session
+Sessions:
+  session                    Show current session name
+  session list               List active sessions
+                             Without a name, uses --session as the restore key
+  --session-name <name>      Legacy alias for restore persistence key

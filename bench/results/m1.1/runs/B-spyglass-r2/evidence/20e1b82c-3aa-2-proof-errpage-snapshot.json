@@ -1,0 +1,37 @@
+{
+  "command": [
+    "snapshot",
+    "-i",
+    "-c",
+    "--delta"
+  ],
+  "error": null,
+  "result": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 3382934810527358500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:43925/error",
+    "snapshot": {
+      "kind": "full",
+      "refs": {
+        "e13": {
+          "name": "Error page",
+          "role": "heading"
+        }
+      },
+      "revision": 5,
+      "tree": "- heading \"Error page\" [level=1, ref=e13]"
+    }
+  },
+  "success": true
+}

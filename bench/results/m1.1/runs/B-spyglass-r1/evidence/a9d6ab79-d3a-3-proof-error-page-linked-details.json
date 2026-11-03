@@ -1,0 +1,318 @@
+{
+  "label": "error-page-linked",
+  "seat": "agent",
+  "step": "a9d6ab79-d3a",
+  "pageContent": true,
+  "results": [
+    {
+      "command": [
+        "snapshot",
+        "-i",
+        "-c",
+        "--delta"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:37623/error",
+        "snapshot": {
+          "baseRevision": 7,
+          "kind": "unchanged",
+          "revision": 8
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "url"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "url": "http://127.0.0.1:37623/error"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "title"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "title": "Error page"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "messages": []
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors"
+      ],
+      "error": null,
+      "result": {
+        "errors": [
+          {
+            "column": 153,
+            "line": 0,
+            "text": "Error: fixture page error\n    at http://127.0.0.1:37623/error:1:154",
+            "url": null
+          }
+        ],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "errors": [
+          {
+            "column": 153,
+            "line": 0,
+            "text": "Error: fixture page error\n    at http://127.0.0.1:37623/error:1:154",
+            "url": null
+          }
+        ],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "(() => {\n  const element = document.activeElement;\n  if (!element || element === document.body || element === document.documentElement) return null;\n  const text = (value) => (value || \"\").replace(/\\s+/g, \" \").trim();\n  const labelledBy = (element.getAttribute(\"aria-labelledby\") || \"\")\n    .split(/\\s+/).map((id) => document.getElementById(id)?.textContent || \"\").join(\" \");\n  // A wrapping label also holds its controls' option and default text.\n  const labelText = (label) => {\n    if (!label) return \"\";\n    const copy = label.cloneNode(true);\n    copy.querySelectorAll(\"input, select, textarea\").forEach((control) => control.remove());\n    return text(copy.textContent);\n  };\n  const tag = element.tagName.toLowerCase();\n  const type = tag === \"input\" ? element.type : element.getAttribute(\"type\") || undefined;\n  const inputRoles = { checkbox: \"checkbox\", radio: \"radio\", button: \"button\", submit: \"button\",\n    reset: \"button\", range: \"slider\", search: \"searchbox\", email: \"textbox\", tel: \"textbox\",\n    text: \"textbox\", url: \"textbox\" };\n  const implicit = tag === \"input\" ? (type ? inputRoles[type] : \"textbox\")\n    : { a: \"link\", button: \"button\", select: \"combobox\", textarea: \"textbox\" }[tag];\n  return {\n    tag,\n    type,\n    role: element.getAttribute(\"role\") || implicit,\n    label: text(element.getAttribute(\"aria-label\")) || text(labelledBy)\n      || labelText(element.labels?.[0]) || text(element.getAttribute(\"title\"))\n      || text(element.getAttribute(\"placeholder\"))\n      || (tag === \"button\" || tag === \"a\" ? text(element.textContent) : \"\"),\n    id: element.id || undefined,\n  };\n})()"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:37623/error",
+        "result": null
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "requests": []
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:37623/error",
+        "result": 12854.6
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "screenshot",
+        "/tmp/m11/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/browser-a9d6ab79-d3a-proof-error-page-linked-5083110f.png"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 5347070307981715000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "path": "/tmp/m11/B-spyglass-r1/repo/.spyglass/runs/B-spyglass-r1/spyglass/browser-a9d6ab79-d3a-proof-error-page-linked-5083110f.png"
+      },
+      "success": true
+    }
+  ]
+}
