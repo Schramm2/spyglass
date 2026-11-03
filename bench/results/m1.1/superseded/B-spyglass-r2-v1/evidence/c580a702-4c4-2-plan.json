@@ -1,0 +1,112 @@
+{
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "claim": "question-completed",
+      "expectation": "The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.",
+      "assertion": "status equals complete"
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "behavior": "In the browser, a wrong password on /login is refused.",
+      "entryPoint": "GET /login in the browser",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The page shows Sign in failed.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "behavior",
+      "required": true
+    },
+    {
+      "id": "login-dashboard",
+      "behavior": "In the browser, the demo user signs in with the correct password.",
+      "entryPoint": "GET /login in the browser",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The browser reaches /dashboard and the heading reads Ask a question.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "behavior",
+      "required": true
+    },
+    {
+      "id": "dashboard-mobile",
+      "behavior": "The signed-in dashboard fits a phone viewport.",
+      "entryPoint": "/dashboard at 390x844",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The heading, question field and Submit question button are visible, readable and not clipped horizontally.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "visual",
+      "required": true
+    },
+    {
+      "id": "question-accepted",
+      "behavior": "The API accepts a question for processing.",
+      "entryPoint": "POST /api/questions with a bearer [REDACTED]",
+      "precondition": "The demo app is running and ready.",
+      "expected": "HTTP 202 with status pending and an id.",
+      "case": "Valid demo input.",
+      "checks": [
+        "api"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "behavior",
+      "required": true
+    },
+    {
+      "id": "question-completed",
+      "behavior": "An accepted question completes and is listed.",
+      "entryPoint": "GET /api/questions/<id> and GET /api/questions",
+      "precondition": "The demo app is running and ready.",
+      "expected": "A later separate read shows status complete with an answer, and the list contains the question.",
+      "case": "Valid demo input.",
+      "checks": [
+        "api"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "side-effect",
+      "required": true
+    },
+    {
+      "id": "error-page-errors",
+      "behavior": "The error page reports its console and page errors.",
+      "entryPoint": "GET /error in the browser",
+      "precondition": "The demo app is running and ready.",
+      "expected": "The console error 'fixture console error' and the page error 'fixture page error' are reported and retained.",
+      "case": "Valid demo input.",
+      "checks": [
+        "browser"
+      ],
+      "evidence": [
+        "Retained step evidence"
+      ],
+      "kind": "behavior",
+      "required": true
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:44597/api/questions/6e720118-82d3-4b24-b033-cb287c3910ef",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 14:28:20 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "6e720118-82d3-4b24-b033-cb287c3910ef",
+      "question": "Control question 3",
+      "status": "complete",
+      "answer": "Thanks. We received your question."
+    }
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "json status=complete",
+      "ok": true,
+      "detail": "observed \"complete\""
+    },
+    {
+      "id": "json answer!=",
+      "ok": true,
+      "detail": "observed \"Thanks. We received your question.\""
+    }
+  ]
+}

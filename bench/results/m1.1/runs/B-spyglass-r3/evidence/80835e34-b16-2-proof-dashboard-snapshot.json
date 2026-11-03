@@ -1,0 +1,31 @@
+{
+  "command": [
+    "snapshot",
+    "-i",
+    "-c",
+    "--delta"
+  ],
+  "error": null,
+  "result": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 11591725904081138000
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:44597/dashboard",
+    "snapshot": {
+      "baseRevision": 3,
+      "kind": "unchanged",
+      "revision": 4
+    }
+  },
+  "success": true
+}

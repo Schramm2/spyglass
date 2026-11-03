@@ -1,0 +1,31 @@
+{
+  "command": [
+    "snapshot",
+    "-i",
+    "-c",
+    "--delta"
+  ],
+  "error": null,
+  "result": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 5347070307981715000
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:37623/error",
+    "snapshot": {
+      "baseRevision": 7,
+      "kind": "unchanged",
+      "revision": 8
+    }
+  },
+  "success": true
+}

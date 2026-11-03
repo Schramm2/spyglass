@@ -329,6 +329,188 @@ The four affected runs (`C-direct-r3`, `C-spyglass-r3`, `B-direct-r2`,
 (section 10.4) and both pairs are repeated with new operators. All run
 directories were prepared again with the repair. Briefs are unchanged.
 
+### 9.2 Environment and source
+
+| Item              | Value                                                                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tested CLI source | Spyglass 1.3.1. `src/`, `schemas/` and the build are identical from `247f965` (main) to the protocol freeze `03eee2e`; only docs changed.      |
+| Platform          | Linux container in a Claude Code cloud session, run as root. Node 24.22.2 (installed for the study; the image has Node 22), Git 2.43.0.        |
+| Browser           | `agent-browser` 0.38.2 (installed from npm) with the pre-installed Playwright Chromium build 1243.                                             |
+| Docker            | Docker daemon started in the container; `postgres:17-alpine` pulled from Docker Hub.                                                           |
+| Operators         | Claude Code `general-purpose` subagents, fresh context, the session's model (`claude-opus-5-5` for all 12 scored runs), default settings.      |
+| Token metric      | The Agent tool reports a per-operator token total. Transcripts expose per-call usage; the per-call sums are recorded separately.               |
+| Durable evidence  | No artifact service was used. Evidence is copied into this repository (section 10.5); the `/tmp/m11/` run directories expire with the session. |
+
+### 9.3 Execution notes
+
+- Slots ran in the frozen order. Each slot's two operators ran at the same
+  time; no other benchmark or test ran during a slot.
+- No coordinator or human message reached an operator after launch.
+- No transcript names another run's directory. Every operator listed
+  processes at least once (`ps`, `pgrep`), which can show other runs' process
+  command lines. Two direct operators reported seeing another demo app
+  process; none read its files. This is an isolation limit of a shared
+  container.
+- The harness gave every operator, in both arms, this repository's
+  `AGENTS.md` as project context, because the coordinator session runs in
+  this checkout. It describes Spyglass and the repository but contains no
+  worked solution, task text or other run's results. It was equal across
+  arms; it means the direct-arm operators knew Spyglass existed.
+- Before slot 1, a killed first attempt of `bench/journey.mjs` (section
+  10.1) had left a demo app and browser processes running; the coordinator
+  stopped them before any operator started.
+
 ## 10. Results
 
-To be filled in after the scored runs.
+### 10.1 Protocol checks and scripted measurements
+
+These rows are scripted or test results. They involve no model; their
+"operator steps" are shell invocations by a script, not model tool calls.
+
+| Check                                                                | Outcome                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run build`                                                      | Passed.                                                                                                                                                                                                                                                            |
+| `npm run format:check`                                               | Passed.                                                                                                                                                                                                                                                            |
+| `npm test` (as root)                                                 | 83 passed, 2 failed, 25 skipped. Both failures (`unreadable source fails verification…`, `a state permission failure is distinct from an active run lock`) depend on file permissions that root ignores.                                                           |
+| The same 2 tests as a non-root user                                  | Passed.                                                                                                                                                                                                                                                            |
+| `SPYGLASS_TEST_SURFACES=1 node --test … tests/e2e/surfaces.test.mjs` | 23 of 25 passed. The Docker/PostgreSQL test failed on a Docker Hub `429 Too Many Requests` pull and passed on rerun. `a proof right after ui open does not wait for the first browser frame` failed twice in a row (proof took about 9.6 s; limit 5 s).            |
+| `node bench/overhead.mjs --label m1.1-cloud`                         | **Gate failed** in this container: added p50/p95 125.8/161.7 ms (`ui get title`), 129.7/155.3 ms (`ui expect`), 150.2/185.3 ms (`ui verify` 5 actions + proof). Cold start p50 84.9 ms, p95 107.1 ms. [Raw](../bench/results/overhead-2026-11-03-m1.1-cloud.json). |
+| `node bench/journey.mjs --label m1.1-cloud` (20 runs)                | Completed. [Raw](../bench/results/journey-2026-11-03-m1.1-cloud.json). Table below.                                                                                                                                                                                |
+
+| Scripted path                           | Wall p50 (s) | Wall p95 (s) | Processes | Scripted steps | Stdout bytes | Recorded steps | Artifacts | Failed attempts |
+| --------------------------------------- | -----------: | -----------: | --------: | -------------: | -----------: | -------------: | --------: | --------------: |
+| agent-browser + fetch                   |        11.79 |        12.06 |         6 |              1 |        11516 |              - |         - |               - |
+| Playwright script                       |         1.50 |         1.62 |         2 |              1 |          850 |              - |         - |               - |
+| Spyglass 1.2.0 (one operation per call) |        22.16 |        30.97 |        34 |             35 |        61363 |             34 |        32 |               1 |
+| Spyglass composite workflow             |        20.69 |        29.08 |        12 |             13 |        26604 |             15 |        23 |               1 |
+
+Conditions: each path runs warm after the first run in one process; no
+cache was cleared between runs. The `agent-browser + fetch` wall times are
+bimodal (about 2.4 s or about 11.9 s per run), which matches the roughly
+10 s first-screenshot delay that the failing surface test detects. The
+cloud container is slower than the machine behind the 2026-10-28 results,
+so compare these rows with each other, not with the historical files. The
+first journey attempt was stopped by a coordinator timeout and left no
+result file.
+
+### 10.2 Independent operator results
+
+All 12 scored runs were accepted by the coordinator after cleanup: every
+claim was verified from retained evidence, the app port was closed, no
+browser session remained, no password or token value appeared in the
+evidence, and the source was unchanged. Raw values are in
+[`runs.json`](../bench/results/m1.1/runs.json).
+
+| Run           | Verified claims | Tool calls | Claims per call | Shell | Wall (s) | Tokens (harness) | Output tokens | Driver lines | Unplanned failures | `result` rejections |
+| ------------- | --------------: | ---------: | --------------: | ----: | -------: | ---------------: | ------------: | -----------: | -----------------: | ------------------: |
+| C-direct-r1   |               2 |          4 |            0.50 |     4 |     44.7 |            86404 |          4879 |           77 |                  0 |                 n/a |
+| C-direct-r2   |               2 |          6 |            0.33 |     6 |     55.5 |            86083 |          5600 |           84 |                  2 |                 n/a |
+| C-direct-r3   |               2 |          7 |            0.29 |     7 |     51.9 |            87518 |          5187 |           79 |                  0 |                 n/a |
+| C-spyglass-r1 |               2 |          6 |            0.33 |     6 |     33.5 |            93167 |          2585 |           11 |                  0 |                   0 |
+| C-spyglass-r2 |               2 |          5 |            0.40 |     5 |     28.3 |            91675 |          2359 |            6 |                  0 |                   0 |
+| C-spyglass-r3 |               2 |          6 |            0.33 |     6 |     32.9 |            92989 |          2756 |            9 |                  0 |                   0 |
+| B-direct-r1   |               6 |         14 |            0.43 |    13 |    101.1 |            95647 |          8670 |           98 |                  2 |                 n/a |
+| B-direct-r2   |               6 |         12 |            0.50 |    11 |     88.2 |           103711 |          7824 |          107 |                  2 |                 n/a |
+| B-direct-r3   |               6 |         17 |            0.35 |    16 |    106.9 |            95384 |          9398 |          117 |                  4 |                 n/a |
+| B-spyglass-r1 |               6 |         25 |            0.24 |    24 |    138.1 |           119598 |         10831 |           44 |                  2 |                   0 |
+| B-spyglass-r2 |               6 |         34 |            0.18 |    32 |    227.0 |           131025 |         19193 |           89 |                  2 |                   0 |
+| B-spyglass-r3 |               6 |         20 |            0.30 |    19 |    121.1 |           114666 |          9465 |           34 |                  0 |                   0 |
+
+Every run had one deliberate control failure. Tool calls exclude the
+operator's final hand-back. Each Journey B operator opened its 390x844
+screenshot with Read before recording the inspection (B-spyglass-r2 opened
+two images). The coordinator also opened all six retained 390x844
+screenshots: each shows the `Ask a question` heading, the `Question` field
+and the green `Submit question` button inside the 390 px width, with no
+clipping.
+
+Unavailable: phase time. The transcripts have per-call timestamps, but
+operators often combined discovery, drive, record and cleanup in one shell
+call, so the section 7.2 phase rules cannot split them without guessing.
+Only total wall time is reported. Driver lines include evidence prose and
+report text that the direct arm writes by hand and the Spyglass arm gets
+from `report`; they are not pure code.
+
+### 10.3 Comparison at equal coverage
+
+**Journey C (command only): comparable, all three pairs.** Both arms
+verified the same 2 claims and the same control with the same assertion.
+Ranges, direct then Spyglass: tool calls 4–7 vs 5–6; wall time 44.7–55.5 s
+vs 28.3–33.5 s; output tokens 4879–5600 vs 2359–2756; harness tokens
+86083–87518 vs 91675–93167; driver lines 77–84 vs 6–11; unplanned failures
+0–2 vs 0. In each of the three pairs, the Spyglass operator finished sooner
+and wrote fewer lines and output tokens; the tool call counts overlap.
+
+**Journey B (browser and API): claims equal, control coverage not equal;
+not ranked.** Both arms verified all 6 claims in every run. The control
+differs: every direct operator made the declared failing read (a separate
+`GET` straight after the `POST`, which saw `pending`). No Spyglass operator
+could. The demo job completes about 180 ms after the `POST`, and each
+`spyglass api` call takes longer than that to start, so 12 immediate
+`spyglass api GET` attempts across the three runs all saw `complete`.
+Spyglass accepted substitutes that its validator allows but that do not
+match the declared read: the assertion on the `POST` response itself
+(r1, r3), and a failing read in a separate baseline run against a
+worktree with the app's timers slowed 100 times (r2). Under section 7.3,
+these pairs are reported but not ranked. For reference, the raw ranges,
+direct then Spyglass: tool calls 12–17 vs 20–34; wall time 88.2–106.9 s vs
+121.1–227.0 s; output tokens 7824–9398 vs 9465–19193; driver lines
+98–117 vs 34–89.
+
+Three repetitions do not support a general speed claim in either
+direction.
+
+### 10.4 Superseded runs (unscored)
+
+The four runs before protocol repair 1 (section 9.1) are kept under
+[`superseded/`](../bench/results/m1.1/superseded/). `B-spyglass-r2-v1` is
+also the first observation of the control timing problem, with an incomplete
+report after 42 operator tool calls.
+
+### 10.5 Evidence and retention
+
+- [`bench/results/m1.1/runs.json`](../bench/results/m1.1/runs.json): the
+  measures for each run, with the control method and unplanned failures.
+- `bench/results/m1.1/runs/<run-id>/evidence/`: the Spyglass evidence
+  folder (step log, artifacts, screenshots, `result.json`, offline HTML
+  report) or the direct `evidence/` folder (action log, screenshots,
+  report), plus the plan and, for Spyglass, the profile.
+  `runs/B-spyglass-r2/baseline-run-evidence/` holds that operator's
+  fault-injected baseline run.
+- Redaction: the per-run demo password and token are absent from all
+  retained files (scanned with every run's values). Two direct action logs
+  captured process listings with host paths; those paths are replaced by
+  `<host-path>`. Spyglass evidence keeps its `/tmp/m11/<run-id>` paths
+  because its checksums cover them.
+- Operator transcripts are not retained (section 8).
+
+### 10.6 Findings and follow-up
+
+**Largest observed source of unnecessary operator work: an immediate
+read-after-write assertion in Spyglass.** It caused the most extra tool
+calls in Journey B: 12 control reads that could not observe the state,
+helper scripts outside the run (an argv preload, a timer-slowing module and
+a Git worktree), 3 extra `result --check` rounds in one run, and the only
+control coverage gap of the study. The direct arm met the same control in
+one scripted `POST` then `GET`.
+
+**Bounded follow-up (M1.2 candidate, not implemented here):** let one
+`spyglass api` step make a write and its immediate follow-up read, for
+example `api POST /questions --then GET /questions/{body.id}
+--then-expect-json status=complete`, recording both requests and the
+follow-up's assertion in the same step so it can back a control's failing
+attempt. Acceptance checks:
+
+1. A row in `docs/failure-cases.md` and an extended E2E test (written
+   first) show that the follow-up read's assertion is recorded under its
+   own name, fails while the job is pending, and can serve as a control's
+   failed step, while a failed `POST` stops the step before the read.
+2. The follow-up read cannot satisfy `independentRead` for a side-effect
+   claim (it is not a later, separate read).
+3. Repeat Journey B with fresh operators in both arms: every Spyglass run
+   meets the declared control without helper scripts, and coverage equals
+   the direct arm.
+
+Other findings to keep visible: the overhead gate fails in this cloud
+container; the first-frame proof surface test fails here; Journey C
+Spyglass operators finished each pair sooner with less written output.

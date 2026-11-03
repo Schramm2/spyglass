@@ -1,0 +1,45 @@
+{
+  "command": [
+    "snapshot",
+    "-i",
+    "-c",
+    "--delta"
+  ],
+  "error": null,
+  "result": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 7425502473494429000
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:36299/dashboard",
+    "snapshot": {
+      "kind": "full",
+      "refs": {
+        "e14": {
+          "name": "Ask a question",
+          "role": "heading"
+        },
+        "e15": {
+          "name": "Question",
+          "role": "textbox"
+        },
+        "e16": {
+          "name": "Submit question",
+          "role": "button"
+        }
+      },
+      "revision": 7,
+      "tree": "- heading \"Ask a question\" [level=1, ref=e14]\n- textbox \"Question\" [required, ref=e15]\n- button \"Submit question\" [ref=e16]"
+    }
+  },
+  "success": true
+}

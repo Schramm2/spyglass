@@ -1,0 +1,6 @@
+1729884502769abf4618926350fb70ad21fc8e68
+!! evidence/run.sh
+!! secrets.env
+79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547  fixtures/demo-app/check.mjs
+764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033  fixtures/demo-app/compose.yaml
+e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb  fixtures/demo-app/server.mjs

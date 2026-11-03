@@ -1,0 +1,117 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r2",
+      "failedStep": "85753eb1-cfc",
+      "restoredStep": "15b2070c-312",
+      "observedFailure": "Step 85753eb1-cfc: GET /api/questions/f00964f7-... made about 70 ms after its POST (POST sent by tools/post-question.mjs at 14:13:22.261Z, 202 pending) returned 200 with status pending; assertion 'json status=complete' failed. Same fault also seen in exec step a3bc8f89-e55 (pending at 115 ms) and api step c2680559-397 (list index 10 pending). Unplanned attempts 308e10d2-b4b, c17e04e1-fea and three list probes read too late and observed complete.",
+      "observedPass": "Step 15b2070c-312: the same GET and assertion on the same question later returned status complete with an answer; also exec step 296619de-193 (complete at 709 ms)."
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "outcome": "passed",
+      "steps": [
+        "f311d7a2-fa4"
+      ],
+      "observed": "Step f311d7a2-fa4: filled agent@example.test and a wrong password on /login, clicked Sign in; the page stayed on /login and the text 'Sign in failed' held.",
+      "artifacts": [
+        "f311d7a2-fa4-1-proof-signin-refused.png",
+        "f311d7a2-fa4-2-proof-signin-refused-snapshot.json",
+        "f311d7a2-fa4-3-proof-signin-refused-details.json"
+      ]
+    },
+    {
+      "id": "login-dashboard",
+      "outcome": "passed",
+      "steps": [
+        "bdf1c211-46e",
+        "9b6bae60-dd0"
+      ],
+      "observed": "Step bdf1c211-46e signed the agent seat in through /login with the profile secret reference (password masked) and landed on /dashboard; step 9b6bae60-dd0 asserted url /dashboard and the heading text 'Ask a question'. Earlier attempts eae622d0-e18 (SECRET_UNAVAILABLE: secrets not loaded in that shell) and 88d6a2be-398 (url still /login after that failed login) failed and are kept.",
+      "artifacts": [
+        "9b6bae60-dd0-1-proof-dashboard.png",
+        "9b6bae60-dd0-2-proof-dashboard-snapshot.json",
+        "9b6bae60-dd0-3-proof-dashboard-details.json"
+      ]
+    },
+    {
+      "id": "dashboard-mobile",
+      "outcome": "passed",
+      "steps": [
+        "6cfe58c5-184"
+      ],
+      "observed": "Step 6cfe58c5-184 at 390x844: heading, question field and Submit question button visible; screenshot inspected. Earlier attempt 93da30bc-7e4 failed on a wrong selector (role=button[...] is not a CSS selector) and is kept.",
+      "artifacts": [
+        "6cfe58c5-184-1-proof-dashboard-mobile-390x844.png",
+        "6cfe58c5-184-2-proof-dashboard-mobile-390x844-snapshot.json",
+        "6cfe58c5-184-3-proof-dashboard-mobile-390x844-details.json"
+      ],
+      "inspections": [
+        {
+          "viewport": "390x844",
+          "expected": "Heading, question field and Submit question button visible, readable and not clipped horizontally at 390x844.",
+          "observed": "Opened the PNG: 'Ask a question' heading in large bold text at top left, a 'Question' label with a textarea ending inside the right edge, and a dark green 'Submit question' button below; all fully inside the 390 px width, no horizontal clipping or overflow, rest of page blank white.",
+          "artifact": "6cfe58c5-184-1-proof-dashboard-mobile-390x844.png"
+        }
+      ]
+    },
+    {
+      "id": "question-accepted",
+      "outcome": "passed",
+      "steps": [
+        "27aa3ca6-60a"
+      ],
+      "observed": "Step 27aa3ca6-60a: POST /api/questions with the agent seat bearer [REDACTED] (masked) returned HTTP 202 with body {id: a3a9869b-..., status: pending}.",
+      "artifacts": [
+        "27aa3ca6-60a-1-api-response.json"
+      ]
+    },
+    {
+      "id": "question-completed",
+      "outcome": "passed",
+      "steps": [
+        "a515fc8f-782",
+        "428ddc20-2f7",
+        "8aca6807-2e9",
+        "296619de-193",
+        "3a596c6c-659",
+        "15b2070c-312"
+      ],
+      "observed": "Action step (POST, 202 pending, id ba162a45-...) then independent read 428ddc20-2f7: GET /api/questions/ba162a45-... returned 200 status complete with answer 'Thanks. We received your question.'; list read 8aca6807-2e9 GET /api/questions contained the id. Control restored step 296619de-193 also read status complete 709 ms after its POST.",
+      "artifacts": [
+        "a515fc8f-782-1-api-response.json",
+        "428ddc20-2f7-1-api-response.json",
+        "8aca6807-2e9-1-api-response.json",
+        "296619de-193-1-node-output.txt",
+        "3a596c6c-659-1-api-response.json",
+        "15b2070c-312-1-api-response.json"
+      ],
+      "independentRead": "3a596c6c-659"
+    },
+    {
+      "id": "error-page-errors",
+      "outcome": "passed",
+      "steps": [
+        "d5462de1-23d",
+        "9eb0283f-444",
+        "cd2ce067-b49"
+      ],
+      "observed": "On /error (step 3a98303b-609), ui errors (d5462de1-23d) reported page error 'Error: fixture page error' and ui console (9eb0283f-444) reported console error 'fixture console error'; both outputs retained in the step logs.",
+      "artifacts": [
+        "cd2ce067-b49-1-proof-error-page.png",
+        "cd2ce067-b49-2-proof-error-page-snapshot.json",
+        "cd2ce067-b49-3-proof-error-page-details.json"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only.",
+    "The control used a helper script outside the repository (tools/completion-read.mjs in the operator folder) via exec because spyglass api steps take ~200 ms, longer than the app's 180 ms completion delay.",
+    "Control completion-detects-pending: the declared assertion text 'status equals complete' does not match any assertion ID that Spyglass records for the profile's surfaces (api records 'json status=complete'; exec does not parse assertions; the profile has no matching check and cannot change during the run). The failing and passing observations exist (85753eb1-cfc, 15b2070c-312) but Spyglass rejects them as CONTROL_INVALID."
+  ]
+}

@@ -1,0 +1,3 @@
+✓ Spyglass demo
+  http://127.0.0.1:47102/login
+http://127.0.0.1:47102/login

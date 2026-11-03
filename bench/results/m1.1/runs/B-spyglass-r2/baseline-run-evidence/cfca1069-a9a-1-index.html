@@ -1,0 +1,1635 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Spyglass report B-spyglass-r2-baseline</title><style>
+:root{color-scheme:light dark;font:16px/1.5 system-ui,sans-serif}body{max-width:1100px;margin:2rem auto;padding:0 1rem}h1,h2{line-height:1.2}article,details,section{border:1px solid #8886;border-radius:.5rem;padding:1rem;margin:1rem 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:32rem;overflow:auto;background:#8881;padding:.75rem}img{max-width:100%;height:auto;border:1px solid #8886}code{overflow-wrap:anywhere}.status{font-size:1.2rem;font-weight:700}li{margin:.5rem 0}
+</style></head><body>
+<header><h1>Spyglass verification report</h1><p class="status">incomplete</p><p>Run B-spyglass-r2-baseline · spyglass-demo · operator not recorded</p><p>Source commit 7efb088aaac78408d91596003e364e26c7042f51 · fingerprint bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470</p></header>
+<section><h2>Behavioral claims</h2><article><h3>signin-refused · not run</h3><p><strong>Behavior:</strong> In the browser, a wrong password on /login is refused.</p><p><strong>Entry point:</strong> GET /login in the browser<br><strong>Precondition:</strong> The demo app is running and ready.<br><strong>Expected:</strong> The page shows Sign in failed.</p><p><strong>Observed:</strong> </p><p><strong>Steps:</strong> none<br><strong>Evidence:</strong> none</p></article>
+<article><h3>login-dashboard · not run</h3><p><strong>Behavior:</strong> In the browser, the demo user signs in with the correct password.</p><p><strong>Entry point:</strong> GET /login in the browser<br><strong>Precondition:</strong> The demo app is running and ready.<br><strong>Expected:</strong> The browser reaches /dashboard and the heading reads Ask a question.</p><p><strong>Observed:</strong> </p><p><strong>Steps:</strong> none<br><strong>Evidence:</strong> none</p></article>
+<article><h3>dashboard-mobile · not run</h3><p><strong>Behavior:</strong> The signed-in dashboard fits a phone viewport.</p><p><strong>Entry point:</strong> /dashboard at 390x844<br><strong>Precondition:</strong> The demo app is running and ready.<br><strong>Expected:</strong> The heading, question field and Submit question button are visible, readable and not clipped horizontally.</p><p><strong>Observed:</strong> </p><p><strong>Steps:</strong> none<br><strong>Evidence:</strong> none</p></article>
+<article><h3>question-accepted · not run</h3><p><strong>Behavior:</strong> The API accepts a question for processing.</p><p><strong>Entry point:</strong> POST /api/questions with a bearer [REDACTED]<br><strong>Precondition:</strong> The demo app is running and ready.<br><strong>Expected:</strong> HTTP 202 with status pending and an id.</p><p><strong>Observed:</strong> </p><p><strong>Steps:</strong> none<br><strong>Evidence:</strong> none</p></article>
+<article><h3>question-completed · not run</h3><p><strong>Behavior:</strong> An accepted question completes and is listed.</p><p><strong>Entry point:</strong> GET /api/questions/&lt;id&gt; and GET /api/questions<br><strong>Precondition:</strong> The demo app is running and ready.<br><strong>Expected:</strong> A later separate read shows status complete with an answer, and the list contains the question.</p><p><strong>Observed:</strong> </p><p><strong>Steps:</strong> none<br><strong>Evidence:</strong> none</p></article>
+<article><h3>error-page-errors · not run</h3><p><strong>Behavior:</strong> The error page reports its console and page errors.</p><p><strong>Entry point:</strong> GET /error in the browser<br><strong>Precondition:</strong> The demo app is running and ready.<br><strong>Expected:</strong> The console error &#39;fixture console error&#39; and the page error &#39;fixture page error&#39; are reported and retained.</p><p><strong>Observed:</strong> </p><p><strong>Steps:</strong> none<br><strong>Evidence:</strong> none</p></article></section>
+<section><h2>Repository gates</h2><ul><li>No repository gates are selected.</li></ul></section>
+<section><h2>Negative controls</h2><article><h3>completion-detects-pending · not run</h3><p><strong>Claim:</strong> question-completed<br><strong>Expectation:</strong> The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.<br><strong>Assertion:</strong> json status=complete</p><p><strong>Failed attempt:</strong> none — not recorded<br><strong>Restored pass:</strong> none — not recorded</p></article></section>
+<section><h2>Environment checks</h2><ul><li><strong>source identity:</strong> passed — Current source matches the baseline recorded at up.</li>
+<li><strong>artifact integrity:</strong> passed — 5 of 5 recorded artifacts match their checksums.</li>
+<li><strong>cleanup:</strong> passed — Spyglass cleanup: true; external owner cleanup: true.</li></ul></section>
+<section><h2>Visual observations</h2><p>No visual observations are recorded.</p></section>
+<section><h2>Cleanup</h2><ul><li><strong>runState:</strong> stopped</li>
+<li><strong>spyglassResourcesCleaned:</strong> true</li>
+<li><strong>externalOwnerCleaned:</strong> not required</li></ul></section>
+<section><h2>Coverage limits</h2><ul><li>The journey proves the demo app&#39;s sign-in, dashboard, question API and error page only.</li></ul></section>
+<section><h2>Attempts</h2><details><summary>2026-11-03T14:20:21.535Z · up · passed · child exit 0 · step 7c19886f-c68</summary><p>Arguments: []<br>Source: bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470<br>Artifacts: 7c19886f-c68-1-profile.json, 7c19886f-c68-2-plan.json</p><pre>{
+  &quot;id&quot;: &quot;B-spyglass-r2-baseline&quot;,
+  &quot;state&quot;: &quot;ready&quot;,
+  &quot;repo&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault&quot;,
+  &quot;evidence&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass&quot;,
+  &quot;web&quot;: &quot;http://127.0.0.1:39967&quot;,
+  &quot;api&quot;: &quot;http://127.0.0.1:39967/api&quot;,
+  &quot;port&quot;: 39967,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+    &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+    &quot;fileCount&quot;: 7
+  },
+  &quot;sourceChanges&quot;: [],
+  &quot;profile&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault/spyglass.json&quot;,
+  &quot;plan&quot;: {
+    &quot;controls&quot;: [
+      {
+        &quot;id&quot;: &quot;completion-detects-pending&quot;,
+        &quot;claim&quot;: &quot;question-completed&quot;,
+        &quot;expectation&quot;: &quot;The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.&quot;,
+        &quot;assertion&quot;: &quot;json status=complete&quot;
+      }
+    ],
+    &quot;claims&quot;: [
+      {
+        &quot;id&quot;: &quot;signin-refused&quot;,
+        &quot;behavior&quot;: &quot;In the browser, a wrong password on /login is refused.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The page shows Sign in failed.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;login-dashboard&quot;,
+        &quot;behavior&quot;: &quot;In the browser, the demo user signs in with the correct password.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The browser reaches /dashboard and the heading reads Ask a question.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;dashboard-mobile&quot;,
+        &quot;behavior&quot;: &quot;The signed-in dashboard fits a phone viewport.&quot;,
+        &quot;entryPoint&quot;: &quot;/dashboard at 390x844&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The heading, question field and Submit question button are visible, readable and not clipped horizontally.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;visual&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;question-accepted&quot;,
+        &quot;behavior&quot;: &quot;The API accepts a question for processing.&quot;,
+        &quot;entryPoint&quot;: &quot;POST /api/questions with a bearer [REDACTED]&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;HTTP 202 with status pending and an id.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;api&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;question-completed&quot;,
+        &quot;behavior&quot;: &quot;An accepted question completes and is listed.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /api/questions/&lt;id&gt; and GET /api/questions&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;A later separate read shows status complete with an answer, and the list contains the question.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;api&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;side-effect&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;error-page-errors&quot;,
+        &quot;behavior&quot;: &quot;The error page reports its console and page errors.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /error in the browser&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The console error &#39;fixture console error&#39; and the page error &#39;fixture page error&#39; are reported and retained.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      }
+    ],
+    &quot;gates&quot;: [],
+    &quot;limits&quot;: [
+      &quot;The journey proves the demo app&#39;s sign-in, dashboard, question API and error page only.&quot;
+    ]
+  },
+  &quot;result&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json&quot;,
+  &quot;export&quot;: &quot;export SPYGLASS_RUN=B-spyglass-r2-baseline&quot;,
+  &quot;active&quot;: {
+    &quot;pid&quot;: 32741,
+    &quot;processStartedAt&quot;: &quot;2026-11-03T14:20:21.277Z&quot;,
+    &quot;command&quot;: &quot;up&quot;,
+    &quot;startedAt&quot;: &quot;2026-11-03T14:20:21.533Z&quot;
+  },
+  &quot;activeSeat&quot;: &quot;default&quot;,
+  &quot;cleanup&quot;: false,
+  &quot;capabilities&quot;: {
+    &quot;ui&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;agent-browser&quot;,
+      &quot;testedVersion&quot;: &quot;0.38.2&quot;
+    },
+    &quot;api&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;Node fetch&quot;
+    },
+    &quot;db&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;node-postgres&quot;
+    },
+    &quot;compose&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;docker compose&quot;
+    },
+    &quot;check&quot;: {
+      &quot;available&quot;: true,
+      &quot;names&quot;: [
+        &quot;health&quot;,
+        &quot;pass&quot;,
+        &quot;fail&quot;
+      ]
+    },
+    &quot;exec&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;process&quot;
+    },
+    &quot;skill&quot;: null,
+    &quot;features&quot;: null
+  },
+  &quot;completedChecks&quot;: [],
+  &quot;pendingClaims&quot;: [
+    &quot;signin-refused&quot;,
+    &quot;login-dashboard&quot;,
+    &quot;dashboard-mobile&quot;,
+    &quot;question-accepted&quot;,
+    &quot;question-completed&quot;,
+    &quot;error-page-errors&quot;
+  ],
+  &quot;owner&quot;: {
+    &quot;mode&quot;: &quot;owned&quot;,
+    &quot;bindings&quot;: {},
+    &quot;cleanupRequired&quot;: false
+  },
+  &quot;next&quot;: &quot;spyglass result --file .spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json --run B-spyglass-r2-baseline&quot;,
+  &quot;resultRules&quot;: [
+    &quot;A passed claim lists its successful steps from this run in steps and states what you saw in observed.&quot;,
+    &quot;Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.&quot;,
+    &quot;Behavior claims signin-refused, login-dashboard, question-accepted, error-page-errors: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.&quot;,
+    &quot;Visual claims dashboard-mobile: fill inspections with the viewport, expected, observed and a screenshot artifact from a cited step.&quot;,
+    &quot;Side-effect claims question-completed: list the action step and a later read in steps, and set independentRead to the read&#39;s step ID. An api read is a GET with a 2xx status other than 202; a db read is a read-only query that is not truncated.&quot;,
+    &quot;Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control&#39;s claim passes and cites restoredStep.&quot;,
+    &quot;Control completion-detects-pending: claim question-completed, assertion json status=complete.&quot;
+  ],
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 7,
+    &quot;rehashed&quot;: 0
+  }
+}</pre></details>
+<details><summary>2026-11-03T14:20:22.029Z · api · passed · child exit 0 · step bc15960b-327</summary><p>Arguments: [&quot;POST&quot;,&quot;/questions&quot;,&quot;--seat&quot;,&quot;agent&quot;,&quot;--data&quot;,&quot;{\&quot;question\&quot;:\&quot;control fault\&quot;}&quot;,&quot;--expect&quot;,&quot;202&quot;]<br>Source: bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470<br>Artifacts: bc15960b-327-1-api-response.json</p><pre>{
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;url&quot;: &quot;http://127.0.0.1:39967/api/questions&quot;,
+  &quot;status&quot;: 202,
+  &quot;body&quot;: {
+    &quot;id&quot;: &quot;407e9710-a960-4de6-9235-d54a511afd22&quot;,
+    &quot;status&quot;: &quot;pending&quot;
+  },
+  &quot;artifacts&quot;: [
+    {
+      &quot;path&quot;: &quot;bc15960b-327-1-api-response.json&quot;,
+      &quot;sha256&quot;: &quot;5de52a55e2b5c85cbad8af79e7bcaadab94ba0fcab1bffdf11bde40174c18ef1&quot;,
+      &quot;kind&quot;: &quot;api&quot;,
+      &quot;step&quot;: &quot;bc15960b-327&quot;
+    }
+  ],
+  &quot;claims&quot;: [
+    {
+      &quot;id&quot;: &quot;status=202&quot;,
+      &quot;ok&quot;: true,
+      &quot;detail&quot;: &quot;HTTP 202&quot;
+    }
+  ],
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 7,
+    &quot;rehashed&quot;: 0
+  }
+}</pre></details>
+<details><summary>2026-11-03T14:20:22.273Z · api · failed · child exit 1 · step 32ad10b6-560</summary><p>Arguments: [&quot;GET&quot;,&quot;/questions/407e9710-a960-4de6-9235-d54a511afd22&quot;,&quot;--seat&quot;,&quot;agent&quot;,&quot;--expect&quot;,&quot;200&quot;,&quot;--expect-json&quot;,&quot;status=complete&quot;]<br>Source: bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470<br>Artifacts: 32ad10b6-560-1-api-response.json</p><pre>{
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;url&quot;: &quot;http://127.0.0.1:39967/api/questions/407e9710-a960-4de6-9235-d54a511afd22&quot;,
+  &quot;status&quot;: 200,
+  &quot;body&quot;: {
+    &quot;id&quot;: &quot;407e9710-a960-4de6-9235-d54a511afd22&quot;,
+    &quot;question&quot;: &quot;control fault&quot;,
+    &quot;status&quot;: &quot;pending&quot;
+  },
+  &quot;artifacts&quot;: [
+    {
+      &quot;path&quot;: &quot;32ad10b6-560-1-api-response.json&quot;,
+      &quot;sha256&quot;: &quot;0876a13df337f235f9167ab28112282290ba112a8537401c9f7e1bbeda9a6d57&quot;,
+      &quot;kind&quot;: &quot;api&quot;,
+      &quot;step&quot;: &quot;32ad10b6-560&quot;
+    }
+  ],
+  &quot;claims&quot;: [
+    {
+      &quot;id&quot;: &quot;status=200&quot;,
+      &quot;ok&quot;: true,
+      &quot;detail&quot;: &quot;HTTP 200&quot;
+    },
+    {
+      &quot;id&quot;: &quot;json status=complete&quot;,
+      &quot;ok&quot;: false,
+      &quot;detail&quot;: &quot;observed \&quot;pending\&quot;&quot;
+    }
+  ],
+  &quot;passed&quot;: false,
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;API_EXPECTATION_FAILED&quot;,
+    &quot;message&quot;: &quot;API expectation failed: json status=complete (observed \&quot;pending\&quot;).&quot;
+  },
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 7,
+    &quot;rehashed&quot;: 0
+  },
+  &quot;linked&quot;: {
+    &quot;claims&quot;: [],
+    &quot;controls&quot;: [
+      &quot;completion-detects-pending:failed&quot;
+    ],
+    &quot;gates&quot;: [],
+    &quot;skipped&quot;: []
+  }
+}</pre></details>
+<details><summary>2026-11-03T14:20:22.523Z · down · passed · child exit 0 · step 5189209f-a72</summary><p>Arguments: []<br>Source: bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470<br>Artifacts: 5189209f-a72-1-launch-final.log</p><pre>{
+  &quot;id&quot;: &quot;B-spyglass-r2-baseline&quot;,
+  &quot;state&quot;: &quot;stopped&quot;,
+  &quot;repo&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault&quot;,
+  &quot;evidence&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass&quot;,
+  &quot;web&quot;: &quot;http://127.0.0.1:39967&quot;,
+  &quot;api&quot;: &quot;http://127.0.0.1:39967/api&quot;,
+  &quot;port&quot;: 39967,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+    &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+    &quot;fileCount&quot;: 7
+  },
+  &quot;sourceChanges&quot;: [],
+  &quot;profile&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault/spyglass.json&quot;,
+  &quot;plan&quot;: {
+    &quot;controls&quot;: [
+      {
+        &quot;id&quot;: &quot;completion-detects-pending&quot;,
+        &quot;claim&quot;: &quot;question-completed&quot;,
+        &quot;expectation&quot;: &quot;The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.&quot;,
+        &quot;assertion&quot;: &quot;json status=complete&quot;
+      }
+    ],
+    &quot;claims&quot;: [
+      {
+        &quot;id&quot;: &quot;signin-refused&quot;,
+        &quot;behavior&quot;: &quot;In the browser, a wrong password on /login is refused.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The page shows Sign in failed.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;login-dashboard&quot;,
+        &quot;behavior&quot;: &quot;In the browser, the demo user signs in with the correct password.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The browser reaches /dashboard and the heading reads Ask a question.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;dashboard-mobile&quot;,
+        &quot;behavior&quot;: &quot;The signed-in dashboard fits a phone viewport.&quot;,
+        &quot;entryPoint&quot;: &quot;/dashboard at 390x844&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The heading, question field and Submit question button are visible, readable and not clipped horizontally.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;visual&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;question-accepted&quot;,
+        &quot;behavior&quot;: &quot;The API accepts a question for processing.&quot;,
+        &quot;entryPoint&quot;: &quot;POST /api/questions with a bearer [REDACTED]&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;HTTP 202 with status pending and an id.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;api&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;question-completed&quot;,
+        &quot;behavior&quot;: &quot;An accepted question completes and is listed.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /api/questions/&lt;id&gt; and GET /api/questions&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;A later separate read shows status complete with an answer, and the list contains the question.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;api&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;side-effect&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;id&quot;: &quot;error-page-errors&quot;,
+        &quot;behavior&quot;: &quot;The error page reports its console and page errors.&quot;,
+        &quot;entryPoint&quot;: &quot;GET /error in the browser&quot;,
+        &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+        &quot;expected&quot;: &quot;The console error &#39;fixture console error&#39; and the page error &#39;fixture page error&#39; are reported and retained.&quot;,
+        &quot;case&quot;: &quot;Valid demo input.&quot;,
+        &quot;checks&quot;: [
+          &quot;browser&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Retained step evidence&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      }
+    ],
+    &quot;gates&quot;: [],
+    &quot;limits&quot;: [
+      &quot;The journey proves the demo app&#39;s sign-in, dashboard, question API and error page only.&quot;
+    ]
+  },
+  &quot;result&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json&quot;,
+  &quot;export&quot;: &quot;export SPYGLASS_RUN=B-spyglass-r2-baseline&quot;,
+  &quot;active&quot;: {
+    &quot;pid&quot;: 346,
+    &quot;processStartedAt&quot;: &quot;2026-11-03T14:20:22.441Z&quot;,
+    &quot;command&quot;: &quot;down&quot;,
+    &quot;startedAt&quot;: &quot;2026-11-03T14:20:22.521Z&quot;
+  },
+  &quot;activeSeat&quot;: &quot;default&quot;,
+  &quot;cleanup&quot;: true,
+  &quot;capabilities&quot;: {
+    &quot;ui&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;agent-browser&quot;,
+      &quot;testedVersion&quot;: &quot;0.38.2&quot;
+    },
+    &quot;api&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;Node fetch&quot;
+    },
+    &quot;db&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;node-postgres&quot;
+    },
+    &quot;compose&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;docker compose&quot;
+    },
+    &quot;check&quot;: {
+      &quot;available&quot;: true,
+      &quot;names&quot;: [
+        &quot;health&quot;,
+        &quot;pass&quot;,
+        &quot;fail&quot;
+      ]
+    },
+    &quot;exec&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;process&quot;
+    },
+    &quot;skill&quot;: null,
+    &quot;features&quot;: null
+  },
+  &quot;completedChecks&quot;: [],
+  &quot;pendingClaims&quot;: [
+    &quot;signin-refused&quot;,
+    &quot;login-dashboard&quot;,
+    &quot;dashboard-mobile&quot;,
+    &quot;question-accepted&quot;,
+    &quot;question-completed&quot;,
+    &quot;error-page-errors&quot;
+  ],
+  &quot;owner&quot;: {
+    &quot;mode&quot;: &quot;owned&quot;,
+    &quot;bindings&quot;: {},
+    &quot;cleanupRequired&quot;: false
+  },
+  &quot;next&quot;: &quot;spyglass result --file .spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json --run B-spyglass-r2-baseline&quot;,
+  &quot;ownerCleanupRequired&quot;: false,
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 7,
+    &quot;rehashed&quot;: 0
+  }
+}</pre></details></section>
+<section><h2>Artifacts</h2><ul><li><strong>7c19886f-c68-1-profile.json</strong> · configuration · SHA-256 2eaca79313693beb271fd4c1359236d519537056de5d51fb8c772aa7d88d5d03 · step 7c19886f-c68<details><summary>Inspect text evidence</summary><pre>{
+  &quot;version&quot;: 1,
+  &quot;app&quot;: &quot;spyglass-demo&quot;,
+  &quot;evidence&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline&quot;,
+  &quot;launch&quot;: {
+    &quot;mode&quot;: &quot;owned&quot;,
+    &quot;command&quot;: [
+      &quot;node&quot;,
+      &quot;--import&quot;,
+      &quot;./fault-slow-timers.mjs&quot;,
+      &quot;fixtures/demo-app/server.mjs&quot;
+    ],
+    &quot;env&quot;: {
+      &quot;PORT&quot;: &quot;39967&quot;,
+      &quot;DEMO_PASSWORD&quot;: &quot;env:DEMO_PASSWORD&quot;,
+      &quot;DEMO_TOKEN&quot;: &quot;env:DEMO_TOKEN&quot;
+    },
+    &quot;ready&quot;: {
+      &quot;url&quot;: &quot;http://127.0.0.1:39967/health&quot;,
+      &quot;status&quot;: 200,
+      &quot;timeoutMs&quot;: 5000
+    }
+  },
+  &quot;web&quot;: &quot;http://127.0.0.1:39967&quot;,
+  &quot;api&quot;: &quot;http://127.0.0.1:39967/api&quot;,
+  &quot;bindings&quot;: {},
+  &quot;checks&quot;: {
+    &quot;health&quot;: {
+      &quot;command&quot;: [
+        &quot;node&quot;,
+        &quot;--input-type=module&quot;,
+        &quot;-e&quot;,
+        &quot;const r=await fetch(process.env.HEALTH_URL);const body=await r.json();const ok=r.status===200&amp;&amp;body.status===&#39;ok&#39;;console.log(JSON.stringify({ok,claims:[{id:&#39;health-ready&#39;,ok,detail:body}]}));process.exitCode=ok?0:1&quot;
+      ],
+      &quot;env&quot;: {
+        &quot;HEALTH_URL&quot;: &quot;http://127.0.0.1:39967/health&quot;
+      },
+      &quot;result&quot;: &quot;json&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;cleanup&quot;: false
+    },
+    &quot;pass&quot;: {
+      &quot;command&quot;: [
+        &quot;node&quot;,
+        &quot;fixtures/demo-app/check.mjs&quot;,
+        &quot;pass&quot;
+      ],
+      &quot;result&quot;: &quot;json&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;cleanup&quot;: false
+    },
+    &quot;fail&quot;: {
+      &quot;command&quot;: [
+        &quot;node&quot;,
+        &quot;fixtures/demo-app/check.mjs&quot;,
+        &quot;fail&quot;
+      ],
+      &quot;result&quot;: &quot;json&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;cleanup&quot;: false
+    }
+  },
+  &quot;seats&quot;: {
+    &quot;agent&quot;: {
+      &quot;token&quot;: &quot;env:DEMO_TOKEN&quot;,
+      &quot;login&quot;: {
+        &quot;path&quot;: &quot;/login&quot;,
+        &quot;steps&quot;: [
+          {
+            &quot;fill&quot;: {
+              &quot;label&quot;: &quot;Email&quot;
+            },
+            &quot;value&quot;: &quot;agent@example.test&quot;
+          },
+          {
+            &quot;fill&quot;: {
+              &quot;label&quot;: &quot;Password&quot;
+            },
+            &quot;secret&quot;: &quot;env:DEMO_PASSWORD&quot;
+          },
+          {
+            &quot;click&quot;: {
+              &quot;role&quot;: &quot;button&quot;,
+              &quot;name&quot;: &quot;Sign in&quot;
+            }
+          }
+        ],
+        &quot;done&quot;: {
+          &quot;urlContains&quot;: &quot;/dashboard&quot;
+        }
+      }
+    }
+  },
+  &quot;browser&quot;: {
+    &quot;allowedOrigins&quot;: [
+      &quot;http://127.0.0.1:39967&quot;
+    ],
+    &quot;idleTimeoutMs&quot;: 3600000
+  },
+  &quot;imports&quot;: []
+}
+</pre></details></li>
+<li><strong>7c19886f-c68-2-plan.json</strong> · configuration · SHA-256 3c1ab8011b98065d848daf43787c369ea213e41f444573b8fa42b1a04f7c01b8 · step 7c19886f-c68<details><summary>Inspect text evidence</summary><pre>{
+  &quot;controls&quot;: [
+    {
+      &quot;id&quot;: &quot;completion-detects-pending&quot;,
+      &quot;claim&quot;: &quot;question-completed&quot;,
+      &quot;expectation&quot;: &quot;The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.&quot;,
+      &quot;assertion&quot;: &quot;json status=complete&quot;
+    }
+  ],
+  &quot;claims&quot;: [
+    {
+      &quot;id&quot;: &quot;signin-refused&quot;,
+      &quot;behavior&quot;: &quot;In the browser, a wrong password on /login is refused.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The page shows Sign in failed.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;evidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;login-dashboard&quot;,
+      &quot;behavior&quot;: &quot;In the browser, the demo user signs in with the correct password.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The browser reaches /dashboard and the heading reads Ask a question.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;evidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;dashboard-mobile&quot;,
+      &quot;behavior&quot;: &quot;The signed-in dashboard fits a phone viewport.&quot;,
+      &quot;entryPoint&quot;: &quot;/dashboard at 390x844&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The heading, question field and Submit question button are visible, readable and not clipped horizontally.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;evidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;kind&quot;: &quot;visual&quot;,
+      &quot;required&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;question-accepted&quot;,
+      &quot;behavior&quot;: &quot;The API accepts a question for processing.&quot;,
+      &quot;entryPoint&quot;: &quot;POST /api/questions with a bearer [REDACTED]&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;HTTP 202 with status pending and an id.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;api&quot;
+      ],
+      &quot;evidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;question-completed&quot;,
+      &quot;behavior&quot;: &quot;An accepted question completes and is listed.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /api/questions/&lt;id&gt; and GET /api/questions&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;A later separate read shows status complete with an answer, and the list contains the question.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;api&quot;
+      ],
+      &quot;evidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;kind&quot;: &quot;side-effect&quot;,
+      &quot;required&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;error-page-errors&quot;,
+      &quot;behavior&quot;: &quot;The error page reports its console and page errors.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /error in the browser&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The console error &#39;fixture console error&#39; and the page error &#39;fixture page error&#39; are reported and retained.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;evidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true
+    }
+  ],
+  &quot;gates&quot;: [],
+  &quot;limits&quot;: [
+    &quot;The journey proves the demo app&#39;s sign-in, dashboard, question API and error page only.&quot;
+  ]
+}
+</pre></details></li>
+<li><strong>bc15960b-327-1-api-response.json</strong> · api · SHA-256 5de52a55e2b5c85cbad8af79e7bcaadab94ba0fcab1bffdf11bde40174c18ef1 · step bc15960b-327<details><summary>Inspect text evidence</summary><pre>{
+  &quot;request&quot;: {
+    &quot;method&quot;: &quot;POST&quot;,
+    &quot;url&quot;: &quot;http://127.0.0.1:39967/api/questions&quot;,
+    &quot;headers&quot;: {
+      &quot;accept&quot;: &quot;application/json, text/plain;q=0.9, */*;q=0.8&quot;,
+      &quot;content-type&quot;: &quot;application/json&quot;,
+      &quot;authorization&quot;: &quot;[REDACTED]&quot;
+    },
+    &quot;body&quot;: {
+      &quot;question&quot;: &quot;control fault&quot;
+    }
+  },
+  &quot;response&quot;: {
+    &quot;status&quot;: 202,
+    &quot;statusText&quot;: &quot;Accepted&quot;,
+    &quot;headers&quot;: {
+      &quot;connection&quot;: &quot;keep-alive&quot;,
+      &quot;content-type&quot;: &quot;application/json; charset=utf-8&quot;,
+      &quot;date&quot;: &quot;Tue, 03 Nov 2026 14:20:22 GMT&quot;,
+      &quot;keep-alive&quot;: &quot;timeout=5&quot;,
+      &quot;transfer-encoding&quot;: &quot;chunked&quot;
+    },
+    &quot;body&quot;: {
+      &quot;id&quot;: &quot;407e9710-a960-4de6-9235-d54a511afd22&quot;,
+      &quot;status&quot;: &quot;pending&quot;
+    }
+  },
+  &quot;assertions&quot;: [
+    {
+      &quot;id&quot;: &quot;status=202&quot;,
+      &quot;ok&quot;: true,
+      &quot;detail&quot;: &quot;HTTP 202&quot;
+    }
+  ]
+}
+</pre></details></li>
+<li><strong>32ad10b6-560-1-api-response.json</strong> · api · SHA-256 0876a13df337f235f9167ab28112282290ba112a8537401c9f7e1bbeda9a6d57 · step 32ad10b6-560<details><summary>Inspect text evidence</summary><pre>{
+  &quot;request&quot;: {
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;url&quot;: &quot;http://127.0.0.1:39967/api/questions/407e9710-a960-4de6-9235-d54a511afd22&quot;,
+    &quot;headers&quot;: {
+      &quot;accept&quot;: &quot;application/json, text/plain;q=0.9, */*;q=0.8&quot;,
+      &quot;authorization&quot;: &quot;[REDACTED]&quot;
+    },
+    &quot;body&quot;: null
+  },
+  &quot;response&quot;: {
+    &quot;status&quot;: 200,
+    &quot;statusText&quot;: &quot;OK&quot;,
+    &quot;headers&quot;: {
+      &quot;connection&quot;: &quot;keep-alive&quot;,
+      &quot;content-type&quot;: &quot;application/json; charset=utf-8&quot;,
+      &quot;date&quot;: &quot;Tue, 03 Nov 2026 14:20:22 GMT&quot;,
+      &quot;keep-alive&quot;: &quot;timeout=5&quot;,
+      &quot;transfer-encoding&quot;: &quot;chunked&quot;
+    },
+    &quot;body&quot;: {
+      &quot;id&quot;: &quot;407e9710-a960-4de6-9235-d54a511afd22&quot;,
+      &quot;question&quot;: &quot;control fault&quot;,
+      &quot;status&quot;: &quot;pending&quot;
+    }
+  },
+  &quot;assertions&quot;: [
+    {
+      &quot;id&quot;: &quot;status=200&quot;,
+      &quot;ok&quot;: true,
+      &quot;detail&quot;: &quot;HTTP 200&quot;
+    },
+    {
+      &quot;id&quot;: &quot;json status=complete&quot;,
+      &quot;ok&quot;: false,
+      &quot;detail&quot;: &quot;observed \&quot;pending\&quot;&quot;
+    }
+  ]
+}
+</pre></details></li>
+<li><strong>5189209f-a72-1-launch-final.log</strong> · text · SHA-256 69dd29a4b4c13b8d3d9633151e30013882f43cf7bfdbf210bf474efef36cd8b0 · step 5189209f-a72<details><summary>Inspect text evidence</summary><pre>2026-11-03T14:20:21.725Z demo app listening on 127.0.0.1:39967
+</pre></details></li></ul></section>
+<section><h2>Report data</h2><details><summary>Machine-readable summary</summary><pre>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;status&quot;: &quot;incomplete&quot;,
+  &quot;complete&quot;: false,
+  &quot;run&quot;: &quot;B-spyglass-r2-baseline&quot;,
+  &quot;app&quot;: &quot;spyglass-demo&quot;,
+  &quot;generatedAt&quot;: &quot;2026-11-03T14:20:23.748Z&quot;,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+    &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+    &quot;currentHash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+    &quot;changed&quot;: []
+  },
+  &quot;claims&quot;: [
+    {
+      &quot;id&quot;: &quot;signin-refused&quot;,
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;not run&quot;,
+      &quot;behavior&quot;: &quot;In the browser, a wrong password on /login is refused.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The page shows Sign in failed.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;steps&quot;: [],
+      &quot;observed&quot;: &quot;&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;inspections&quot;: []
+    },
+    {
+      &quot;id&quot;: &quot;login-dashboard&quot;,
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;not run&quot;,
+      &quot;behavior&quot;: &quot;In the browser, the demo user signs in with the correct password.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The browser reaches /dashboard and the heading reads Ask a question.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;steps&quot;: [],
+      &quot;observed&quot;: &quot;&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;inspections&quot;: []
+    },
+    {
+      &quot;id&quot;: &quot;dashboard-mobile&quot;,
+      &quot;kind&quot;: &quot;visual&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;not run&quot;,
+      &quot;behavior&quot;: &quot;The signed-in dashboard fits a phone viewport.&quot;,
+      &quot;entryPoint&quot;: &quot;/dashboard at 390x844&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The heading, question field and Submit question button are visible, readable and not clipped horizontally.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;steps&quot;: [],
+      &quot;observed&quot;: &quot;&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;inspections&quot;: []
+    },
+    {
+      &quot;id&quot;: &quot;question-accepted&quot;,
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;not run&quot;,
+      &quot;behavior&quot;: &quot;The API accepts a question for processing.&quot;,
+      &quot;entryPoint&quot;: &quot;POST /api/questions with a bearer [REDACTED]&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;HTTP 202 with status pending and an id.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;api&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;steps&quot;: [],
+      &quot;observed&quot;: &quot;&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;inspections&quot;: []
+    },
+    {
+      &quot;id&quot;: &quot;question-completed&quot;,
+      &quot;kind&quot;: &quot;side-effect&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;not run&quot;,
+      &quot;behavior&quot;: &quot;An accepted question completes and is listed.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /api/questions/&lt;id&gt; and GET /api/questions&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;A later separate read shows status complete with an answer, and the list contains the question.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;api&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;steps&quot;: [],
+      &quot;observed&quot;: &quot;&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;inspections&quot;: []
+    },
+    {
+      &quot;id&quot;: &quot;error-page-errors&quot;,
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;not run&quot;,
+      &quot;behavior&quot;: &quot;The error page reports its console and page errors.&quot;,
+      &quot;entryPoint&quot;: &quot;GET /error in the browser&quot;,
+      &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+      &quot;expected&quot;: &quot;The console error &#39;fixture console error&#39; and the page error &#39;fixture page error&#39; are reported and retained.&quot;,
+      &quot;case&quot;: &quot;Valid demo input.&quot;,
+      &quot;checks&quot;: [
+        &quot;browser&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Retained step evidence&quot;
+      ],
+      &quot;steps&quot;: [],
+      &quot;observed&quot;: &quot;&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;inspections&quot;: []
+    }
+  ],
+  &quot;gates&quot;: [],
+  &quot;controls&quot;: [
+    {
+      &quot;id&quot;: &quot;completion-detects-pending&quot;,
+      &quot;claim&quot;: &quot;question-completed&quot;,
+      &quot;expectation&quot;: &quot;The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.&quot;,
+      &quot;assertion&quot;: &quot;json status=complete&quot;,
+      &quot;outcome&quot;: &quot;not run&quot;
+    }
+  ],
+  &quot;environment&quot;: [
+    {
+      &quot;name&quot;: &quot;source identity&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;Current source matches the baseline recorded at up.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;artifact integrity&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;5 of 5 recorded artifacts match their checksums.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;cleanup&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;Spyglass cleanup: true; external owner cleanup: true.&quot;
+    }
+  ],
+  &quot;visualObservations&quot;: [],
+  &quot;cleanup&quot;: {
+    &quot;runState&quot;: &quot;stopped&quot;,
+    &quot;spyglassResourcesCleaned&quot;: true,
+    &quot;externalOwnerCleaned&quot;: &quot;not required&quot;
+  },
+  &quot;limits&quot;: [
+    &quot;The journey proves the demo app&#39;s sign-in, dashboard, question API and error page only.&quot;
+  ],
+  &quot;attempts&quot;: [
+    {
+      &quot;id&quot;: &quot;7c19886f-c68&quot;,
+      &quot;command&quot;: &quot;up&quot;,
+      &quot;args&quot;: [],
+      &quot;startedAt&quot;: &quot;2026-11-03T14:20:21.535Z&quot;,
+      &quot;durationMs&quot;: 390,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+        &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+        &quot;files&quot;: {
+          &quot;.gitignore&quot;: &quot;0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93&quot;,
+          &quot;fault-slow-timers.mjs&quot;: &quot;aa02175e3ef48bd46e789c183a2b552e7a35ee4495f565b244f592a907e11650&quot;,
+          &quot;fixtures/demo-app/check.mjs&quot;: &quot;79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547&quot;,
+          &quot;fixtures/demo-app/compose.yaml&quot;: &quot;764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033&quot;,
+          &quot;fixtures/demo-app/server.mjs&quot;: &quot;e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb&quot;,
+          &quot;spyglass.json&quot;: &quot;5837b77237ed0cdc89ca2a8e64069f284c89fc425b91f94846d25ce1db42482e&quot;,
+          &quot;verification-plan.json&quot;: &quot;d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa&quot;
+        }
+      },
+      &quot;artifacts&quot;: [
+        {
+          &quot;path&quot;: &quot;7c19886f-c68-1-profile.json&quot;,
+          &quot;sha256&quot;: &quot;2eaca79313693beb271fd4c1359236d519537056de5d51fb8c772aa7d88d5d03&quot;,
+          &quot;kind&quot;: &quot;configuration&quot;,
+          &quot;step&quot;: &quot;7c19886f-c68&quot;
+        },
+        {
+          &quot;path&quot;: &quot;7c19886f-c68-2-plan.json&quot;,
+          &quot;sha256&quot;: &quot;3c1ab8011b98065d848daf43787c369ea213e41f444573b8fa42b1a04f7c01b8&quot;,
+          &quot;kind&quot;: &quot;configuration&quot;,
+          &quot;step&quot;: &quot;7c19886f-c68&quot;
+        }
+      ],
+      &quot;data&quot;: {
+        &quot;id&quot;: &quot;B-spyglass-r2-baseline&quot;,
+        &quot;state&quot;: &quot;ready&quot;,
+        &quot;repo&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault&quot;,
+        &quot;evidence&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass&quot;,
+        &quot;web&quot;: &quot;http://127.0.0.1:39967&quot;,
+        &quot;api&quot;: &quot;http://127.0.0.1:39967/api&quot;,
+        &quot;port&quot;: 39967,
+        &quot;source&quot;: {
+          &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+          &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+          &quot;fileCount&quot;: 7
+        },
+        &quot;sourceChanges&quot;: [],
+        &quot;profile&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault/spyglass.json&quot;,
+        &quot;plan&quot;: {
+          &quot;controls&quot;: [
+            {
+              &quot;id&quot;: &quot;completion-detects-pending&quot;,
+              &quot;claim&quot;: &quot;question-completed&quot;,
+              &quot;expectation&quot;: &quot;The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.&quot;,
+              &quot;assertion&quot;: &quot;json status=complete&quot;
+            }
+          ],
+          &quot;claims&quot;: [
+            {
+              &quot;id&quot;: &quot;signin-refused&quot;,
+              &quot;behavior&quot;: &quot;In the browser, a wrong password on /login is refused.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The page shows Sign in failed.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;login-dashboard&quot;,
+              &quot;behavior&quot;: &quot;In the browser, the demo user signs in with the correct password.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The browser reaches /dashboard and the heading reads Ask a question.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;dashboard-mobile&quot;,
+              &quot;behavior&quot;: &quot;The signed-in dashboard fits a phone viewport.&quot;,
+              &quot;entryPoint&quot;: &quot;/dashboard at 390x844&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The heading, question field and Submit question button are visible, readable and not clipped horizontally.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;visual&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;question-accepted&quot;,
+              &quot;behavior&quot;: &quot;The API accepts a question for processing.&quot;,
+              &quot;entryPoint&quot;: &quot;POST /api/questions with a bearer [REDACTED]&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;HTTP 202 with status pending and an id.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;api&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;question-completed&quot;,
+              &quot;behavior&quot;: &quot;An accepted question completes and is listed.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /api/questions/&lt;id&gt; and GET /api/questions&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;A later separate read shows status complete with an answer, and the list contains the question.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;api&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;side-effect&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;error-page-errors&quot;,
+              &quot;behavior&quot;: &quot;The error page reports its console and page errors.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /error in the browser&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The console error &#39;fixture console error&#39; and the page error &#39;fixture page error&#39; are reported and retained.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            }
+          ],
+          &quot;gates&quot;: [],
+          &quot;limits&quot;: [
+            &quot;The journey proves the demo app&#39;s sign-in, dashboard, question API and error page only.&quot;
+          ]
+        },
+        &quot;result&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json&quot;,
+        &quot;export&quot;: &quot;export SPYGLASS_RUN=B-spyglass-r2-baseline&quot;,
+        &quot;active&quot;: {
+          &quot;pid&quot;: 32741,
+          &quot;processStartedAt&quot;: &quot;2026-11-03T14:20:21.277Z&quot;,
+          &quot;command&quot;: &quot;up&quot;,
+          &quot;startedAt&quot;: &quot;2026-11-03T14:20:21.533Z&quot;
+        },
+        &quot;activeSeat&quot;: &quot;default&quot;,
+        &quot;cleanup&quot;: false,
+        &quot;capabilities&quot;: {
+          &quot;ui&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;agent-browser&quot;,
+            &quot;testedVersion&quot;: &quot;0.38.2&quot;
+          },
+          &quot;api&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;Node fetch&quot;
+          },
+          &quot;db&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;node-postgres&quot;
+          },
+          &quot;compose&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;docker compose&quot;
+          },
+          &quot;check&quot;: {
+            &quot;available&quot;: true,
+            &quot;names&quot;: [
+              &quot;health&quot;,
+              &quot;pass&quot;,
+              &quot;fail&quot;
+            ]
+          },
+          &quot;exec&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;process&quot;
+          },
+          &quot;skill&quot;: null,
+          &quot;features&quot;: null
+        },
+        &quot;completedChecks&quot;: [],
+        &quot;pendingClaims&quot;: [
+          &quot;signin-refused&quot;,
+          &quot;login-dashboard&quot;,
+          &quot;dashboard-mobile&quot;,
+          &quot;question-accepted&quot;,
+          &quot;question-completed&quot;,
+          &quot;error-page-errors&quot;
+        ],
+        &quot;owner&quot;: {
+          &quot;mode&quot;: &quot;owned&quot;,
+          &quot;bindings&quot;: {},
+          &quot;cleanupRequired&quot;: false
+        },
+        &quot;next&quot;: &quot;spyglass result --file .spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json --run B-spyglass-r2-baseline&quot;,
+        &quot;resultRules&quot;: [
+          &quot;A passed claim lists its successful steps from this run in steps and states what you saw in observed.&quot;,
+          &quot;Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.&quot;,
+          &quot;Behavior claims signin-refused, login-dashboard, question-accepted, error-page-errors: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.&quot;,
+          &quot;Visual claims dashboard-mobile: fill inspections with the viewport, expected, observed and a screenshot artifact from a cited step.&quot;,
+          &quot;Side-effect claims question-completed: list the action step and a later read in steps, and set independentRead to the read&#39;s step ID. An api read is a GET with a 2xx status other than 202; a db read is a read-only query that is not truncated.&quot;,
+          &quot;Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control&#39;s claim passes and cites restoredStep.&quot;,
+          &quot;Control completion-detects-pending: claim question-completed, assertion json status=complete.&quot;
+        ],
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 7,
+          &quot;rehashed&quot;: 0
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;bc15960b-327&quot;,
+      &quot;command&quot;: &quot;api&quot;,
+      &quot;args&quot;: [
+        &quot;POST&quot;,
+        &quot;/questions&quot;,
+        &quot;--seat&quot;,
+        &quot;agent&quot;,
+        &quot;--data&quot;,
+        &quot;{\&quot;question\&quot;:\&quot;control fault\&quot;}&quot;,
+        &quot;--expect&quot;,
+        &quot;202&quot;
+      ],
+      &quot;startedAt&quot;: &quot;2026-11-03T14:20:22.029Z&quot;,
+      &quot;durationMs&quot;: 119,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+        &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+        &quot;files&quot;: {
+          &quot;.gitignore&quot;: &quot;0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93&quot;,
+          &quot;fault-slow-timers.mjs&quot;: &quot;aa02175e3ef48bd46e789c183a2b552e7a35ee4495f565b244f592a907e11650&quot;,
+          &quot;fixtures/demo-app/check.mjs&quot;: &quot;79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547&quot;,
+          &quot;fixtures/demo-app/compose.yaml&quot;: &quot;764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033&quot;,
+          &quot;fixtures/demo-app/server.mjs&quot;: &quot;e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb&quot;,
+          &quot;spyglass.json&quot;: &quot;5837b77237ed0cdc89ca2a8e64069f284c89fc425b91f94846d25ce1db42482e&quot;,
+          &quot;verification-plan.json&quot;: &quot;d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa&quot;
+        }
+      },
+      &quot;artifacts&quot;: [
+        {
+          &quot;path&quot;: &quot;bc15960b-327-1-api-response.json&quot;,
+          &quot;sha256&quot;: &quot;5de52a55e2b5c85cbad8af79e7bcaadab94ba0fcab1bffdf11bde40174c18ef1&quot;,
+          &quot;kind&quot;: &quot;api&quot;,
+          &quot;step&quot;: &quot;bc15960b-327&quot;
+        }
+      ],
+      &quot;data&quot;: {
+        &quot;method&quot;: &quot;POST&quot;,
+        &quot;url&quot;: &quot;http://127.0.0.1:39967/api/questions&quot;,
+        &quot;status&quot;: 202,
+        &quot;body&quot;: {
+          &quot;id&quot;: &quot;407e9710-a960-4de6-9235-d54a511afd22&quot;,
+          &quot;status&quot;: &quot;pending&quot;
+        },
+        &quot;artifacts&quot;: [
+          {
+            &quot;path&quot;: &quot;bc15960b-327-1-api-response.json&quot;,
+            &quot;sha256&quot;: &quot;5de52a55e2b5c85cbad8af79e7bcaadab94ba0fcab1bffdf11bde40174c18ef1&quot;,
+            &quot;kind&quot;: &quot;api&quot;,
+            &quot;step&quot;: &quot;bc15960b-327&quot;
+          }
+        ],
+        &quot;claims&quot;: [
+          {
+            &quot;id&quot;: &quot;status=202&quot;,
+            &quot;ok&quot;: true,
+            &quot;detail&quot;: &quot;HTTP 202&quot;
+          }
+        ],
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 7,
+          &quot;rehashed&quot;: 0
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;32ad10b6-560&quot;,
+      &quot;command&quot;: &quot;api&quot;,
+      &quot;args&quot;: [
+        &quot;GET&quot;,
+        &quot;/questions/407e9710-a960-4de6-9235-d54a511afd22&quot;,
+        &quot;--seat&quot;,
+        &quot;agent&quot;,
+        &quot;--expect&quot;,
+        &quot;200&quot;,
+        &quot;--expect-json&quot;,
+        &quot;status=complete&quot;
+      ],
+      &quot;startedAt&quot;: &quot;2026-11-03T14:20:22.273Z&quot;,
+      &quot;durationMs&quot;: 143,
+      &quot;exitCode&quot;: 1,
+      &quot;commandExitCode&quot;: 1,
+      &quot;status&quot;: &quot;failed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+        &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+        &quot;files&quot;: {
+          &quot;.gitignore&quot;: &quot;0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93&quot;,
+          &quot;fault-slow-timers.mjs&quot;: &quot;aa02175e3ef48bd46e789c183a2b552e7a35ee4495f565b244f592a907e11650&quot;,
+          &quot;fixtures/demo-app/check.mjs&quot;: &quot;79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547&quot;,
+          &quot;fixtures/demo-app/compose.yaml&quot;: &quot;764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033&quot;,
+          &quot;fixtures/demo-app/server.mjs&quot;: &quot;e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb&quot;,
+          &quot;spyglass.json&quot;: &quot;5837b77237ed0cdc89ca2a8e64069f284c89fc425b91f94846d25ce1db42482e&quot;,
+          &quot;verification-plan.json&quot;: &quot;d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa&quot;
+        }
+      },
+      &quot;artifacts&quot;: [
+        {
+          &quot;path&quot;: &quot;32ad10b6-560-1-api-response.json&quot;,
+          &quot;sha256&quot;: &quot;0876a13df337f235f9167ab28112282290ba112a8537401c9f7e1bbeda9a6d57&quot;,
+          &quot;kind&quot;: &quot;api&quot;,
+          &quot;step&quot;: &quot;32ad10b6-560&quot;
+        }
+      ],
+      &quot;data&quot;: {
+        &quot;method&quot;: &quot;GET&quot;,
+        &quot;url&quot;: &quot;http://127.0.0.1:39967/api/questions/407e9710-a960-4de6-9235-d54a511afd22&quot;,
+        &quot;status&quot;: 200,
+        &quot;body&quot;: {
+          &quot;id&quot;: &quot;407e9710-a960-4de6-9235-d54a511afd22&quot;,
+          &quot;question&quot;: &quot;control fault&quot;,
+          &quot;status&quot;: &quot;pending&quot;
+        },
+        &quot;artifacts&quot;: [
+          {
+            &quot;path&quot;: &quot;32ad10b6-560-1-api-response.json&quot;,
+            &quot;sha256&quot;: &quot;0876a13df337f235f9167ab28112282290ba112a8537401c9f7e1bbeda9a6d57&quot;,
+            &quot;kind&quot;: &quot;api&quot;,
+            &quot;step&quot;: &quot;32ad10b6-560&quot;
+          }
+        ],
+        &quot;claims&quot;: [
+          {
+            &quot;id&quot;: &quot;status=200&quot;,
+            &quot;ok&quot;: true,
+            &quot;detail&quot;: &quot;HTTP 200&quot;
+          },
+          {
+            &quot;id&quot;: &quot;json status=complete&quot;,
+            &quot;ok&quot;: false,
+            &quot;detail&quot;: &quot;observed \&quot;pending\&quot;&quot;
+          }
+        ],
+        &quot;passed&quot;: false,
+        &quot;error&quot;: {
+          &quot;code&quot;: &quot;API_EXPECTATION_FAILED&quot;,
+          &quot;message&quot;: &quot;API expectation failed: json status=complete (observed \&quot;pending\&quot;).&quot;
+        },
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 7,
+          &quot;rehashed&quot;: 0
+        },
+        &quot;linked&quot;: {
+          &quot;claims&quot;: [],
+          &quot;controls&quot;: [
+            &quot;completion-detects-pending:failed&quot;
+          ],
+          &quot;gates&quot;: [],
+          &quot;skipped&quot;: []
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;5189209f-a72&quot;,
+      &quot;command&quot;: &quot;down&quot;,
+      &quot;args&quot;: [],
+      &quot;startedAt&quot;: &quot;2026-11-03T14:20:22.523Z&quot;,
+      &quot;durationMs&quot;: 978,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+        &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+        &quot;files&quot;: {
+          &quot;.gitignore&quot;: &quot;0f19d797d4d5b0ede17e0b70e83f93fbafb2596e2ed2385f7b5972a5342c0e93&quot;,
+          &quot;fault-slow-timers.mjs&quot;: &quot;aa02175e3ef48bd46e789c183a2b552e7a35ee4495f565b244f592a907e11650&quot;,
+          &quot;fixtures/demo-app/check.mjs&quot;: &quot;79e55d157a49ead13f468d4c24df696143104d59c5efd8aa4765ecfbd8f08547&quot;,
+          &quot;fixtures/demo-app/compose.yaml&quot;: &quot;764ed602d5aff02708290b2ff91569ad3fa61de8ab6798378168f7532bf43033&quot;,
+          &quot;fixtures/demo-app/server.mjs&quot;: &quot;e52d8dd92ff1e5ca4b28a25b381d4c3a797cb32d4083c932a410bd04547b9fbb&quot;,
+          &quot;spyglass.json&quot;: &quot;5837b77237ed0cdc89ca2a8e64069f284c89fc425b91f94846d25ce1db42482e&quot;,
+          &quot;verification-plan.json&quot;: &quot;d2fd6bdc46c80d80e908642396afd226207eed16a01eeec89275ee03f3115efa&quot;
+        }
+      },
+      &quot;artifacts&quot;: [
+        {
+          &quot;path&quot;: &quot;5189209f-a72-1-launch-final.log&quot;,
+          &quot;sha256&quot;: &quot;69dd29a4b4c13b8d3d9633151e30013882f43cf7bfdbf210bf474efef36cd8b0&quot;,
+          &quot;kind&quot;: &quot;text&quot;,
+          &quot;step&quot;: &quot;5189209f-a72&quot;
+        }
+      ],
+      &quot;data&quot;: {
+        &quot;id&quot;: &quot;B-spyglass-r2-baseline&quot;,
+        &quot;state&quot;: &quot;stopped&quot;,
+        &quot;repo&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault&quot;,
+        &quot;evidence&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass&quot;,
+        &quot;web&quot;: &quot;http://127.0.0.1:39967&quot;,
+        &quot;api&quot;: &quot;http://127.0.0.1:39967/api&quot;,
+        &quot;port&quot;: 39967,
+        &quot;source&quot;: {
+          &quot;commit&quot;: &quot;7efb088aaac78408d91596003e364e26c7042f51&quot;,
+          &quot;hash&quot;: &quot;bda0a39ce287e8837d7fb5fcf78e8f8827723870779f9904e02c8baa622d1470&quot;,
+          &quot;fileCount&quot;: 7
+        },
+        &quot;sourceChanges&quot;: [],
+        &quot;profile&quot;: &quot;/tmp/m11/B-spyglass-r2/wt-fault/spyglass.json&quot;,
+        &quot;plan&quot;: {
+          &quot;controls&quot;: [
+            {
+              &quot;id&quot;: &quot;completion-detects-pending&quot;,
+              &quot;claim&quot;: &quot;question-completed&quot;,
+              &quot;expectation&quot;: &quot;The completion assertion (status equals complete) fails on a read made immediately after the POST, while the job is pending, and passes on a later read.&quot;,
+              &quot;assertion&quot;: &quot;json status=complete&quot;
+            }
+          ],
+          &quot;claims&quot;: [
+            {
+              &quot;id&quot;: &quot;signin-refused&quot;,
+              &quot;behavior&quot;: &quot;In the browser, a wrong password on /login is refused.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The page shows Sign in failed.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;login-dashboard&quot;,
+              &quot;behavior&quot;: &quot;In the browser, the demo user signs in with the correct password.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /login in the browser&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The browser reaches /dashboard and the heading reads Ask a question.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;dashboard-mobile&quot;,
+              &quot;behavior&quot;: &quot;The signed-in dashboard fits a phone viewport.&quot;,
+              &quot;entryPoint&quot;: &quot;/dashboard at 390x844&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The heading, question field and Submit question button are visible, readable and not clipped horizontally.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;visual&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;question-accepted&quot;,
+              &quot;behavior&quot;: &quot;The API accepts a question for processing.&quot;,
+              &quot;entryPoint&quot;: &quot;POST /api/questions with a bearer [REDACTED]&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;HTTP 202 with status pending and an id.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;api&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;question-completed&quot;,
+              &quot;behavior&quot;: &quot;An accepted question completes and is listed.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /api/questions/&lt;id&gt; and GET /api/questions&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;A later separate read shows status complete with an answer, and the list contains the question.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;api&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;side-effect&quot;,
+              &quot;required&quot;: true
+            },
+            {
+              &quot;id&quot;: &quot;error-page-errors&quot;,
+              &quot;behavior&quot;: &quot;The error page reports its console and page errors.&quot;,
+              &quot;entryPoint&quot;: &quot;GET /error in the browser&quot;,
+              &quot;precondition&quot;: &quot;The demo app is running and ready.&quot;,
+              &quot;expected&quot;: &quot;The console error &#39;fixture console error&#39; and the page error &#39;fixture page error&#39; are reported and retained.&quot;,
+              &quot;case&quot;: &quot;Valid demo input.&quot;,
+              &quot;checks&quot;: [
+                &quot;browser&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Retained step evidence&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            }
+          ],
+          &quot;gates&quot;: [],
+          &quot;limits&quot;: [
+            &quot;The journey proves the demo app&#39;s sign-in, dashboard, question API and error page only.&quot;
+          ]
+        },
+        &quot;result&quot;: &quot;.spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json&quot;,
+        &quot;export&quot;: &quot;export SPYGLASS_RUN=B-spyglass-r2-baseline&quot;,
+        &quot;active&quot;: {
+          &quot;pid&quot;: 346,
+          &quot;processStartedAt&quot;: &quot;2026-11-03T14:20:22.441Z&quot;,
+          &quot;command&quot;: &quot;down&quot;,
+          &quot;startedAt&quot;: &quot;2026-11-03T14:20:22.521Z&quot;
+        },
+        &quot;activeSeat&quot;: &quot;default&quot;,
+        &quot;cleanup&quot;: true,
+        &quot;capabilities&quot;: {
+          &quot;ui&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;agent-browser&quot;,
+            &quot;testedVersion&quot;: &quot;0.38.2&quot;
+          },
+          &quot;api&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;Node fetch&quot;
+          },
+          &quot;db&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;node-postgres&quot;
+          },
+          &quot;compose&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;docker compose&quot;
+          },
+          &quot;check&quot;: {
+            &quot;available&quot;: true,
+            &quot;names&quot;: [
+              &quot;health&quot;,
+              &quot;pass&quot;,
+              &quot;fail&quot;
+            ]
+          },
+          &quot;exec&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;process&quot;
+          },
+          &quot;skill&quot;: null,
+          &quot;features&quot;: null
+        },
+        &quot;completedChecks&quot;: [],
+        &quot;pendingClaims&quot;: [
+          &quot;signin-refused&quot;,
+          &quot;login-dashboard&quot;,
+          &quot;dashboard-mobile&quot;,
+          &quot;question-accepted&quot;,
+          &quot;question-completed&quot;,
+          &quot;error-page-errors&quot;
+        ],
+        &quot;owner&quot;: {
+          &quot;mode&quot;: &quot;owned&quot;,
+          &quot;bindings&quot;: {},
+          &quot;cleanupRequired&quot;: false
+        },
+        &quot;next&quot;: &quot;spyglass result --file .spyglass/runs/B-spyglass-r2-baseline/spyglass/result.json --run B-spyglass-r2-baseline&quot;,
+        &quot;ownerCleanupRequired&quot;: false,
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 7,
+          &quot;rehashed&quot;: 0
+        }
+      }
+    }
+  ],
+  &quot;artifacts&quot;: [
+    {
+      &quot;path&quot;: &quot;7c19886f-c68-1-profile.json&quot;,
+      &quot;sha256&quot;: &quot;2eaca79313693beb271fd4c1359236d519537056de5d51fb8c772aa7d88d5d03&quot;,
+      &quot;kind&quot;: &quot;configuration&quot;,
+      &quot;step&quot;: &quot;7c19886f-c68&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;7c19886f-c68&quot;
+    },
+    {
+      &quot;path&quot;: &quot;7c19886f-c68-2-plan.json&quot;,
+      &quot;sha256&quot;: &quot;3c1ab8011b98065d848daf43787c369ea213e41f444573b8fa42b1a04f7c01b8&quot;,
+      &quot;kind&quot;: &quot;configuration&quot;,
+      &quot;step&quot;: &quot;7c19886f-c68&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;7c19886f-c68&quot;
+    },
+    {
+      &quot;path&quot;: &quot;bc15960b-327-1-api-response.json&quot;,
+      &quot;sha256&quot;: &quot;5de52a55e2b5c85cbad8af79e7bcaadab94ba0fcab1bffdf11bde40174c18ef1&quot;,
+      &quot;kind&quot;: &quot;api&quot;,
+      &quot;step&quot;: &quot;bc15960b-327&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;bc15960b-327&quot;
+    },
+    {
+      &quot;path&quot;: &quot;32ad10b6-560-1-api-response.json&quot;,
+      &quot;sha256&quot;: &quot;0876a13df337f235f9167ab28112282290ba112a8537401c9f7e1bbeda9a6d57&quot;,
+      &quot;kind&quot;: &quot;api&quot;,
+      &quot;step&quot;: &quot;32ad10b6-560&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;32ad10b6-560&quot;
+    },
+    {
+      &quot;path&quot;: &quot;5189209f-a72-1-launch-final.log&quot;,
+      &quot;sha256&quot;: &quot;69dd29a4b4c13b8d3d9633151e30013882f43cf7bfdbf210bf474efef36cd8b0&quot;,
+      &quot;kind&quot;: &quot;text&quot;,
+      &quot;step&quot;: &quot;5189209f-a72&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;5189209f-a72&quot;
+    }
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;code&quot;: &quot;RESULT_MISSING&quot;,
+      &quot;message&quot;: &quot;No result has been recorded for this run. Submit it with spyglass result --file PATH.&quot;
+    },
+    {
+      &quot;code&quot;: &quot;CONTROL_INCOMPLETE&quot;,
+      &quot;control&quot;: &quot;completion-detects-pending&quot;,
+      &quot;message&quot;: &quot;Required negative control completion-detects-pending has no failed-then-restored result.&quot;
+    }
+  ]
+}</pre></details></section>
+</body></html>

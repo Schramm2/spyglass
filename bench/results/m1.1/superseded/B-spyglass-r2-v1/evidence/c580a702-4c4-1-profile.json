@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "app": "spyglass-demo",
+  "evidence": ".spyglass/runs/B-spyglass-r2",
+  "launch": {
+    "mode": "owned",
+    "command": [
+      "node",
+      "fixtures/demo-app/server.mjs"
+    ],
+    "env": {
+      "PORT": "36299",
+      "DEMO_PASSWORD": "env:DEMO_PASSWORD",
+      "DEMO_TOKEN": "env:DEMO_TOKEN"
+    },
+    "ready": {
+      "url": "http://127.0.0.1:36299/health",
+      "status": 200,
+      "timeoutMs": 5000
+    }
+  },
+  "web": "http://127.0.0.1:36299",
+  "api": "http://127.0.0.1:36299/api",
+  "bindings": {},
+  "checks": {
+    "health": {
+      "command": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "const r=await fetch(process.env.HEALTH_URL);const body=await r.json();const ok=r.status===200&&body.status==='ok';console.log(JSON.stringify({ok,claims:[{id:'health-ready',ok,detail:body}]}));process.exitCode=ok?0:1"
+      ],
+      "env": {
+        "HEALTH_URL": "http://127.0.0.1:36299/health"
+      },
+      "result": "json",
+      "artifacts": [],
+      "cleanup": false
+    },
+    "pass": {
+      "command": [
+        "node",
+        "fixtures/demo-app/check.mjs",
+        "pass"
+      ],
+      "result": "json",
+      "artifacts": [],
+      "cleanup": false
+    },
+    "fail": {
+      "command": [
+        "node",
+        "fixtures/demo-app/check.mjs",
+        "fail"
+      ],
+      "result": "json",
+      "artifacts": [],
+      "cleanup": false
+    }
+  },
+  "seats": {
+    "agent": {
+      "token": "env:DEMO_TOKEN",
+      "login": {
+        "path": "/login",
+        "steps": [
+          {
+            "fill": {
+              "label": "Email"
+            },
+            "value": "agent@example.test"
+          },
+          {
+            "fill": {
+              "label": "Password"
+            },
+            "secret": "env:DEMO_PASSWORD"
+          },
+          {
+            "click": {
+              "role": "button",
+              "name": "Sign in"
+            }
+          }
+        ],
+        "done": {
+          "urlContains": "/dashboard"
+        }
+      }
+    }
+  },
+  "browser": {
+    "allowedOrigins": [
+      "http://127.0.0.1:36299"
+    ],
+    "idleTimeoutMs": 3600000
+  },
+  "imports": []
+}

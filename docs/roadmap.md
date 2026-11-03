@@ -27,20 +27,19 @@ The scripted 12-claim journey reduced operator steps from 36 to 13, and wall
 time from 10.9 to 9.0 seconds on the recorded machine. The overhead gate
 passed, so a local server was not built.
 
-These measurements do not prove the same improvement for an agent. This
-public repository has no retained independent operator comparison for the
-current release. M1.1 must supply that evidence before a comparison claim
-can be made.
+These measurements do not prove the same improvement for an agent. M1.1
+added the first retained independent operator comparison for the current
+release: see [operator comparison](operator-comparison.md).
 
 ## Priority order
 
-| Priority | Milestone                             | Status         | Depends on                           |
-| -------- | ------------------------------------- | -------------- | ------------------------------------ |
-| Now      | M1. Prove the current workflow        | Ready to start | Current CLI and public fixtures      |
-| Next     | M2. Reduce first-adoption work        | Proposed       | M1 findings; fresh adoption attempts |
-| Next     | M3. Support review and CI             | Proposed       | M1; a repeatable adoption recipe     |
-| Later    | M4. Expand from repeated adapter gaps | Demand-led     | Evidence from adoption               |
-| Later    | M5. Evaluate shared evidence services | Not committed  | Demonstrated team needs after M3     |
+| Priority | Milestone                             | Status        | Depends on                           |
+| -------- | ------------------------------------- | ------------- | ------------------------------------ |
+| Now      | M1. Prove the current workflow        | M1.1 done     | Current CLI and public fixtures      |
+| Next     | M2. Reduce first-adoption work        | Proposed      | M1 findings; fresh adoption attempts |
+| Next     | M3. Support review and CI             | Proposed      | M1; a repeatable adoption recipe     |
+| Later    | M4. Expand from repeated adapter gaps | Demand-led    | Evidence from adoption               |
+| Later    | M5. Evaluate shared evidence services | Not committed | Demonstrated team needs after M3     |
 
 Independent discovery can overlap. Do not use this order to delay a safety
 fix. Record scope changes and their reasons here.
@@ -103,6 +102,30 @@ Complete the protocol and every runnable check without those facilities, then
 record the exact blocked checks and the command or facility needed to resume.
 M1.1 remains partial until the independent runs and retained evidence exist.
 Do not replace them with scripted calls and call the study complete.
+
+**M1.1 status: done, with limits.** The protocol, the 12 scored runs and
+their evidence are in [operator comparison](operator-comparison.md) and
+`bench/results/m1.1/`. Completion checks:
+
+1. Done: both journeys have fixed acceptance and equal-proof rules
+   (sections 2 and 3), frozen before scored runs, with one recorded
+   repair and its repeated runs (section 9.1).
+2. Done: preflight, the scripted journey and the overhead gate are recorded
+   separately (section 10.1). The overhead gate failed in the cloud
+   container, and one opt-in surface test failed there.
+3. Done: 12 independent runs, all accepted after cleanup, with retained
+   reports. Journey C pairs are comparable. Journey B pairs verified the
+   same claims but not the same control, so they are not ranked.
+4. Done: the largest source of unnecessary work is an immediate
+   read-after-write assertion in `spyglass api`; one bounded follow-up is
+   proposed (section 10.6).
+5. Done: phase time is recorded as unavailable; every visual inspection
+   followed an opened image, and the coordinator opened all six.
+
+Limits: operators were subagents of the same model in one shared container
+(process lists were visible across runs) and with this repository's
+`AGENTS.md` in context; three repetitions support no
+general speed claim.
 
 The [Claude Code Cloud task prompt](prompts/current-version-comparison.md) defines
 the scope and execution boundaries for this task.

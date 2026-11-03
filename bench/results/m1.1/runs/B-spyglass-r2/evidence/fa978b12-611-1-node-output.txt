@@ -1,0 +1,4 @@
+stdout:
+{"ok":false,"post":{"status":202,"body":{"id":"b706dcee-a45b-43da-9ff9-5a99c4b66bef","status":"pending"}},"get":{"status":200,"body":{"id":"b706dcee-a45b-43da-9ff9-5a99c4b66bef","question":"control delay 0","status":"pending"}},"claims":[{"id":"json status=complete","ok":false,"detail":"observed \"pending\" after 0 ms"}]}
+
+stderr:

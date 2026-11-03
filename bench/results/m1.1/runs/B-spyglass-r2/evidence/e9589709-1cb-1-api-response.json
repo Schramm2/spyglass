@@ -1,0 +1,84 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:43925/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 14:20:05 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": [
+      {
+        "id": "aee30e9a-19e3-4234-a2e4-4847be8339d5",
+        "question": "What is Spyglass?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "a56c680c-18a2-4228-9e70-a4e4a093f967",
+        "question": "Control question",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "b706dcee-a45b-43da-9ff9-5a99c4b66bef",
+        "question": "control delay 0",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "6fa0bab1-a14e-4018-94a6-7ef6c02351b3",
+        "question": "control delay 600",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "88e1a0ce-bcef-4921-8623-277259f4a9c0",
+        "question": "control via curl",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "65bc8f33-4b8a-4933-b8e2-c55d717331f6",
+        "question": "control attempt 1",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "e951d258-6bac-4b72-bbd4-04cd3ef23271",
+        "question": "control attempt 2",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "4de2586e-5153-45d3-8dd9-b04cf7ac02af",
+        "question": "control attempt 3",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "e6947113-4d82-44cb-88dc-4a9053369338",
+        "question": "control attempt 4",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "f063365b-e56d-40b6-a0ea-d4d9f19830e9",
+        "question": "control attempt 5",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      }
+    ]
+  }
+}

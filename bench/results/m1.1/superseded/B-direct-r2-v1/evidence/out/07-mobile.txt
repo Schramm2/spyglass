@@ -1,0 +1,7 @@
+✓ Done
+✓ Questions
+  http://127.0.0.1:47102/dashboard
+✓ Done
+http://127.0.0.1:47102/dashboard
+✓ Screenshot saved to /tmp/m11/B-direct-r2/repo/evidence/out/dashboard-mobile.png
+"{\"vw\":390,\"scrollW\":390,\"els\":[{\"s\":\"h1\",\"left\":16,\"right\":374,\"w\":358,\"h\":44,\"text\":\"Ask a question\"},{\"s\":\"#question\",\"left\":92.078125,\"right\":365.078125,\"w\":273,\"h\":60,\"text\":\"\"},{\"s\":\"button\",\"left\":16,\"right\":169.640625,\"w\":153.640625,\"h\":37,\"text\":\"Submit question\"}]}"

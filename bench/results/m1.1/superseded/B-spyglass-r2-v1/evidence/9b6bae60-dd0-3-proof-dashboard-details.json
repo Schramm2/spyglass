@@ -1,0 +1,399 @@
+{
+  "label": "dashboard",
+  "seat": "agent",
+  "step": "9b6bae60-dd0",
+  "pageContent": true,
+  "results": [
+    {
+      "command": [
+        "snapshot",
+        "-i",
+        "-c",
+        "--delta"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:36299/dashboard",
+        "snapshot": {
+          "baseRevision": 5,
+          "kind": "unchanged",
+          "revision": 6
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "url"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "url": "http://127.0.0.1:36299/dashboard"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "title"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "title": "Questions"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "messages": []
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors"
+      ],
+      "error": null,
+      "result": {
+        "errors": [],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "errors": [],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "(() => {\n  const element = document.activeElement;\n  if (!element || element === document.body || element === document.documentElement) return null;\n  const text = (value) => (value || \"\").replace(/\\s+/g, \" \").trim();\n  const labelledBy = (element.getAttribute(\"aria-labelledby\") || \"\")\n    .split(/\\s+/).map((id) => document.getElementById(id)?.textContent || \"\").join(\" \");\n  // A wrapping label also holds its controls' option and default text.\n  const labelText = (label) => {\n    if (!label) return \"\";\n    const copy = label.cloneNode(true);\n    copy.querySelectorAll(\"input, select, textarea\").forEach((control) => control.remove());\n    return text(copy.textContent);\n  };\n  const tag = element.tagName.toLowerCase();\n  const type = tag === \"input\" ? element.type : element.getAttribute(\"type\") || undefined;\n  const inputRoles = { checkbox: \"checkbox\", radio: \"radio\", button: \"button\", submit: \"button\",\n    reset: \"button\", range: \"slider\", search: \"searchbox\", email: \"textbox\", tel: \"textbox\",\n    text: \"textbox\", url: \"textbox\" };\n  const implicit = tag === \"input\" ? (type ? inputRoles[type] : \"textbox\")\n    : { a: \"link\", button: \"button\", select: \"combobox\", textarea: \"textbox\" }[tag];\n  return {\n    tag,\n    type,\n    role: element.getAttribute(\"role\") || implicit,\n    label: text(element.getAttribute(\"aria-label\")) || text(labelledBy)\n      || labelText(element.labels?.[0]) || text(element.getAttribute(\"title\"))\n      || text(element.getAttribute(\"placeholder\"))\n      || (tag === \"button\" || tag === \"a\" ? text(element.textContent) : \"\"),\n    id: element.id || undefined,\n  };\n})()"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:36299/dashboard",
+        "result": null
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "requests": [
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "GET",
+            "mimeType": "text/html",
+            "requestId": "A6BF4B0FCF1C2AB468F3AAE18A49A6E2",
+            "resourceType": "Document",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "Transfer-Encoding": "chunked",
+              "content-type": "text/html; charset=utf-8",
+              "date": "Tue, 03 Nov 2026 14:10:12 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793715012261,
+            "url": "http://127.0.0.1:36299/dashboard"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "GET",
+            "mimeType": "text/html",
+            "requestId": "967058738AA11EC03DA75ACFBE433466",
+            "resourceType": "Document",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "Transfer-Encoding": "chunked",
+              "content-type": "text/html; charset=utf-8",
+              "date": "Tue, 03 Nov 2026 14:10:21 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793715021765,
+            "url": "http://127.0.0.1:36299/login"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Origin": "http://127.0.0.1:36299",
+              "Referer": "http://127.0.0.1:36299/login",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "POST",
+            "postData": "email=agent%40example.test&password=[REDACTED]",
+            "requestId": "58A13CA8DE45D4058C74498D8AFB1B8B",
+            "resourceType": "Document",
+            "timestamp": 1793715021925,
+            "url": "http://127.0.0.1:36299/login"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-US,en;q=0.9",
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Origin": "http://127.0.0.1:36299",
+              "Referer": "http://127.0.0.1:36299/login",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Chromium\";v=\"153\", \"Not_A Brand\";v=\"8\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"Linux\""
+            },
+            "method": "GET",
+            "mimeType": "text/html",
+            "requestId": "58A13CA8DE45D4058C74498D8AFB1B8B",
+            "resourceType": "Document",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "Transfer-Encoding": "chunked",
+              "content-type": "text/html; charset=utf-8",
+              "date": "Tue, 03 Nov 2026 14:10:21 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793715021926,
+            "url": "http://127.0.0.1:36299/dashboard"
+          }
+        ]
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:36299/dashboard",
+        "result": 314.7
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "screenshot",
+        "/tmp/m11/B-spyglass-r2/repo/.spyglass/runs/B-spyglass-r2/spyglass/browser-9b6bae60-dd0-proof-dashboard-d3af36be.png"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 7425502473494429000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "path": "/tmp/m11/B-spyglass-r2/repo/.spyglass/runs/B-spyglass-r2/spyglass/browser-9b6bae60-dd0-proof-dashboard-d3af36be.png"
+      },
+      "success": true
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+stdout:
+{"ok":false,"postStatus":202,"accepted":{"id":"46f6b2f7-a96d-449d-9cbd-57d095e4f3da","status":"pending"},"readAfterMs":115,"readStatus":200,"body":{"id":"46f6b2f7-a96d-449d-9cbd-57d095e4f3da","question":"control read after 0 ms","status":"pending"},"claims":[{"id":"status equals complete","ok":false,"detail":"observed status pending"}]}
+
+stderr:
