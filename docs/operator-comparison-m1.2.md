@@ -107,4 +107,21 @@ first-frame failures stay visible; this API change does not resolve them.
 
 ## Execution record
 
-Pending. The protocol must be committed before the first operator starts.
+### Preparation repair 1 (unscored first pair)
+
+The protocol and candidate were frozen at `b53a6cd`. The first repetition 3
+pair exposed a coordinator preparation defect: the frozen `dist/` copy did
+not include its external runtime dependencies. `spyglass --help` worked,
+but `up` failed because `zod` was absent. The coordinator stopped both
+operators and asked them to clean up; both attempts are unscored and retained
+under `superseded/`. These two cleanup messages are interventions, not help
+in a scored run.
+
+Repair: copy the candidate's installed dependencies into the shared tools
+directory and preflight `spyglass schema plan --json`. Repeat the entire
+pair with fresh operators and new `-v2` directories before repetitions 1
+and 2. The claims, control, brief, fixture and candidate source are unchanged.
+No scored operator receives a message after launch. Earlier artifacts and
+transcripts remain unchanged.
+
+Results pending.
