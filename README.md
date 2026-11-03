@@ -423,6 +423,12 @@ The end-to-end tests run the built CLI in temporary Git repositories. They
 need `agent-browser` on your `PATH`. The surface tests also need its Chromium
 and Docker.
 
+## Roadmap
+
+See the [product roadmap](docs/roadmap.md) for priorities, completion checks
+and the next development task. The next milestone is a current-version
+comparison with fresh operators at equal proof.
+
 ## Contributing
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you

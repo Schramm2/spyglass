@@ -5,6 +5,11 @@ more efficient across every surface — browser, HTTP, PostgreSQL, Docker
 Compose, repository checks, results and reports — and the plan to prove each
 improvement.
 
+Orders 0–7 of this plan shipped in 1.3.0. For the next product milestones,
+see the [product roadmap](roadmap.md). Its first task is to measure the current
+workflow with fresh operators; the scripted results below do not replace that
+comparison.
+
 This is a plan, not a contract. `README.md`, `src/help.ts` and
 `docs/failure-cases.md` remain the contract. An idea becomes a contract only
 when its failure case and its end-to-end test exist.
