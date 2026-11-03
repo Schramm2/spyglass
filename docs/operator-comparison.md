@@ -395,10 +395,15 @@ result file.
 
 ### 10.2 Independent operator results
 
-All 12 scored runs were accepted by the coordinator after cleanup: every
-claim was verified from retained evidence, the app port was closed, no
-browser session remained, no password or token value appeared in the
-evidence, and the source was unchanged. Raw values are in
+All 12 scored runs had every claim verified from retained evidence after
+cleanup: the app port was closed, no browser session remained, no password
+or token value appeared in the evidence, and the source was unchanged.
+Review correction: the original coordinator marked all 12 accepted.
+`runs.json` keeps that original judgement as `coordinatorOriginallyAccepted`
+for the three corrected rows; no measured values changed.
+Nine runs met full journey acceptance (section 2.3). The three Spyglass
+Journey B runs did not meet the declared control, so they were not accepted
+as equal-proof verifications and their pairs are not ranked (section 10.3). Raw values are in
 [`runs.json`](../bench/results/m1.1/runs.json).
 
 | Run           | Verified claims | Tool calls | Claims per call | Shell | Wall (s) | Tokens (harness) | Output tokens | Driver lines | Unplanned failures | `result` rejections |

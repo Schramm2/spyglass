@@ -426,8 +426,9 @@ and Docker.
 ## Roadmap
 
 See the [product roadmap](docs/roadmap.md) for priorities, completion checks
-and the next development task. The next milestone is a current-version
-comparison with fresh operators at equal proof.
+and the next development task. The first operator comparison is complete,
+with limits. The next task is to repair its measured API read-after-write gap
+and repeat the affected comparison at equal proof.
 
 ## Contributing
 

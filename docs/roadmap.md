@@ -48,7 +48,7 @@ fix. Record scope changes and their reasons here.
 
 **Question:** Does current Spyglass reduce operator work at equal proof?
 
-### M1.1 — next task: a public, cloud-runnable comparison
+### M1.1 — a public, cloud-runnable comparison
 
 Prepare and execute a comparison that uses only this repository's public
 fixtures. Start with the browser/API journey and a command-only journey.
@@ -113,9 +113,10 @@ their evidence are in [operator comparison](operator-comparison.md) and
 2. Done: preflight, the scripted journey and the overhead gate are recorded
    separately (section 10.1). The overhead gate failed in the cloud
    container, and one opt-in surface test failed there.
-3. Done: 12 independent runs, all accepted after cleanup, with retained
-   reports. Journey C pairs are comparable. Journey B pairs verified the
-   same claims but not the same control, so they are not ranked.
+3. Done: 12 independent runs with retained reports after cleanup. Nine
+   runs met full journey acceptance. Journey C pairs are comparable.
+   The three Spyglass Journey B runs did not meet the declared control;
+   those pairs verified the same claims but are not ranked.
 4. Done: the largest source of unnecessary work is an immediate
    read-after-write assertion in `spyglass api`; one bounded follow-up is
    proposed (section 10.6).
@@ -130,7 +131,7 @@ general speed claim.
 The [Claude Code Cloud task prompt](prompts/current-version-comparison.md) defines
 the scope and execution boundaries for this task.
 
-### M1.2 — repair measured friction
+### M1.2 — next task: repair measured friction
 
 Select the highest-value bounded improvement from M1.1. Write its failure
 case and extend an existing E2E test before implementation. Repeat affected
