@@ -305,7 +305,29 @@ claims across arms are not made from three repetitions.
 
 ## 9. Execution record
 
-To be filled in during execution.
+### 9.1 Protocol repair 1 (after slot 2, before any accepted comparison)
+
+Two preparation defects were found in the first two slots (C rep 3 and B
+rep 2). Both were in the coordinator's run directory preparation, not in
+the operators' work:
+
+1. The Journey B control declared the assertion name
+   `status equals complete`. Spyglass `api --expect-json status=complete`
+   records the assertion `json status=complete`, so no Spyglass step could
+   match the declared name and `result` rejected the control with
+   `CONTROL_INVALID`. The direct arm treats the name as prose and was not
+   affected. Repair: the control's `assertion` is `json status=complete`.
+   The control's meaning and the task text are unchanged.
+2. `fixtures/demo-app/check.mjs` writes `check-output.json` in its working
+   directory. The prepared `.gitignore` did not ignore it, so a Spyglass
+   `check` that ran it made the source stale (`STALE_SOURCE`). Repair:
+   `.gitignore` also lists `check-output.json`, as a real repository that
+   runs this check would.
+
+The four affected runs (`C-direct-r3`, `C-spyglass-r3`, `B-direct-r2`,
+`B-spyglass-r2`) are superseded: they are retained as unscored records
+(section 10.4) and both pairs are repeated with new operators. All run
+directories were prepared again with the repair. Briefs are unchanged.
 
 ## 10. Results
 
