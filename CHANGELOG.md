@@ -6,6 +6,15 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `api POST|PUT|PATCH|DELETE --then GET PATH` makes an immediate read after
+  a successful write in one recorded step. `--then-expect` and repeatable
+  `--then-expect-json` check the read; `{body.id}` fills a URL-encoded,
+  non-secret scalar from the write response. Both requests retain masked
+  evidence. A failed write skips the read. The combined step cannot count
+  as a side-effect claim's independent read.
+
 ## [1.3.1] - 2026-11-02
 
 ### Changed

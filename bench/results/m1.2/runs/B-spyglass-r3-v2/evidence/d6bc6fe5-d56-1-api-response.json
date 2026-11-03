@@ -1,0 +1,47 @@
+{
+  "startedAt": "2026-11-03T15:08:15.820Z",
+  "completedAt": "2026-11-03T15:08:15.850Z",
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:53195/api/questions/eb49731a-cb58-4154-b85a-f6fe71c983ab",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 15:08:15 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "eb49731a-cb58-4154-b85a-f6fe71c983ab",
+      "question": "Can completion distinguish pending from complete?",
+      "status": "complete",
+      "answer": "Thanks. We received your question."
+    }
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "json status=complete",
+      "ok": true,
+      "detail": "observed \"complete\""
+    },
+    {
+      "id": "json answer=Thanks. We received your question.",
+      "ok": true,
+      "detail": "observed \"Thanks. We received your question.\""
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "completion-detects-pending",
+      "failedRun": "B-spyglass-r2",
+      "failedStep": "f2733e4e-6f8",
+      "restoredStep": "3becb1b3-eb1",
+      "observedFailure": "Immediate GET after POST returned HTTP 200 with pending; json status=complete failed as intended.",
+      "observedPass": "Later restored GET of the same question returned complete and passed the identical json status=complete assertion."
+    }
+  ],
+  "claims": [
+    {
+      "id": "signin-refused",
+      "outcome": "passed",
+      "steps": [
+        "03e837fe-f71",
+        "9288e8ea-8b0"
+      ],
+      "observed": "Wrong password submission displayed Sign in failed; explicit text assertion passed.",
+      "artifacts": [
+        "9288e8ea-8b0-1-proof-signin-refused.png",
+        "9288e8ea-8b0-2-proof-signin-refused-snapshot.json",
+        "9288e8ea-8b0-3-proof-signin-refused-details.json"
+      ]
+    },
+    {
+      "id": "login-dashboard",
+      "outcome": "passed",
+      "steps": [
+        "441682de-848",
+        "d9ee7f77-8b2"
+      ],
+      "observed": "Seat agent signed in using its secret reference, reached /dashboard, and the visible heading/text Ask a question assertions passed.",
+      "artifacts": [
+        "d9ee7f77-8b2-1-expect.json"
+      ]
+    },
+    {
+      "id": "dashboard-mobile",
+      "outcome": "passed",
+      "steps": [
+        "5f505420-bca"
+      ],
+      "observed": "Opened the retained image with read: the dashboard fits the phone viewport.",
+      "artifacts": [
+        "5f505420-bca-1-proof-dashboard-mobile-390x844.png",
+        "5f505420-bca-2-proof-dashboard-mobile-390x844-snapshot.json",
+        "5f505420-bca-3-proof-dashboard-mobile-390x844-details.json"
+      ],
+      "inspections": [
+        {
+          "viewport": "390x844",
+          "expected": "Heading, question field and Submit question button visible, readable and not clipped horizontally.",
+          "observed": "At 390x844 the Ask a question heading, Question label, textarea and green Submit question button are readable and wholly inside the image width. No horizontal clipping is visible.",
+          "artifact": "5f505420-bca-1-proof-dashboard-mobile-390x844.png"
+        }
+      ]
+    },
+    {
+      "id": "question-accepted",
+      "outcome": "passed",
+      "steps": [
+        "2ae90aea-f81"
+      ],
+      "observed": "Authenticated POST returned HTTP 202, status pending and a non-null question id.",
+      "artifacts": [
+        "2ae90aea-f81-1-api-response.json"
+      ]
+    },
+    {
+      "id": "question-completed",
+      "outcome": "passed",
+      "steps": [
+        "3becb1b3-eb1",
+        "7fd0385c-41a",
+        "1a817f93-1f1",
+        "2ae90aea-f81"
+      ],
+      "observed": "After the accepted POST, a separate later GET returned HTTP 200 with status complete and answer Thanks. We received your question. A separate list GET contained the same id and question. The control question also completed on the restored GET.",
+      "artifacts": [
+        "3becb1b3-eb1-1-api-response.json",
+        "7fd0385c-41a-1-api-response.json",
+        "1a817f93-1f1-1-api-response.json"
+      ],
+      "independentRead": "7fd0385c-41a"
+    },
+    {
+      "id": "error-page-errors",
+      "outcome": "passed",
+      "steps": [
+        "b46e7186-b17",
+        "7e0b8013-741",
+        "a24b157f-83a",
+        "ba93a82e-095",
+        "8b6ec4ca-1cf",
+        "ff0206fc-062"
+      ],
+      "observed": "Initial /error navigation failed with net::ERR_HTTP_RESPONSE_CODE_FAILURE and initial error reads were empty; retained retry reached Error page. Console reported fixture console error and page errors reported Error: fixture page error.",
+      "artifacts": [
+        "ff0206fc-062-1-proof-error-page.png",
+        "ff0206fc-062-2-proof-error-page-snapshot.json",
+        "ff0206fc-062-3-proof-error-page-details.json"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "The journey proves the demo app's sign-in, dashboard, question API and error page only."
+  ]
+}

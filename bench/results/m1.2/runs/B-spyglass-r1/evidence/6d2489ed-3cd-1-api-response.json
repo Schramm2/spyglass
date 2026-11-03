@@ -1,0 +1,48 @@
+{
+  "startedAt": "2026-11-03T15:12:15.960Z",
+  "completedAt": "2026-11-03T15:12:15.974Z",
+  "request": {
+    "method": "POST",
+    "url": "http://127.0.0.1:53557/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "content-type": "application/json",
+      "authorization": "[REDACTED]"
+    },
+    "body": {
+      "question": "What does Spyglass retain?"
+    }
+  },
+  "response": {
+    "status": 202,
+    "statusText": "Accepted",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 15:12:15 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "39a9a740-c4db-43ae-a458-c3ba30e61c70",
+      "status": "pending"
+    }
+  },
+  "assertions": [
+    {
+      "id": "status=202",
+      "ok": true,
+      "detail": "HTTP 202"
+    },
+    {
+      "id": "json status=pending",
+      "ok": true,
+      "detail": "observed \"pending\""
+    },
+    {
+      "id": "json id!=null",
+      "ok": true,
+      "detail": "observed \"39a9a740-c4db-43ae-a458-c3ba30e61c70\""
+    }
+  ]
+}

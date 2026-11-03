@@ -86,7 +86,7 @@ async function api(
   if (args.length < 2)
     throw usage(
       "api",
-      "spyglass api METHOD PATH [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--expect-json PATH=VALUE] [--expect-body-contains TEXT] [--wait-until PATH=VALUE [--fail-on PATH=VALUE] [--timeout-ms MS] [--interval-ms MS]]",
+      "spyglass api METHOD PATH [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--expect-json PATH=VALUE] [--expect-body-contains TEXT] [--then GET PATH [--then-expect STATUS] [--then-expect-json PATH=VALUE]] [--wait-until PATH=VALUE [--fail-on PATH=VALUE] [--timeout-ms MS] [--interval-ms MS]]",
     );
   const method = args[0]!.toUpperCase();
   if (!/^(GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS)$/.test(method)) {
@@ -125,6 +125,10 @@ async function api(
   let timeoutMs = API_POLL_TIMEOUT_MS;
   let intervalMs = API_POLL_INTERVAL_MS;
   let pollTuning = false;
+  let thenPath: string | undefined;
+  let thenStatus = 200;
+  let thenOptions = false;
+  const thenChecks: JsonCheck[] = [];
   for (let i = 2; i < args.length; i++) {
     const option = args[i]!;
     if (option === "--seat") {
@@ -150,6 +154,29 @@ async function api(
         );
       }
       expectedStatus = Number(raw);
+    } else if (option === "--then") {
+      if (thenPath !== undefined || args[++i] !== "GET")
+        throw usage("api", "Use one --then GET PATH after a write.");
+      thenPath = args[++i];
+      if (!thenPath || thenPath.startsWith("--"))
+        throw usage("api", "--then GET requires a path.");
+    } else if (option === "--then-expect") {
+      const raw = args[++i];
+      if (
+        !raw ||
+        !/^\d{3}$/.test(raw) ||
+        Number(raw) < 100 ||
+        Number(raw) > 599
+      )
+        throw usage(
+          "api",
+          "--then-expect requires an HTTP status from 100 through 599.",
+        );
+      thenStatus = Number(raw);
+      thenOptions = true;
+    } else if (option === "--then-expect-json") {
+      thenChecks.push(parseJsonCheck("api", option, args[++i], true));
+      thenOptions = true;
     } else if (option === "--expect-json") {
       jsonChecks.push(parseJsonCheck("api", option, args[++i], true));
     } else if (option === "--expect-body-contains") {
@@ -185,6 +212,28 @@ async function api(
     );
   if (pollTuning && !waitUntil)
     throw usage("api", "--timeout-ms and --interval-ms need --wait-until.");
+
+  if (thenOptions && thenPath === undefined)
+    throw usage(
+      "api",
+      "--then-expect and --then-expect-json need --then GET PATH.",
+    );
+  if (thenPath !== undefined) {
+    if (
+      !["POST", "PUT", "PATCH", "DELETE"].includes(method) ||
+      waitUntil ||
+      failOn
+    )
+      throw usage(
+        "api",
+        "--then needs one POST, PUT, PATCH or DELETE, without polling.",
+      );
+    // Validate the static path, origin and template syntax before any side effect.
+    const probe = apiTemplate(ctx, thenPath);
+    const nextTarget = apiTarget(base, probe);
+    if (nextTarget.origin !== base.origin)
+      throw usage("api", "The follow-up GET must stay on the run API origin.");
+  }
 
   let requestValue: unknown;
   let requestBody: string | undefined;
@@ -339,6 +388,12 @@ async function api(
   // Every expectation is a structured assertion of the step, in the shape
   // that check records.
   const assertions: Assertion[] = [];
+  if (thenPath !== undefined)
+    assertions.push({
+      id: "success",
+      ok: response.ok,
+      detail: `HTTP ${response.status}`,
+    });
   if (expectedStatus !== undefined)
     assertions.push({
       id: `status=${expectedStatus}`,
@@ -389,6 +444,8 @@ async function api(
         }
       : undefined;
   const record = {
+    startedAt: new Date(started).toISOString(),
+    completedAt: new Date().toISOString(),
     request: requestRecord,
     response: responseRecord,
     ...(assertions.length ? { assertions } : {}),
@@ -398,16 +455,33 @@ async function api(
   const cleanValue = sanitizeValue(ctx, body.value);
   const preview = previewBody(cleanValue, redactUrls(ctx, responseText));
   const data: Record<string, unknown> = {
+    ...(thenPath !== undefined ? { followUp: { status: "not run" } } : {}),
     method,
     url: safeUrl(target),
     status: response.status,
     body: preview,
     artifacts: [artifact],
     ...(location ? { redirectLocation: safeLocation(target, location) } : {}),
-    ...(assertions.length ? { claims: assertions } : {}),
+    ...(assertions.length
+      ? {
+          claims:
+            thenPath !== undefined
+              ? assertions.map((item) => ({ ...item, id: `write ${item.id}` }))
+              : assertions,
+        }
+      : {}),
     ...(polling ? { polls, elapsedMs } : {}),
   };
 
+  if (thenPath !== undefined && !response.ok) {
+    throw new Fault(
+      "API_EXPECTATION_FAILED",
+      `API write returned HTTP ${response.status}; the follow-up GET was not sent.`,
+      "Inspect the saved write response and correct the request before retrying.",
+      1,
+      data,
+    );
+  }
   if (expectedStatus !== undefined && response.status !== expectedStatus) {
     throw new Fault(
       "API_EXPECTATION_FAILED",
@@ -426,7 +500,109 @@ async function api(
       1,
       data,
     );
+  if (thenPath !== undefined) {
+    // Keep the step's method and body as the write. The follow-up can back a
+    // control, but can never turn the write into an independent read.
+    const combine = (followUp: Record<string, unknown>) => ({
+      ...data,
+      followUp,
+      claims: [
+        ...assertions.map((item) => ({ ...item, id: `write ${item.id}` })),
+        ...((followUp.claims ?? []) as Assertion[]),
+      ],
+      artifacts: [
+        ...(data.artifacts as unknown[]),
+        ...((followUp.artifacts ?? []) as unknown[]),
+      ],
+    });
+    try {
+      const path = apiTemplate(ctx, thenPath, body.value);
+      const followUp = await api(ctx, [
+        "GET",
+        path,
+        ...(seatName ? ["--seat", seatName] : []),
+        "--expect",
+        String(thenStatus),
+        ...thenChecks.flatMap((check) => ["--expect-json", check.id]),
+      ]);
+      return sanitizeValue(ctx, combine(followUp)) as Record<string, unknown>;
+    } catch (error) {
+      if (!(error instanceof Fault)) throw error;
+      throw new Fault(
+        error.code,
+        error.message,
+        error.next,
+        error.exit,
+        sanitizeValue(
+          ctx,
+          combine(
+            Object.keys(error.data).length
+              ? error.data
+              : {
+                  status: "not run",
+                  error: error.code,
+                },
+          ),
+        ) as Record<string, unknown>,
+      );
+    }
+  }
   return sanitizeValue(ctx, data) as Record<string, unknown>;
+}
+
+/** Only scalar, non-secret body fields can fill a URL path or query value. */
+function apiTemplate(ctx: Context, path: string, body?: unknown): string {
+  const invalid = () =>
+    new Fault(
+      "INVALID_API_TEMPLATE",
+      "The follow-up path needs a scalar, non-secret {body.PATH} value.",
+      "Use a public response field such as /questions/{body.id}; inspect the retained write response.",
+    );
+  if (/[\u0000-\u0020\u007f\\]/.test(path)) throw invalid();
+  const expanded = path.replace(
+    /\{([^{}]*)\}/g,
+    (_match, expression: string) => {
+      if (
+        !/^body\.[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*$/.test(expression) ||
+        expression
+          .slice(5)
+          .split(".")
+          .some((part) => SENSITIVE_FIELD.test(part))
+      )
+        throw invalid();
+      if (body === undefined) return "spyglass-template-value";
+      const found = valueAt(body, expression.slice(5).split("."));
+      const value = found.value;
+      if (
+        !found.found ||
+        value === null ||
+        value === "" ||
+        !["string", "number", "boolean"].includes(typeof value) ||
+        sanitizeValue(ctx, value) !== value
+      )
+        throw invalid();
+      try {
+        return encodeURIComponent(String(value));
+      } catch {
+        // JSON permits unpaired surrogates, but URL encoding does not.
+        throw invalid();
+      }
+    },
+  );
+  if (/[{}]/.test(expanded)) throw invalid();
+  // URL parsers normalize literal and encoded dot segments. Check after
+  // substitution, including segments assembled from fields and literal text.
+  if (
+    /(?:^|\/)(?:\.|%2e){1,2}(?=\/|[?#]|$)/i.test(expanded.split(/[?#]/, 1)[0]!)
+  )
+    throw invalid();
+  // Substitutions cannot select a host, protocol or credentials.
+  if (
+    /^https?:\/\//i.test(path) &&
+    /\{/.test(path.split("/").slice(0, 3).join("/"))
+  )
+    throw invalid();
+  return expanded;
 }
 
 interface Assertion {

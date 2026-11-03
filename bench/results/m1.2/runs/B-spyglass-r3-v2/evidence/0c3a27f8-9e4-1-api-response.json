@@ -1,0 +1,70 @@
+{
+  "startedAt": "2026-11-03T15:08:16.187Z",
+  "completedAt": "2026-11-03T15:08:16.202Z",
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:53195/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "authorization": "[REDACTED]"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 15:08:16 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": [
+      {
+        "id": "22140ada-d700-4286-bec1-e93ba99edd9a",
+        "question": "What does this demo verify?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      },
+      {
+        "id": "eb49731a-cb58-4154-b85a-f6fe71c983ab",
+        "question": "Can completion distinguish pending from complete?",
+        "status": "complete",
+        "answer": "Thanks. We received your question."
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "json 0.id=22140ada-d700-4286-bec1-e93ba99edd9a",
+      "ok": true,
+      "detail": "observed \"22140ada-d700-4286-bec1-e93ba99edd9a\""
+    },
+    {
+      "id": "json 0.status=complete",
+      "ok": true,
+      "detail": "observed \"complete\""
+    },
+    {
+      "id": "json 0.question=What does this demo verify?",
+      "ok": true,
+      "detail": "observed \"What does this demo verify?\""
+    },
+    {
+      "id": "json 1.id=eb49731a-cb58-4154-b85a-f6fe71c983ab",
+      "ok": true,
+      "detail": "observed \"eb49731a-cb58-4154-b85a-f6fe71c983ab\""
+    },
+    {
+      "id": "json 1.status=complete",
+      "ok": true,
+      "detail": "observed \"complete\""
+    }
+  ]
+}

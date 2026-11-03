@@ -4099,6 +4099,365 @@ const submitQuestion = (dir, run, token) =>
     "202",
   ]);
 
+test("api --then retains an immediate failing GET control and still needs a later independent read", async () => {
+  const token = `then-token-${randomUUID()}`;
+  const plan = {
+    ...asyncPlan,
+    controls: [
+      {
+        id: "completion-detects-pending",
+        claim: "question-completed",
+        expectation:
+          "A completion assertion fails on an immediate pending read.",
+        assertion: "json status=complete",
+      },
+    ],
+  };
+  const dir = await makeRepo({ profile: apiProfile(), plan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-then", "--plan", "plan.json"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    ).run;
+    const postArgs = [
+      "POST",
+      "/questions",
+      "--seat",
+      "agent",
+      "--data",
+      JSON.stringify({ question: "Immediate read?" }),
+      "--expect",
+      "202",
+    ];
+    const failed = await apiCall(
+      dir,
+      run,
+      token,
+      [
+        ...postArgs,
+        "--expect-json",
+        "status=pending",
+        "--then",
+        "GET",
+        "/questions/{body.id}",
+        "--then-expect",
+        "200",
+        "--then-expect-json",
+        "status=complete",
+        "--control",
+        "completion-detects-pending:failed",
+      ],
+      { ok: false, code: 1 },
+    );
+    assert.equal(failed.error.code, "API_EXPECTATION_FAILED");
+    assert.equal(failed.data.method, "POST", "the step remains a write");
+    assert.equal(failed.data.body.status, "pending");
+    assert.equal(
+      failed.data.followUp.body.status,
+      "pending",
+      "a separate GET observed pending",
+    );
+    assert.equal(failed.data.followUp.method, "GET");
+    assert.equal(
+      failed.data.claims.find((c) => c.id === "json status=complete").ok,
+      false,
+    );
+    assert.equal(
+      failed.data.claims.find((c) => c.id === "write json status=pending").ok,
+      true,
+    );
+    assert.equal(failed.artifacts.filter((a) => a.kind === "api").length, 2);
+    const records = await Promise.all(
+      failed.artifacts
+        .filter((a) => a.kind === "api")
+        .map(async (a) =>
+          JSON.parse(await readRunFile(dir, run, `spyglass/${a.path}`)),
+        ),
+    );
+    assert.deepEqual(
+      records.map((r) => r.request.method),
+      ["POST", "GET"],
+    );
+    assert.equal(records[1].response.body.status, "pending");
+    assert.ok(
+      !JSON.stringify(records).includes(token),
+      "both request records mask the seat token",
+    );
+    const id = failed.data.body.id;
+    const restored = await apiCall(dir, run, token, [
+      "GET",
+      `/questions/${id}`,
+      "--seat",
+      "agent",
+      "--wait-until",
+      "status=complete",
+      "--expect-json",
+      "status=complete",
+      "--control",
+      "completion-detects-pending:restored",
+      "--claim",
+      "question-completed",
+    ]);
+    const combined = await apiCall(dir, run, token, [
+      ...postArgs,
+      "--then",
+      "GET",
+      `/questions/${id}`,
+      "--then-expect-json",
+      "status=complete",
+      "--claim",
+      "question-completed",
+      "--independent-read",
+    ]);
+    await runCli(dir, [
+      "--json",
+      "--run",
+      run,
+      "result",
+      "set",
+      "--claim",
+      "question-completed",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The question completed.",
+    ]);
+    const rejected = assertEnvelope(
+      await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+      { ok: false, code: 1 },
+    );
+    assert.ok(
+      rejected.data.findings.some((f) => f.code === "INDEPENDENT_READ_MISSING"),
+      "even a passing combined write and GET is not an independent read",
+    );
+    const later = await apiCall(dir, run, token, [
+      "GET",
+      `/questions/${id}`,
+      "--seat",
+      "agent",
+      "--expect-json",
+      "status=complete",
+      "--claim",
+      "question-completed",
+      "--independent-read",
+    ]);
+    assert.equal(later.data.body.status, "complete");
+    assert.ok(restored.step, "the restored control is retained separately");
+    await runCli(dir, [
+      "--json",
+      "--run",
+      run,
+      "result",
+      "set",
+      "--control",
+      "completion-detects-pending",
+      "--observed-failure",
+      "The immediate GET returned pending.",
+      "--observed-pass",
+      "The later GET returned complete.",
+    ]);
+    assertEnvelope(await runCli(dir, ["--json", "--run", run, "finish"]), {
+      ok: true,
+      code: 0,
+    });
+    const log = await readRunFile(dir, run, "spyglass/log.jsonl");
+    assert.ok(
+      log.includes(failed.step),
+      "the failed control survives cleanup and reporting",
+    );
+    assert.ok(log.includes(combined.step));
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("api --then stops on a failed write and refuses unsafe follow-up requests", async () => {
+  const token = `then-token-${randomUUID()}`;
+  const dir = await makeRepo({ profile: apiProfile() });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-then-stop"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    ).run;
+    const post = [
+      "POST",
+      "/questions",
+      "--seat",
+      "agent",
+      "--data",
+      '{"question":"safe"}',
+    ];
+    for (const tail of [
+      ["--then", "POST", "/questions"],
+      ["--then", "GET", "https://example.test/questions/{body.id}"],
+      ["--then", "GET", "/questions/{body.token}"],
+      [
+        "--then",
+        "GET",
+        "/questions/{body.id}",
+        "--then-expect-json",
+        "invalid",
+      ],
+      ["--then", "GET", "/questions/{body.id}", "--then-expect", "no"],
+      ["--then", "GET", "/questions/{body.id}", "--then", "GET", "/questions"],
+      ["--then-expect-json", "status=complete"],
+    ]) {
+      await apiCall(dir, run, token, [...post, ...tail], {
+        ok: false,
+        code: 2,
+      });
+    }
+    const empty = await apiCall(dir, run, token, [
+      "GET",
+      "/questions",
+      "--seat",
+      "agent",
+    ]);
+    assert.equal(
+      empty.data.body.length,
+      0,
+      "invalid follow-up input cannot cause a write",
+    );
+    const stopped = await apiCall(
+      dir,
+      run,
+      token,
+      [
+        "POST",
+        "/questions",
+        "--seat",
+        "agent",
+        "--data",
+        "{}",
+        "--then",
+        "GET",
+        "/questions",
+      ],
+      { ok: false, code: 1 },
+    );
+    assert.equal(stopped.data.status, 400);
+    assert.equal(stopped.data.followUp.status, "not run");
+    assert.equal(stopped.artifacts.filter((a) => a.kind === "api").length, 1);
+    const assertionFailed = await apiCall(
+      dir,
+      run,
+      token,
+      [
+        ...post,
+        "--expect-json",
+        "status=complete",
+        "--then",
+        "GET",
+        "/questions",
+      ],
+      { ok: false, code: 1 },
+    );
+    assert.equal(assertionFailed.data.followUp.status, "not run");
+    const missing = await apiCall(
+      dir,
+      run,
+      token,
+      [...post, "--then", "GET", "/questions/{body.missing}"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(missing.error.code, "INVALID_API_TEMPLATE");
+    assert.equal(
+      missing.artifacts.filter((a) => a.kind === "api").length,
+      1,
+      "the successful write is retained",
+    );
+    const reflected = await apiCall(
+      dir,
+      run,
+      token,
+      [
+        "POST",
+        "/reflect",
+        "--seat",
+        "agent",
+        "--data",
+        JSON.stringify({ value: token }),
+        "--then",
+        "GET",
+        "/questions/{body.reflected}",
+      ],
+      { ok: false, code: 2 },
+    );
+    assert.equal(reflected.error.code, "INVALID_API_TEMPLATE");
+    assert.ok(
+      !JSON.stringify(reflected).includes(token),
+      "template failures cannot expose secrets",
+    );
+    for (const [value, path] of [
+      ["..", "/questions/{body.reflected}"],
+      [".", "/questions/{body.reflected}"],
+      [".", "/questions/.{body.reflected}"],
+      [".", "/questions/%2e{body.reflected}"],
+      ["\ud800", "/questions/{body.reflected}"],
+      ["", "/questions/{body.reflected}"],
+      [null, "/questions/{body.reflected}"],
+      [{ id: "not-scalar" }, "/questions/{body.reflected}"],
+    ]) {
+      const invalidValue = await apiCall(
+        dir,
+        run,
+        token,
+        [
+          "POST",
+          "/reflect",
+          "--seat",
+          "agent",
+          "--data",
+          JSON.stringify({ value }),
+          "--then",
+          "GET",
+          path,
+        ],
+        { ok: false, code: 2 },
+      );
+      assert.equal(invalidValue.error.code, "INVALID_API_TEMPLATE");
+      assert.equal(
+        invalidValue.data.method,
+        "POST",
+        "the successful write stays in structured output",
+      );
+      assert.equal(invalidValue.data.status, 200);
+      assert.equal(invalidValue.data.followUp.status, "not run");
+      assert.equal(
+        invalidValue.artifacts.filter((a) => a.kind === "api").length,
+        1,
+        "no read can supply unrelated route evidence",
+      );
+    }
+    const failedRead = await apiCall(
+      dir,
+      run,
+      token,
+      [...post, "--then", "GET", "/questions/not-found"],
+      { ok: false, code: 1 },
+    );
+    assert.equal(failedRead.data.followUp.status, 404);
+    assert.equal(
+      failedRead.artifacts.filter((a) => a.kind === "api").length,
+      2,
+    );
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
 test("api --wait-until polls one job to completion and satisfies the independent read", async () => {
   const token = `wait-token-${randomUUID()}`;
   const dir = await makeRepo({ profile: apiProfile(), plan: asyncPlan });

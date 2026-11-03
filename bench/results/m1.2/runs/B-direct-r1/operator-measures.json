@@ -1,0 +1,290 @@
+{
+  "wallSeconds": 154.395,
+  "phaseSeconds": "unavailable",
+  "definition": "Elapsed from the first user message to the final assistant message; tool calls are model tool calls, not child processes. Usage fields are summed as exposed by Pi. Raw transcript is not retained in Git.",
+  "assistantEvents": [
+    {
+      "timestamp": "2026-11-03T15:11:08.505Z",
+      "usage": {
+        "input": 1172,
+        "output": 35,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 1207
+      },
+      "toolCalls": [
+        {
+          "id": "call_8189881e0b07457db17856ea4ddb5fec|fc_03f7559a454383e0016ae9f98bc0608191bd6f0f20eaf1540b",
+          "name": "read"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:11:12.291Z",
+      "usage": {
+        "input": 614,
+        "output": 38,
+        "cacheRead": 1024,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 1676
+      },
+      "toolCalls": [
+        {
+          "id": "call_e2b9ecbf9ba441cdb8d36d14364f0f6c|fc_03f7559a454383e0016ae9f98f90008191867da50454b98922",
+          "name": "read"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:11:15.683Z",
+      "usage": {
+        "input": 2460,
+        "output": 38,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 2498
+      },
+      "toolCalls": [
+        {
+          "id": "call_3412eb68d96c4f33a6c4a3b580ee5c33|fc_03f7559a454383e0016ae9f993100c8191aa41dfcab3aa888a",
+          "name": "read"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:11:20.457Z",
+      "usage": {
+        "input": 1072,
+        "output": 99,
+        "cacheRead": 2304,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 3475
+      },
+      "toolCalls": [
+        {
+          "id": "call_bcee92fa36dd4fdabc5306ee5fbf5431|fc_03f7559a454383e0016ae9f996adc8819181819c4a598c4b1c",
+          "name": "bash"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:11:23.937Z",
+      "usage": {
+        "input": 180,
+        "output": 39,
+        "cacheRead": 3328,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 3547
+      },
+      "toolCalls": [
+        {
+          "id": "call_121a8a89285f44d28be263aaa6bfe3ab|fc_03f7559a454383e0016ae9f99b4fe88191bb229f163bc1ddfb",
+          "name": "read"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:11:27.365Z",
+      "usage": {
+        "input": 5748,
+        "output": 41,
+        "cacheRead": 3456,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 9245
+      },
+      "toolCalls": [
+        {
+          "id": "call_37460824196f45fd816c85fa02f4fbf2|fc_03f7559a454383e0016ae9f99ebe0c8191b0972f1e557b6304",
+          "name": "read"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:11:54.398Z",
+      "usage": {
+        "input": 1931,
+        "output": 1640,
+        "cacheRead": 9088,
+        "cacheWrite": 0,
+        "reasoning": 55,
+        "totalTokens": 12659
+      },
+      "toolCalls": [
+        {
+          "id": "call_eae4544c9f904e4a8dad824414026a3f|fc_03f7559a454383e0016ae9f9a722588191886642507855ad1b",
+          "name": "write"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:11:57.413Z",
+      "usage": {
+        "input": 144,
+        "output": 78,
+        "cacheRead": 12544,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 12766
+      },
+      "toolCalls": [
+        {
+          "id": "call_ab4520a376b94cc6a0af9274ccfb6613|fc_03f7559a454383e0016ae9f9bc8cf08191852f36cd1cacf97c",
+          "name": "bash"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:12:06.851Z",
+      "usage": {
+        "input": 3468,
+        "output": 66,
+        "cacheRead": 12672,
+        "cacheWrite": 0,
+        "reasoning": 22,
+        "totalTokens": 16206
+      },
+      "toolCalls": [
+        {
+          "id": "call_0471ad3a2fac4798916184c10ab6e436|fc_03f7559a454383e0016ae9f9c3557c8191ba28df9019403e65",
+          "name": "read"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:12:15.417Z",
+      "usage": {
+        "input": 645,
+        "output": 219,
+        "cacheRead": 16000,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 16864
+      },
+      "toolCalls": [
+        {
+          "id": "call_9f42b16b174e4eca9c07c7ced302396e|fc_03f7559a454383e0016ae9f9c9de748191bbec9575ec3048fd",
+          "name": "write"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:12:21.610Z",
+      "usage": {
+        "input": 124,
+        "output": 296,
+        "cacheRead": 16768,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 17188
+      },
+      "toolCalls": [
+        {
+          "id": "call_38f8c33034a04b09bac3cbee79c16f19|fc_03f7559a454383e0016ae9f9d2a2288191967bd6988ecb2b08",
+          "name": "edit"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:12:25.941Z",
+      "usage": {
+        "input": 71,
+        "output": 86,
+        "cacheRead": 17152,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 17309
+      },
+      "toolCalls": [
+        {
+          "id": "call_76d80e10a5b042b489a620691e1ca052|fc_03f7559a454383e0016ae9f9d8d38881919020e3b7ce9cfb88",
+          "name": "bash"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:12:37.228Z",
+      "usage": {
+        "input": 1794,
+        "output": 195,
+        "cacheRead": 17280,
+        "cacheWrite": 0,
+        "reasoning": 55,
+        "totalTokens": 19269
+      },
+      "toolCalls": [
+        {
+          "id": "call_75c59fee21834ad7ad6d95fb3f4686c2|fc_03f7559a454383e0016ae9f9e4c95081919fbdde13a785e070",
+          "name": "bash"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:12:46.350Z",
+      "usage": {
+        "input": 809,
+        "output": 233,
+        "cacheRead": 19200,
+        "cacheWrite": 0,
+        "reasoning": 13,
+        "totalTokens": 20242
+      },
+      "toolCalls": [
+        {
+          "id": "call_1e1599e4c908414e80e39a97de32664c|fc_03f7559a454383e0016ae9f9ed9bbc8191961a0e627c29408b",
+          "name": "bash"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:13:32.028Z",
+      "usage": {
+        "input": 247,
+        "output": 1967,
+        "cacheRead": 20096,
+        "cacheWrite": 0,
+        "reasoning": 94,
+        "totalTokens": 22310
+      },
+      "toolCalls": [
+        {
+          "id": "call_b44b9d642e934e6fadc158453d8fb355|fc_03f7559a454383e0016ae9f9f5f0188191a490e29559c29551",
+          "name": "write"
+        }
+      ],
+      "stopReason": "toolUse"
+    },
+    {
+      "timestamp": "2026-11-03T15:13:38.901Z",
+      "usage": {
+        "input": 65,
+        "output": 165,
+        "cacheRead": 22272,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 22502
+      },
+      "toolCalls": [],
+      "stopReason": "stop"
+    }
+  ]
+}

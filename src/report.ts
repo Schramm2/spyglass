@@ -661,6 +661,8 @@ function independentReadComplete(run: Run, step: Step): boolean {
     const status = step.data.status;
     return (
       method === "GET" &&
+      !step.args.includes("--then") &&
+      !step.data.followUp &&
       typeof status === "number" &&
       status >= 200 &&
       status < 300 &&

@@ -159,12 +159,25 @@ spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question
 | --- | --- | --- |
 | `api` | `--expect-json PATH=VALUE` or `PATH!=VALUE` | Check a field of the JSON body. A dotted `PATH` reaches objects, array indexes and `length`, for example `items.length=3`. A path that is not in the body fails both forms. |
 | `api` | `--expect-body-contains TEXT` | The raw body contains `TEXT`. |
+| `api POST` (also `PUT`, `PATCH`, `DELETE`) | `--then GET PATH [--then-expect STATUS] [--then-expect-json PATH=VALUE]` | Make one immediate read after a successful write. `{body.id}` fills a URL-encoded scalar, non-secret response field. The GET reuses the seat and expects HTTP 200 by default. Both requests stay in one step; this is not an independent read. |
 | `api GET` | `--wait-until PATH=VALUE` | Poll until the field has the value. Add `--fail-on PATH=VALUE` to stop at a failed state, `--timeout-ms` (default 15000) and `--interval-ms` (default 250). |
 | `db` | `--expect-col COLUMN=VALUE` | The first row has the value. A dotted name reaches into a JSON column. Repeat the flag for more columns. |
 | `db` | `--expect-empty` | The query returns no row (`--expect-rows 0`). |
 | `ps` | `--wait`, `--timeout-ms MS` | Poll every 500 ms until each required service is running and, with a health check, healthy. |
 | `logs` | `--since-step ID`, `--since-last` | Start at a step's start time, or the previous step, with no `mark`. |
 | `logs` | `--grep PATTERN`, `--expect-text TEXT`, `--forbid-text TEXT` | Keep matching lines, then require or refuse text. |
+
+For a pending-state control, use `api POST /questions --data @question.json
+--expect 202 --then GET '/questions/{body.id}' --then-expect-json status=complete
+--control completion-detects-pending:failed --run ID --seat agent`. The
+follow-up assertion keeps the name `json status=complete`; write assertions
+have the prefix `write `. A later separate GET with the same assertion can
+supply the restored pass and independent read. The combined step keeps the
+write's method, status and body, with the read in `data.followUp` and a
+separate masked artifact for each request. A failed write skips the GET.
+Invalid follow-up options and origins are rejected before the write; a
+missing, non-scalar or secret template value stops before the GET and keeps
+the write's evidence. The operation supports one follow-up GET, without polling.
 
 Each check is an assertion of the step in `data.claims`. A failed check exits 1
 and keeps the response, the bounded query result or the log. A poll keeps its
@@ -426,9 +439,10 @@ and Docker.
 ## Roadmap
 
 See the [product roadmap](docs/roadmap.md) for priorities, completion checks
-and the next development task. The first operator comparison is complete,
-with limits. The next task is to repair its measured API read-after-write gap
-and repeat the affected comparison at equal proof.
+and the next development task. The first operator comparison and its
+[API read-after-write repair](docs/operator-comparison-m1.2.md) are complete,
+with limits. The next milestone is to reduce first-adoption work through
+fresh adoption attempts.
 
 ## Contributing
 

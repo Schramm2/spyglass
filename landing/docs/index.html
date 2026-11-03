@@ -1031,7 +1031,7 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
             <h3><code>api</code></h3>
             <pre
               class="usage"
-            ><code>spyglass api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--expect-json PATH=VALUE] [--expect-body-contains TEXT] [--wait-until PATH=VALUE [--fail-on PATH=VALUE] [--timeout-ms MS] [--interval-ms MS]] [--claim ID] [--independent-read]</code></pre>
+            ><code>spyglass api METHOD PATH --run ID [--seat NAME] [--data JSON|@FILE] [--expect STATUS] [--expect-json PATH=VALUE] [--expect-body-contains TEXT] [--then GET PATH [--then-expect STATUS] [--then-expect-json PATH=VALUE]] [--wait-until PATH=VALUE [--fail-on PATH=VALUE] [--timeout-ms MS] [--interval-ms MS]] [--claim ID] [--independent-read]</code></pre>
             <p>
               Request a path relative to profile.api. A named seat resolves its
               token reference privately. Requests stay on the configured origin;
@@ -1051,9 +1051,26 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
               --interval-ms (default 250, from 50) bound it. The poll count, the
               elapsed time and the final response stay in api-response.json. A
               poll that times out or reaches a fail state fails the step, so it
-              cannot be an independent read. Keep raw credentials out of argv.
-              --claim ID, --independent-read, --control ID:failed|restored and
-              --gate NAME link a step into the pending result; see result.
+              cannot be an independent read. After a successful POST, PUT, PATCH
+              or DELETE, <code>--then GET PATH</code> makes one immediate read
+              with the same seat, without polling.
+              <code>--then-expect STATUS</code> defaults to 200; repeat
+              <code>--then-expect-json PATH=VALUE</code> (or PATH!=VALUE) for
+              read assertions. A quoted path such as
+              <code>'/questions/{body.id}'</code> inserts a URL-encoded scalar,
+              non-secret field from the write response. Invalid options,
+              template syntax and origins fail before the write; a missing,
+              non-scalar or secret field stops before the GET and retains the
+              write. A failed write or write assertion skips the GET. Each
+              request keeps a masked artifact. <code>data.method</code>, status
+              and body describe the write; <code>data.followUp</code> describes
+              the read. Write assertion IDs have the prefix <code>write </code>;
+              read assertions keep normal IDs such as
+              <code>json status=complete</code>, so a later GET can restore the
+              same control. The combined step cannot satisfy an independent
+              read. Keep raw credentials out of argv. --claim ID,
+              --independent-read, --control ID:failed|restored and --gate NAME
+              link a step into the pending result; see result.
             </p>
             <div class="call">
               <pre><code>spyglass api GET /jobs/123 --run change-42 --seat member --expect 200 --json</code></pre>
@@ -1608,6 +1625,22 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
                   <td><code>api</code></td>
                   <td><code>--expect-body-contains TEXT</code></td>
                   <td>The raw body contains <code>TEXT</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>api POST</code> (also PUT, PATCH, DELETE)</td>
+                  <td>
+                    <code
+                      >--then GET PATH [--then-expect STATUS]
+                      [--then-expect-json PATH=VALUE]</code
+                    >
+                  </td>
+                  <td>
+                    Make one immediate read after a successful write.
+                    <code>{body.id}</code> fills a URL-encoded scalar,
+                    non-secret response field. The GET reuses the seat and
+                    expects HTTP 200 by default. Both requests stay in one step;
+                    this is not an independent read.
+                  </td>
                 </tr>
                 <tr>
                   <td><code>api GET</code></td>
@@ -2583,6 +2616,26 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                 <tr>
                   <td>HTTP</td>
                   <td>
+                    A pending job completes between separate CLI calls, so a
+                    control cannot make an immediate failing read.
+                  </td>
+                  <td>
+                    <code
+                      >api POST|PUT|PATCH|DELETE PATH --then GET PATH
+                      --then-expect-json PATH=VALUE</code
+                    >
+                    records the write and immediate read in one step. The read
+                    assertion keeps its normal name for a later restored GET. A
+                    failed write stops before the read. Invalid follow-up
+                    options or origins are rejected before the write. Missing,
+                    non-scalar or secret template values stop before the read
+                    and retain the write. The combined step cannot satisfy an
+                    independent read.
+                  </td>
+                </tr>
+                <tr>
+                  <td>HTTP</td>
+                  <td>
                     <code>api --wait-until</code> times out while the job
                     remains <code>pending</code>, or reaches a
                     <code>--fail-on</code> state.
@@ -3088,6 +3141,22 @@ npm run format:check</code></pre>
             repositories. They need <code>agent-browser</code> on your
             <code>PATH</code>. The surface tests also need its Chromium and
             Docker.
+          </p>
+          <h3>Roadmap</h3>
+          <p>
+            See the
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/roadmap.md"
+              >product roadmap</a
+            >
+            for priorities and completion checks. The first operator comparison
+            and its
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/operator-comparison-m1.2.md"
+              >API read-after-write repair</a
+            >
+            are complete, with limits. The next milestone is to reduce
+            first-adoption work through fresh adoption attempts.
           </p>
           <p>
             Contributions are welcome. Read

@@ -10,7 +10,13 @@ see the [product roadmap](roadmap.md). Its first task is to measure the current
 workflow with fresh operators; the scripted results below do not replace that
 comparison. The [operator comparison](operator-comparison.md) records that
 study (M1.1) and its 2026-11-03 cloud runs of the scripted journey and the
-overhead gate.
+overhead gate. The [M1.2 comparison](operator-comparison-m1.2.md) records the
+immediate API follow-up GET repair and three new browser/API pairs. All six
+runs met the same claims and control; those results are not a speed comparison
+with the earlier cloud study. A separate local overhead rerun passed with
+added p50 42.1–42.7 ms and p95 43.0–57.3 ms; see
+[`overhead-2026-11-03-m1.2-local.json`](../bench/results/overhead-2026-11-03-m1.2-local.json).
+These local results do not resolve the earlier cloud failure.
 
 This is a plan, not a contract. `README.md`, `src/help.ts` and
 `docs/failure-cases.md` remain the contract. An idea becomes a contract only

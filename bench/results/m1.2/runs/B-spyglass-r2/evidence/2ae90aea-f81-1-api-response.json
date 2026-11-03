@@ -1,0 +1,48 @@
+{
+  "startedAt": "2026-11-03T15:14:50.510Z",
+  "completedAt": "2026-11-03T15:14:50.525Z",
+  "request": {
+    "method": "POST",
+    "url": "http://127.0.0.1:53834/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "content-type": "application/json",
+      "authorization": "[REDACTED]"
+    },
+    "body": {
+      "question": "Can the independent operator verify completion?"
+    }
+  },
+  "response": {
+    "status": 202,
+    "statusText": "Accepted",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 15:14:50 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "a77997e5-e5dc-4a22-bb0a-7855a0bc245f",
+      "status": "pending"
+    }
+  },
+  "assertions": [
+    {
+      "id": "status=202",
+      "ok": true,
+      "detail": "HTTP 202"
+    },
+    {
+      "id": "json status=pending",
+      "ok": true,
+      "detail": "observed \"pending\""
+    },
+    {
+      "id": "json id!=null",
+      "ok": true,
+      "detail": "observed \"a77997e5-e5dc-4a22-bb0a-7855a0bc245f\""
+    }
+  ]
+}

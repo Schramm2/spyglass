@@ -1,0 +1,48 @@
+{
+  "startedAt": "2026-11-03T15:12:16.032Z",
+  "completedAt": "2026-11-03T15:12:16.046Z",
+  "request": {
+    "method": "POST",
+    "url": "http://127.0.0.1:53557/api/questions",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8",
+      "content-type": "application/json",
+      "authorization": "[REDACTED]"
+    },
+    "body": {
+      "question": "How is completion verified?"
+    }
+  },
+  "response": {
+    "status": 202,
+    "statusText": "Accepted",
+    "headers": {
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8",
+      "date": "Tue, 03 Nov 2026 15:12:16 GMT",
+      "keep-alive": "timeout=5",
+      "transfer-encoding": "chunked"
+    },
+    "body": {
+      "id": "777db197-03f5-4e15-8e1e-722c0b48263a",
+      "status": "pending"
+    }
+  },
+  "assertions": [
+    {
+      "id": "success",
+      "ok": true,
+      "detail": "HTTP 202"
+    },
+    {
+      "id": "status=202",
+      "ok": true,
+      "detail": "HTTP 202"
+    },
+    {
+      "id": "json status=pending",
+      "ok": true,
+      "detail": "observed \"pending\""
+    }
+  ]
+}

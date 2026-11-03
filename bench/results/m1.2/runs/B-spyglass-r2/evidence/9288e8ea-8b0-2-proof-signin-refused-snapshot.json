@@ -1,0 +1,37 @@
+{
+  "command": [
+    "snapshot",
+    "-i",
+    "-c",
+    "--delta"
+  ],
+  "error": null,
+  "result": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 16957416422986211000
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:53834/login",
+    "snapshot": {
+      "kind": "full",
+      "refs": {
+        "e9": {
+          "name": "Sign in failed",
+          "role": "heading"
+        }
+      },
+      "revision": 4,
+      "tree": "- heading \"Sign in failed\" [level=1, ref=e9]"
+    }
+  },
+  "success": true
+}

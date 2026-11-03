@@ -33,7 +33,7 @@ All runtime code is in `src/`. Each command loads only the module it needs.
 | `src/checks.ts` | `check` (also several at once), `exec`, `evidence add` and assertion parsing | `checks`, `parallelChecks` |
 | `src/browser.ts` | `ui`: calls `agent-browser`, seats and sign-in, expectations, `verify` and `proof`, screenshots | `browser`, `pollConditions`, `runVerify`, `browserDoctor`, `closeBrowsers` |
 | `src/browser-proxy.ts` | Separate process: an exact-origin HTTP proxy for the run browser | `ensureBrowserProxy`, `stopBrowserProxy` |
-| `src/surfaces.ts` | `api` (with expectations and polling), `db`, `ps`, `logs` and `mark` | `surfaces`, `readDatabaseRole` |
+| `src/surfaces.ts` | `api` (with expectations, polling and one immediate follow-up GET), `db`, `ps`, `logs` and `mark` | `surfaces`, `readDatabaseRole` |
 | `src/report.ts` | `result` validation with a repair for each finding, `result set`, `status --work`, gate citation, and `report` (JSON summary and HTML page) | `report`, `workFor`, `citeGates` |
 | `src/secrets.ts` | Secret reference resolution and masking | `Secrets` |
 | `src/files.ts` | Safe paths, hashing and JSON I/O | `safePath`, `beneath`, `hash` |
@@ -113,6 +113,7 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 | The browser reaches only the configured origins | `src/browser-proxy.ts` and `--allowed-domains` in `src/browser.ts`; surface tests |
 | `db` runs one statement in a read-only transaction | `src/surfaces.ts`; surface tests |
 | HTTP redirects are not followed | `src/surfaces.ts` |
+| An API write with `--then GET` retains both requests in one step, keeps read assertions distinct from write assertions and cannot count as an independent read | `src/surfaces.ts`, `independentReadComplete` in `src/report.ts`, E2E tests |
 | Profiles hold secret references, never literal credentials | `secretReference` in `src/schema.ts`, E2E tests |
 | The evidence folder stays Git-ignored | `allocate` and `doctor` in `src/lifecycle.ts` |
 | JSON output is one versioned envelope; the CLI never prompts | `emit` in `src/cli.ts`, E2E tests |
