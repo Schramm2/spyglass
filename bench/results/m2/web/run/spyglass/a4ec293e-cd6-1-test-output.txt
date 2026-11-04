@@ -1,0 +1,489 @@
+stdout:
+
+> pretest
+> lerna bootstrap
+
+
+> test
+> tape tests/*.js | tap-spec
+
+
+  polka
+
+    ✔ exports a function
+
+  polka::internals
+
+    ✔ app.opts is an object
+    ✔ app.opts is empty
+    ✔ app.apps is an object
+    ✔ app.apps is empty
+    ✔ app.wares is an array
+    ✔ app.wares is empty
+    ✔ app.bwares is an object
+    ✔ app.bwares is empty
+    ✔ app.server is `undefined` initially (pre-listen)
+    ✔ ~> app.server becomes HTTP server (post-listen)
+    ✔ app.onError is a function
+    ✔ app.onNoMatch is a function
+    ✔ app.parse is a function
+    ✔ app.handler is a function
+    ✔ app.use is a prototype method
+    ✔ app.listen is a prototype method
+    ✔ app.handler is a prototype method
+    ✔ app.routes is an object tree
+    ✔ app.handlers is an object tree
+    ✔ app.get is a function
+    ✔ ~> handlers.GET is empty
+    ✔ ~> routes.GET is empty
+    ✔ app.post is a function
+    ✔ ~> handlers.POST is empty
+    ✔ ~> routes.POST is empty
+    ✔ app.put is a function
+    ✔ ~> handlers.PUT is empty
+    ✔ ~> routes.PUT is empty
+    ✔ app.delete is a function
+    ✔ ~> handlers.DELETE is empty
+    ✔ ~> routes.DELETE is empty
+
+  polka::usage::basic
+
+    ✔ added a new `app.route` definition
+    ✔ added the router handler as array
+    ✔ ~> contains 1 item
+    ✔ 1
+    ✔ added a new `app.route` definition
+    ✔ added the router handler as array
+    ✔ ~> contains 1 item
+    ✔ 1
+    ✔ added a new `app.route` definition
+    ✔ added the router handler as array
+    ✔ ~> contains 1 item
+    ✔ 1
+    ✔ ~> matched GET(/) route
+    ✔ ~> matched POST(/users) route
+    ✔ ~> matched PUT(/users/:id) route
+
+  polka::usage::variadic
+
+    ✔ adds all handlers to GET /one
+    ✔ 3rd "/one" handler
+    ✔ ~> foo() ran twice
+    ✔ ~> bar() ran twice
+    ✔ ~> received 200 status
+    ✔ ~> received "one" response
+    ✔ 2nd "/two" handler
+    ✔ ~> foo() ran twice
+    ✔ ~> bar() ran once
+    ✔ 3rd "/two" handler
+    ✔ ~> preserves route handler order
+    ✔ ~> original `req` object all the way
+    ✔ ~> received 200 status
+    ✔ ~> received "two" response
+    ✔ 2nd "/err" handler threw error!
+    ✔ ~> receives the "error" message
+    ✔ ~> foo() ran twice
+    ✔ ~> bar() ran once
+    ✔ ~> received 400 status
+    ✔ ~> received "error" response
+
+  polka::usage::middleware
+
+    ✔ added 2 middleware functions
+    ✔ ~> matches the GET(/) route
+    ✔ ~> route handler runs after first middleware
+    ✔ ~> route handler runs after both middlewares!
+    ✔ ~> received 200 status
+    ✔ ~> received "Hello" response
+    ✔ ~> received custom header
+    ✔ ~> sub-mware runs after first global middleware
+    ✔ ~> sub-mware runs after second global middleware
+    ✔ ~> received 200 status
+    ✔ ~> received "About" response
+    ✔ ~> sub-mware runs after first global middleware
+    ✔ ~> sub-mware runs after second global middleware
+    ✔ ~~> POST /subgroup ran after its shared middleware
+    ✔ ~> received 200 status
+    ✔ ~> received "POST /subgroup" response
+    ✔ ~> sub-mware runs after first global middleware
+    ✔ ~> sub-mware runs after second global middleware
+    ✔ ~~> GET /subgroup/foo ran after its shared middleware
+    ✔ ~> received 200 status
+    ✔ ~> received "GET /subgroup/foo" response
+
+  polka::usage::middleware (async)
+
+    ✔ added 2 middleware functions
+    ✔ ~> matches the GET(/) route
+    ✔ ~> route handler runs after first middleware
+    ✔ ~> route handler runs after both middlewares!
+    ✔ ~> received 200 status
+    ✔ ~> received "Hello" response
+    ✔ ~> received custom header
+
+  polka::usage::middleware (basenames)
+
+    ✔ added 3 global middleware functions
+    ✔ added 2 basename middleware groups
+    ✔ ~> has middleware groups for `/foo` & `/bar` path matches
+    ✔ runs the MAIN app handler for GET /
+    ✔ ~> runs after `aaa` global middleware
+    ✔ ~> runs after `bbb` global middleware
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from main" response
+    ✔ defers `bware` URL mutation until after global
+    ✔ defers `bware` PATH mutation until after global
+    ✔ runs the base middleware for: foo
+    ✔ ~> runs after `aaa` global middleware
+    ✔ ~> runs after `bbb` global middleware
+    ✔ ~> strips "foo" base from `req.url`
+    ✔ ~> strips "foo" base from `req.path`
+    ✔ ~> keeps "foo" base within `req.originalUrl`
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from foo" response
+    ✔ defers `bware` URL mutation until after global
+    ✔ defers `bware` PATH mutation until after global
+    ✔ runs the base middleware for: foo
+    ✔ ~> runs after `aaa` global middleware
+    ✔ ~> runs after `bbb` global middleware
+    ✔ ~> strips "foo" base from `req.url`
+    ✔ ~> strips "foo" base from `req.path`
+    ✔ ~> keeps "foo" base within `req.originalUrl`
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from foo" response
+    ✔ runs the base middleware for: bar
+    ✔ ~> runs after `aaa` global middleware
+    ✔ ~> runs after `bbb` global middleware
+    ✔ ~> runs after `bar` SELF-GROUPED middleware
+    ✔ ~> strips "bar" base from `req.url`
+    ✔ ~> strips "bar" base from `req.path`
+    ✔ ~> keeps "bar" base within `req.originalUrl`
+    ✔ ~> matches expected `req.path` value
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from bar" response
+    ✔ ~> received 404 status
+    ✔ ~> received "Not Found" response
+
+  polka::usage::middleware (wildcard)
+
+    ✔ runs the MAIN app handler for GET /*
+    ✔ ~> runs after `foo` global middleware
+    ✔ ~> receives the full, expected URL
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from wildcard" response
+    ✔ runs the MAIN app handler for GET /*
+    ✔ ~> runs after `foo` global middleware
+    ✔ ~> receives the full, expected URL
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from wildcard" response
+    ✔ runs the MAIN app handler for GET /*
+    ✔ ~> runs after `foo` global middleware
+    ✔ ~> receives the full, expected URL
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from wildcard" response
+    ✔ runs the base middleware for: bar
+    ✔ ~> runs after `foo` global middleware
+    ✔ ~> strips "bar" base from `req.url`
+    ✔ ~> strips "bar" base from `req.path`
+    ✔ ~> keeps "bar" base within `req.originalUrl`
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from bar" response
+    ✔ runs the base middleware for: bar
+    ✔ ~> runs after `foo` global middleware
+    ✔ ~> strips "bar" base from `req.url`
+    ✔ ~> strips "bar" base from `req.path`
+    ✔ ~> keeps "bar" base within `req.originalUrl`
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from bar" response
+
+  polka::usage::errors
+
+    ✔ exits before route handler if middleware error
+    ✔ ~> received "boo" text
+    ✔ ~> received 500 status
+    ✔ exits without running route handler
+    ✔ ~> received "boo~!" text
+    ✔ ~> received 500 status
+    ✔ exits without running route handler
+    ✔ ~> received "oh dear" (custom) text
+    ✔ ~> received 501 (custom) status
+
+  polka::usage::sub-apps
+
+    ✔ Cannot mount ".get('/sub')" because
+    ✔ runs the sub-application middleware
+    ✔ runs the sub-application / route
+    ✔ ~> trims basepath from `req.url` value
+    ✔ ~> preserves original `req.url` value
+    ✔ ~> receives mutatations from main-app middleware
+    ✔ ~> receives mutatations from own middleware
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from sub@index" response
+    ✔ run the main-application route
+    ✔ ~> receives mutatations from middleware
+    ✔ ~> does NOT run the sub-application middleware
+    ✔ ~> always sets `req.originalUrl` key
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from main" response
+    ✔ runs the sub-application middleware
+    ✔ runs the sub-application /:id route
+    ✔ ~> parses the sub-application params
+    ✔ ~> trims basepath from `req.url` value
+    ✔ ~> parses the sub-application `res.query` value
+    ✔ ~> preserves original `req.url` value
+    ✔ ~> receives mutatations from main-app middleware
+    ✔ ~> receives mutatations from own middleware
+    ✔ ~> received 200 status
+    ✔ ~> received "hello from sub@show" response
+
+  polka::usage::middleware w/ sub-app
+
+    ✔ ~> VERIFY middleware ran after MAIN
+    ✔ ~> API middleware ran after MAIN
+    ✔ ~> API middleware ran after VERIFY
+    ✔ ~> API/users middleware ran after MAIN
+    ✔ ~> API middleware ran after VERIFY
+    ✔ ~> API/users middleware ran after API
+    ✔ ~> GET API/users/:id #1 ran after MAIN
+    ✔ ~> API middleware ran after VERIFY
+    ✔ ~> GET API/users/:id #1 ran after API
+    ✔ ~> GET API/users/:id #1 ran after API/users
+    ✔ ~> GET /API/users/:id #1 received the `params.id` value
+    ✔ ~> GET API/users/:id #2 ran after MAIN
+    ✔ ~> API middleware ran after VERIFY
+    ✔ ~> GET API/users/:id #2 ran after API
+    ✔ ~> GET API/users/:id #2 ran after API/users
+    ✔ ~> GET API/users/:id #2 ran after GET API/users/:id #1
+    ✔ ~> GET /API/users/:id #2 received the `params.id` value
+    ✔ ~> received 200 status
+    ✔ ~> received "Hello, BOB" response
+
+  polka::options::server
+
+    ✔ ~> store custom server internally as is
+    ✔ ~> attach `Polka.handler` to custom server
+
+  polka::options::onError
+
+    ✔ replaces `app.onError` with the option value
+    ✔ ~> receives the `err` object directly as 1st param
+    ✔ ~> receives the `req` object as 2nd param
+    ✔ ~> receives the `res` object as 3rd param
+    ✔ ~> receives the `next` function 4th param
+    ✔ ~> response gets the error code
+    ✔ ~> response gets the formatted error message
+
+  polka::options::onNoMatch
+
+    ✔ replaces `app.onNoMatch` with the option value
+    ✔ does not affect the `app.onError` handler
+    ✔ ~> receives the `req` object as 1st param
+    ✔ ~> receives the `res` object as 2nd param
+    ✔ ~> response gets the error code
+    ✔ ~> response gets the formatted error message
+
+  polka/send-type
+
+    ✔ exports a function
+
+  polka/send-type::usage::basic
+
+    ✔ default statusCode: 200
+    ✔ custom headers added: 2
+    ✔ custom header[type]: text/plain
+    ✔ custom header[length]: 2
+    ✔ fallback body: OK
+
+  polka/send-type::usage::custom::code
+
+    ✔ set statusCode: 404
+    ✔ custom headers added: 2
+    ✔ custom header[type]: text/plain
+    ✔ custom header[length]: 9
+    ✔ fallback body: Not Found
+
+  polka/send-type::usage::custom::body
+
+    ✔ set statusCode: 405
+    ✔ custom headers added: 2
+    ✔ custom header[type]: text/plain
+    ✔ custom header[length]: 6
+    ✔ custom body: FOOBAR
+
+  polka/send-type::usage::custom::body::object
+
+    ✔ set statusCode: 200
+    ✔ custom headers added: 2
+    ✔ custom header[type]: application/json
+    ✔ custom header[length]: 21
+    ✔ custom body: {"foo":123,"bar":456} (as JSON string)
+
+  polka/send-type::usage::custom::body::object
+
+    ✔ set statusCode: 200
+    ✔ custom headers added: 2
+    ✔ custom header[type]: application/octet-stream
+    ✔ custom header[length]: 6
+    ✔ custom body: foobar (as JSON string)
+
+  polka/send-type::usage::custom::headers
+
+    ✔ set statusCode: 500
+    ✔ total headers added: 4
+    ✔ custom header[type]: foo/bar
+    ✔ custom header[length]: 5
+    ✔ custom header[x-foo]: hello
+    ✔ custom header[x-bar]: world
+    ✔ custom body: Hello
+
+  polka/send-type::usage::custom::headers::object
+
+    ✔ set statusCode: 500
+    ✔ total headers added: 2
+    ✔ allow Content-Type override: foo/bar
+    ✔ custom header[length]: 11
+    ✔ custom body: {"foo":123}
+
+  polka/send-type::usage::reuse::headers::object
+
+    ✔ set statusCode: 500
+    ✔ total headers added: 2
+    ✔ reuse Content-Type from header: custom/type
+    ✔ custom header[length]: 11
+    ✔ custom body: {"foo":123}
+
+  polka/send-type::usage::custom::headers::buffer
+
+    ✔ set statusCode: 200
+    ✔ total headers added: 2
+    ✔ prefer provided header[type] value: foo/bar
+    ✔ custom header[length]: 5
+    ✔ custom body: hello
+
+  polka/send-type::usage (Stream)
+
+    ✔ ~> "response" receives the pipe
+    ✔ returns the "response" to itself
+    ✔ applies `Content-Type: application/octet-stream` header
+    ✔ ~> "response" output exists
+    ✔ ~~> data piped successfully
+
+  polka/send-type::usage (Stream – respect existing header)
+
+    ✔ ~> "response" receives the pipe
+    ✔ returns the "response" to itself
+    ✔ maintains `Content-Type: custom/stream` header
+    ✔ ~> "response" output exists
+    ✔ ~~> data piped successfully
+
+  polka/send
+
+    ✔ exports a function
+
+  polka/send::usage::basic
+
+    ✔ default statusCode: 200
+    ✔ default headers: {}
+    ✔ fallback body: OK
+
+  polka/send::usage::custom::code
+
+    ✔ custom statusCode: 404
+    ✔ default headers: {}
+    ✔ fallback body: Not Found
+
+  polka/send::usage::custom::body
+
+    ✔ custom statusCode: 405
+    ✔ default headers: {}
+    ✔ custom body: FOOBAR
+
+  polka/send::usage::custom::headers
+
+    ✔ custom statusCode: 405
+    ✔ custom headers added: 2
+    ✔ custom headers[x-foo]: hello
+    ✔ custom headers[x-bar]: world
+    ✔ custom body: Hello
+
+  polka/url
+
+    ✔ exports a function
+
+  polka/url :: usage
+
+    ✔ throws if no input
+    ✔ returns `undefined` for empty object input
+    ✔ returns Object for valid input (`{ url }`)
+    ✔ ~> `output._raw` matches input URL string
+    ✔ mutates original input with new `_parsedUrl` key
+    ✔ ~> `req._parsedUrl` is an Object
+    ✔ ~> identical to output
+
+  polka/url :: /
+
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ ~> matches values from `url.parse` output
+
+  polka/url :: /foo/bar
+
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ ~> matches values from `url.parse` output
+
+  polka/url :: /foo/bar?fizz=buzz
+
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ ~> matches values from `url.parse` output
+
+  polka/url :: /foo/bar?fizz=buzz&hello=world
+
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ ~> matches values from `url.parse` output
+
+  polka/url :: /foo.123
+
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ ~> matches values from `url.parse` output
+
+  polka/url :: recycle
+
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+
+  polka/url :: rerun if changed
+
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+    ✔ should be equal
+
+
+  total:     343
+  passing:   343
+  duration:  75ms
+
+
+
+stderr:
+lerna info version 2.11.0
+lerna info Bootstrapping 4 packages
+lerna info lifecycle preinstall
+lerna info Symlinking packages and binaries
+lerna info lifecycle postinstall
+lerna info lifecycle prepublish
+lerna info lifecycle prepare
+lerna success Bootstrapped 4 packages

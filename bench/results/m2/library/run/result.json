@@ -1,0 +1,40 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "detect-disabled-colors",
+      "failedRun": "kleur-adoption",
+      "failedStep": "9188cd49-60a",
+      "restoredStep": "75c110aa-312",
+      "observedFailure": "NO_COLOR=1 disabled colors: 12 of 15 existing checks failed, including colors enabled by default and exact ANSI output assertions. The child exited 1.",
+      "observedPass": "Removing NO_COLOR restored all 15 existing checks with the same profile, command, source identity and expectations. The child exited 0."
+    }
+  ],
+  "claims": [
+    {
+      "id": "existing-ansi-contract",
+      "outcome": "passed",
+      "steps": [
+        "75c110aa-312"
+      ],
+      "observed": "The unchanged existing uvu runner passed 15 of 15 checks after NO_COLOR was removed; exact ANSI output, nesting, chains and disabled output checks passed.",
+      "artifacts": [
+        "75c110aa-312-1-test-output.txt"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "name": "test",
+      "outcome": "passed",
+      "steps": [
+        "75c110aa-312"
+      ]
+    }
+  ],
+  "limits": [
+    "Agent-operated adoption only; no human use is claimed.",
+    "Only the 15 existing uvu checks are adopted. Linux-specific env.sh, coverage upload, CommonJS build, other Node versions and performance are not checked.",
+    "NO_COLOR is the deliberate environment fault. Source files and test expectations are unchanged."
+  ]
+}

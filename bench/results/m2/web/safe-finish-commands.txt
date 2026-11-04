@@ -1,0 +1,18 @@
++ export PATH=/tmp/spyglass-m2-polka.dtXryw/tool-bin:/usr/bin:/bin:/usr/sbin:/sbin
++ PATH=/tmp/spyglass-m2-polka.dtXryw/tool-bin:/usr/bin:/bin:/usr/sbin:/sbin
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:51:07Z
++ cd /tmp/spyglass-m2-polka.dtXryw/polka
++ spyglass result set --operator agent --run m2-web-safe --json
++ spyglass result set --claim health-ready --outcome passed --observed 'Sirv returned HTTP 200 and OK. The same GET /health request rejected the existing Morgan example with 404 Not Found, then passed after owner restored Sirv.' --run m2-web-safe --json
++ spyglass result set --claim local-page --outcome passed --observed 'At 1280x800, title Example: Sirv and exactly one #app held. GET /style.css returned 200 and #app. One console error and one failed request remain; gallery appearance and external image loading are outside this claim.' --run m2-web-safe --json
++ spyglass result set --control wrong-owner --observed-failure 'Morgan at the same origin returned 404 Not Found and body-contains OK failed.' --observed-pass 'Owner restored Sirv with npm start; identical GET /health expectation returned 200 OK and body-contains OK passed.' --run m2-web-safe --json
++ spyglass result --check --run m2-web-safe --json
++ echo RESULT_CHECK_EXIT=0
+RESULT_CHECK_EXIT=0
++ spyglass status --work --run m2-web-safe --json
++ spyglass finish --cleanup owner-cleanup --run m2-web-safe --json
++ echo FINISH_EXIT=0
+FINISH_EXIT=0
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:51:08Z

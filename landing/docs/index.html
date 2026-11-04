@@ -175,13 +175,13 @@
             >
           </p>
           <p>
-            Spyglass is a command-line tool for coding agents and the people who
-            review their work. It connects browser actions, HTTP calls, database
-            reads and repository checks to one <strong>run</strong>. Each run
-            records its source identity, every attempt (failed attempts too) and
-            its artifacts. The evidence stays after cleanup, so another agent or
-            person can inspect the result later without the original chat or
-            shell.
+            Spyglass is an agent-first command-line tool that helps coding
+            agents verify their work with real tools and less repeated setup. It
+            connects browser actions, HTTP calls, database reads and repository
+            checks to one <strong>run</strong>. Each run records its source
+            identity, every attempt (failed attempts too) and its artifacts. The
+            evidence stays after cleanup, so another agent or person can inspect
+            the result later without the original chat or shell.
           </p>
           <p>
             An agent can say "the tests pass" or "the page works". That
@@ -288,7 +288,12 @@
           </div>
           <p>
             Spyglass does not install tools, fetch secrets or start your app
-            during <code>init</code>.
+            during <code>init</code>. See
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/dev/docs/support.md"
+              >platform and external-tool support</a
+            >
+            for tested configurations and unverified platforms.
           </p>
           <h3>Install from source</h3>
           <p>Spyglass is not on npm yet. Install it from source:</p>
@@ -301,6 +306,18 @@ npm link
 spyglass --version</code></pre>
             <button class="copy" type="button" data-copy>Copy</button>
           </div>
+          <p>
+            For an isolated installation, upgrades and rollback, use the
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/dev/docs/adoption.md"
+              >adoption recipes</a
+            >. They cover existing checks, an isolated web app and a
+            repository-owned installation or library host, including an intended
+            failure, restored pass, cleanup and report reopening. Local
+            <code>npm pack</code>
+            builds the runtime and excludes local plans, run evidence and
+            unrelated files. npm publication remains disabled.
+          </p>
         </section>
 
         <section class="doc" id="quickstart" aria-labelledby="quickstart-title">
@@ -491,8 +508,8 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
             <code>up --plan</code> writes a pending result file and prints its
             path. Run each step with <code>--claim ID</code>: when the step
             passes, Spyglass adds its step ID and its artifact paths to that
-            claim in the pending file. You write only what a person must judge:
-            what you observed and the outcome of each claim, with
+            claim in the pending file. You write only what the operator must
+            judge: what you observed and the outcome of each claim, with
             <code>spyglass result set</code>. Check the file with
             <code>spyglass result --check</code>. It lists every finding at once
             in <code>data.findings</code>, and each finding has a
@@ -851,6 +868,13 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
               spyglass.json with observed and guessed fields. Review owner
               setup, guessed readiness and addresses before up. No app starts.
               --force prints changed fields before replacement.
+              <code>setup.reviewFields</code> lists guesses;
+              <code>setup.prerequisites</code>, <code>setup.commands</code> and
+              <code>setup.notes</code> guide plan creation, a discovered check,
+              result observations, cleanup and report reopening. Replace
+              <code>CLAIM_ID</code> with a planned claim. Install and build the
+              target before <code>up</code>; its runtime can differ from
+              Spyglass.
             </p>
             <div class="call">
               <pre><code>spyglass init --json</code></pre>
@@ -863,6 +887,14 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
             data-keys="up start create run plan binding profile baseline"
           >
             <h3><code>up</code></h3>
+            <p>
+              <code>repo</code>, <code>run</code>, <code>port</code>,
+              <code>web</code>, <code>api</code> and <code>evidence</code> are
+              reserved run values. Conflicting profile or CLI bindings fail
+              before allocation with <code>RESERVED_BINDING</code>. Use
+              <code>ownerPort</code> for an external port; <code>${port}</code>
+              is allocated by Spyglass.
+            </p>
             <pre
               class="usage"
             ><code>spyglass up [--run ID] [--profile PATH] [--binding NAME=VALUE] [--plan FILE] [--cite-gates-from RUN] [--warm [--seat SEAT]]</code></pre>
@@ -2187,6 +2219,36 @@ spyglass result set --gate GATE_NAME --outcome passed --step STEP_ID</code></pre
                   <td>
                     The command exits with usage/profile status and names the
                     invalid field. It does not launch the app.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Installation</td>
+                  <td>
+                    A local package includes private plans, run evidence or
+                    unrelated files.
+                  </td>
+                  <td>
+                    Package only the distributable runtime, schemas and public
+                    guidance. Build before packaging.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Setup</td>
+                  <td>
+                    A fresh operator has a profile but no plan or report
+                    procedure.
+                  </td>
+                  <td>
+                    init lists guessed fields and plan, check, cleanup and
+                    report commands. It starts nothing.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Setup</td>
+                  <td>A profile or CLI binding uses a reserved run value.</td>
+                  <td>
+                    up rejects it before allocation or readiness with
+                    RESERVED_BINDING. Use ownerPort for an external port.
                   </td>
                 </tr>
                 <tr>

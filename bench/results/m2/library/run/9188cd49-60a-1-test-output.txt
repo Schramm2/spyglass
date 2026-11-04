@@ -1,0 +1,181 @@
+stdout:
+test/colors.js
+✘ ✘ ✘ ✘ • ✘ •   (2 / 7)
+
+   FAIL  "kleur"
+    ~> colors enabled by default  (is)
+
+        ++true     (Expected)
+        --false    (Actual)
+        
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/colors.js:9:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:9
+
+
+   FAIL  "codes"
+    ~> matches expected  (is)
+
+        ++[0m~foobar~[0m    (Expected)
+        --~foobar~            (Actual)
+          ^^^^        ^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/colors.js:20:10)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:9
+
+
+   FAIL  "wrappings"
+    Expected values to be strictly equal:  (is)
+
+        ++[31m[1m~foo~[22m[39m    (Expected)
+        --~foo~                       (Actual)
+          ^^^^^^^^^     ^^^^^^^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/colors.js:27:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:9
+
+
+   FAIL  "integer"
+    ~> negative  (is)
+
+        ++[34m-1[39m  [string]  (Expected)
+        ---1            [number]  (Actual)
+        
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/colors.js:61:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:9
+
+
+   FAIL  "boolean"
+    Expected values to be strictly equal:  (is)
+
+        ++[31mfalse[39m  [string]   (Expected)
+        --false            [boolean]  (Actual)
+        
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/colors.js:99:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at async exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:33)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+
+test/index.js
+✘ ✘ ✘ ✘ ✘ ✘ ✘ •   (1 / 8)
+
+   FAIL  "kleur"
+    colors enabled by default  (ok)
+
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.ok (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:35:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/index.js:8:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+   FAIL  "codes"
+    ~> matches expected  (is)
+
+        ++[0m~foobar~[0m    (Expected)
+        --~foobar~            (Actual)
+          ^^^^        ^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/index.js:19:10)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+   FAIL  "chains"
+    Expected values to be strictly equal:  (is)
+
+        ++[31m[1m~foobar~[39m[22m    (Expected)
+        --~foobar~                       (Actual)
+          ^^^^^^^^^        ^^^^^^^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/index.js:26:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+   FAIL  "nested"
+    Expected values to be strictly equal:  (is)
+
+        ++[31mfoo·[33mbar[39m[31m·baz[39m    (Expected)
+        --foo·bar·baz                             (Actual)
+          ^^^^^    ^^^^^   ^^^^^^^^^^    ^^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/index.js:33:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+   FAIL  "integer"
+    ~> basic  (is)
+
+        ++[34m123[39m    (Expected)
+        --123              (Actual)
+          ^^^^^   ^^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/index.js:49:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+   FAIL  "partial require"
+    ~> red()  (is)
+
+        ++[31mfoo[39m    (Expected)
+        --foo              (Actual)
+          ^^^^^   ^^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/index.js:68:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+   FAIL  "named chains"
+    ~> c.red() – clean  (is)
+
+        ++[31mfoo[39m    (Expected)
+        --foo              (Actual)
+          ^^^^^   ^^^^^
+    at assert (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:31:8)
+    at Proxy.is (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/assert/index.js:39:2)
+    at Object.handler (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/test/index.js:93:9)
+    at Number.runner (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:92:16)
+    at exec (/private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/dist/index.js:147:39)
+    at async /private/tmp/spyglass-m2-kleur.pMPRlA/kleur/node_modules/uvu/bin.js:26:3
+
+
+
+  Total:     15
+  Passed:    3
+  Skipped:   0
+  Duration:  2.11ms
+
+
+stderr:

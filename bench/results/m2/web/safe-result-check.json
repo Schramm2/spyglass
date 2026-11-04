@@ -1,0 +1,1 @@
+{"schemaVersion":1,"ok":true,"status":"passed","run":"m2-web-safe","step":"301a8af9-957","data":{"checked":true,"valid":true,"recorded":false,"operator":"agent","claims":2,"gates":1,"controls":1,"resultPath":"/private/tmp/spyglass-m2-polka.dtXryw/polka/.spyglass/runs/m2-web-safe/spyglass/result.json","next":"spyglass result --run m2-web-safe"},"artifacts":[],"error":null}

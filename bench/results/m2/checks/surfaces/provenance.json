@@ -1,0 +1,21 @@
+{
+  "test": "agent-browser uses a fresh allowed session, retains visual proof, and protects login secrets",
+  "commit": null,
+  "run": "browser-proof",
+  "browserVersion": "agent-browser 0.38.2",
+  "screenshots": [
+    {
+      "path": "0d6fffa4-c29-1-proof-dashboard.png",
+      "sha256": "47fcbd61d0d7ed16cb486002b7a582ad8334716eb1f58fafea1e56498b7d2a61",
+      "kind": "image",
+      "step": "0d6fffa4-c29"
+    },
+    {
+      "path": "1e342574-561-1-proof-narrow-dashboard.png",
+      "sha256": "de0317b2a8a7089c6c0302e70cb42d905c2a75445ce6a90b2806b6b2e092284b",
+      "kind": "image",
+      "step": "1e342574-561"
+    }
+  ],
+  "repeat": "SPYGLASS_TEST_SURFACES=1 SPYGLASS_TEST_ARTIFACTS=/tmp/spyglass-e2e-proof node --test --test-concurrency=1 tests/e2e/surfaces.test.mjs"
+}

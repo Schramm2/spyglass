@@ -1,0 +1,40 @@
+{
+  "candidate": {
+    "commit": "e8bf2130637c3bc2284b89986a862abfe6f198e9",
+    "version": "1.3.1",
+    "trackedPatchSha256AtSourceCapture": "c9f7e53733db388442c6c247dafd0b899c546b94cc7afcd2c120fdb0ee12f9ce",
+    "trackedPatchSha256AfterCheckoutPack": "9c41b58d5a9dc2a058f254a6fa2a1c198396965f881c20209f2b366e7296c64f",
+    "trackedPatchSha256AtRetention": "27f8cd1b20fcbcfe347ff5d4ab3072275e11247b98d082cc76b5f0762dcb39b9",
+    "patchNote": "Concurrent landing/docs/index.html edits changed the tracked patch. Runtime inputs match the captured source copy; both independently built package archives are byte-identical. Retained patches are raw, not selected public evidence.",
+    "packageArchiveSha256": "edcd81f9f34bda4811b885ad96e26d82769cf4b0b2bd53f3290313de979ff784",
+    "installedCliSha256": "78b68c380450109398d67bb67a154cf7754843178e4cc18e3356c6de2b8524ac",
+    "installedDistManifestSha256": "5d15d3853c611eb0504834668421f5bca4e7e559ba25d7a5efc7058da1bf9593",
+    "untrackedPublicGuideSha256": {
+      "docs/adoption.md": "b77d9f0c9b40207fee818ca50e61a57bdf998c5a73b3161cce3f9c2f2c3d1ffd",
+      "docs/support.md": "6ea133b8428545fe757bc5038949bcf23c2699db0c1a3113ee9e6e582eb9ce3b"
+    }
+  },
+  "target": {
+    "url": "https://github.com/juliangruber/isarray",
+    "commit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+    "version": "2.0.5",
+    "existingCheck": [
+      "npm",
+      "run",
+      "tests-only"
+    ],
+    "testFileSha256": "f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a",
+    "candidateSourceHash": "ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131",
+    "faultSourceHash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685"
+  },
+  "tools": {
+    "platform": "macOS Darwin arm64",
+    "node": "v24.11.1",
+    "npm": "11.6.2",
+    "git": "2.56.0",
+    "spyglass": "1.3.1",
+    "tape": "5.6.1"
+  },
+  "operator": "agent",
+  "humanUse": "untested"
+}

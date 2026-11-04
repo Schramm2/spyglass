@@ -1,0 +1,29 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "detects-fault",
+      "failedRun": "guided-m2-fault",
+      "failedStep": "1e5de173-be5",
+      "restoredStep": "",
+      "observedFailure": "",
+      "observedPass": ""
+    }
+  ],
+  "claims": [
+    {
+      "id": "existing-check",
+      "outcome": "not run",
+      "steps": [],
+      "observed": "",
+      "artifacts": []
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.",
+    "Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.",
+    "The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.",
+    "Legacy browser compatibility, package publication, browser behavior and human use are untested."
+  ]
+}

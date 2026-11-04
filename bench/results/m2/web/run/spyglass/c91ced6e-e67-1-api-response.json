@@ -1,0 +1,35 @@
+{
+  "startedAt": "2026-11-04T13:50:46.879Z",
+  "completedAt": "2026-11-04T13:50:46.893Z",
+  "request": {
+    "method": "GET",
+    "url": "http://127.0.0.1:43187/health",
+    "headers": {
+      "accept": "application/json, text/plain;q=0.9, */*;q=0.8"
+    },
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "connection": "keep-alive",
+      "content-length": "2",
+      "date": "Wed, 04 Nov 2026 13:50:46 GMT",
+      "keep-alive": "timeout=5"
+    },
+    "body": "OK"
+  },
+  "assertions": [
+    {
+      "id": "status=200",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "id": "body-contains OK",
+      "ok": true,
+      "detail": "found"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "detects-fault",
+      "failedRun": "final-m2-fault",
+      "failedStep": "74e04b43-da2",
+      "restoredStep": "c7845e28-498",
+      "observedFailure": "The always-false export failed the existing truthy array assertions 1, 14, 15 and 28. Tape ran 28 assertions: 24 passed and 4 failed; child exit 1, CHECK_FAILED. The declared not ok 1 should be truthy message is present.",
+      "observedPass": "The original export passed the same npm run tests-only check: all 28 assertions passed, including 1, 14, 15 and 28; child exit 0. No skips were reported."
+    }
+  ],
+  "claims": [
+    {
+      "id": "existing-check",
+      "outcome": "passed",
+      "steps": [
+        "c7845e28-498"
+      ],
+      "observed": "The unchanged test.js ran both named cases under Tape. All 28 existing assertions passed with no skips and child exit 0. The retained fault run failed 4 array assertions under the same check and plan.",
+      "artifacts": [
+        "c7845e28-498-1-verify-output.txt"
+      ]
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.",
+    "Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.",
+    "The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.",
+    "Legacy browser compatibility, package publication, browser behavior and human use are untested."
+  ]
+}

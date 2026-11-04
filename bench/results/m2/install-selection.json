@@ -1,0 +1,23 @@
+{
+  "method": "Switch isolated prefixes through PATH; read public schema, then restore baseline. Both unreleased archives report 1.3.1; CLI hashes distinguish builds. No active-run migration tested.",
+  "checks": [
+    {
+      "selection": "baseline",
+      "exitCode": 0,
+      "profileSchema": true,
+      "cliSha256": "896d88f6a542d378e8144dc4cd30682035f2b038057c1b17fa2dcd970146fad2"
+    },
+    {
+      "selection": "candidate",
+      "exitCode": 0,
+      "profileSchema": true,
+      "cliSha256": "78b68c380450109398d67bb67a154cf7754843178e4cc18e3356c6de2b8524ac"
+    },
+    {
+      "selection": "baseline",
+      "exitCode": 0,
+      "profileSchema": true,
+      "cliSha256": "896d88f6a542d378e8144dc4cd30682035f2b038057c1b17fa2dcd970146fad2"
+    }
+  ]
+}

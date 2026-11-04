@@ -1,0 +1,15 @@
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:52:52Z
++ env -u SPYGLASS_RUN -u SPYGLASS_PROFILE /bin/bash --noprofile --norc -c 'export PATH=/tmp/spyglass-m2-polka.dtXryw/tool-bin:/usr/bin:/bin:/usr/sbin:/sbin; set -ex; cd /tmp/spyglass-m2-polka.dtXryw/polka; spyglass status --run m2-web-safe --json > ../safe-reopened-status-corrected.json; spyglass report --run m2-web-safe --json > ../safe-reopened-report-corrected.json; node --input-type=module -e '\''import fs from "node:fs"; import assert from "node:assert/strict"; const f=JSON.parse(fs.readFileSync("../safe-finish.json")); const r=JSON.parse(fs.readFileSync("../safe-reopened-report-corrected.json")); const s=JSON.parse(fs.readFileSync("../safe-reopened-status-corrected.json")); assert.equal(r.data.complete,true); assert.equal(r.data.status,"passed"); assert.equal(s.data.state,"stopped"); const h=fs.readFileSync(f.data.report.reportPath,"utf8"); for(const v of ["health-ready","local-page","wrong-owner","c36cf8b5d1a57164e64fdd7d4e0d0f80ab262dc0"]) assert.ok(h.includes(v),v); console.log(JSON.stringify({newShell:true,appStopped:true,originalHtmlRead:true,reportComplete:true,status:r.data.status,htmlBytes:h.length,reportPath:r.data.reportPath}));'\'''
++ cd /tmp/spyglass-m2-polka.dtXryw/polka
++ spyglass status --run m2-web-safe --json
++ spyglass report --run m2-web-safe --json
++ node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const f=JSON.parse(fs.readFileSync("../safe-finish.json")); const r=JSON.parse(fs.readFileSync("../safe-reopened-report-corrected.json")); const s=JSON.parse(fs.readFileSync("../safe-reopened-status-corrected.json")); assert.equal(r.data.complete,true); assert.equal(r.data.status,"passed"); assert.equal(s.data.state,"stopped"); const h=fs.readFileSync(f.data.report.reportPath,"utf8"); for(const v of ["health-ready","local-page","wrong-owner","c36cf8b5d1a57164e64fdd7d4e0d0f80ab262dc0"]) assert.ok(h.includes(v),v); console.log(JSON.stringify({newShell:true,appStopped:true,originalHtmlRead:true,reportComplete:true,status:r.data.status,htmlBytes:h.length,reportPath:r.data.reportPath}));'
+{"newShell":true,"appStopped":true,"originalHtmlRead":true,"reportComplete":true,"status":"passed","htmlBytes":591044,"reportPath":"/private/tmp/spyglass-m2-polka.dtXryw/polka/.spyglass/runs/m2-web-safe/spyglass/f43811af-7f8-1-index.html"}
++ echo NEW_SHELL_EXIT=0
+NEW_SHELL_EXIT=0
++ /usr/sbin/lsof -nP -iTCP:43187 -sTCP:LISTEN
++ echo LISTENER_CHECK_EXIT=1
+LISTENER_CHECK_EXIT=1
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:52:52Z

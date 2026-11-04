@@ -2,6 +2,16 @@
   "name": "@schramm2/spyglass",
   "version": "1.3.1",
   "private": true,
+  "files": [
+    "dist/",
+    "schemas/",
+    "skills/",
+    "docs/adoption.md",
+    "docs/support.md",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "description": "Verify code changes with real tools and keep the evidence, for coding agents and the people who review their work.",
   "keywords": [
     "verification",
@@ -31,6 +41,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "prepack": "npm run build",
     "build": "tsc --noEmit && node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && esbuild src/*.ts --bundle --splitting --format=esm --platform=node --packages=external --external:./browser-proxy.js --outdir=dist --entry-names='[name]' --chunk-names='chunks/[name]-[hash]' && esbuild src/browser.ts --bundle --format=esm --platform=node --external:./browser-proxy.js --external:./state.js --external:./errors.js --outfile=dist/browser.js && node dist/export-schemas.js",
     "test": "npm run build && node --test --test-concurrency=1 tests/e2e/*.test.mjs",
     "check": "npm run build && npm test",

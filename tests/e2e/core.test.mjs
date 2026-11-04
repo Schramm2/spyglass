@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 import {
   assertEnvelope,
+  REPO_ROOT,
   baseProfile,
   git,
   makeRepo,
@@ -89,6 +90,20 @@ test("init proposes a profile with discovery provenance without starting the app
     assert.match(profileText, /"version"\s*:\s*1/);
     assert.match(profileText, /package\.json/);
     assert.match(profileText, /verify/);
+    assert.deepEqual(
+      result.data.setup.reviewFields,
+      ["app", "evidence", "launch"],
+      "setup must identify guesses that need review before a run",
+    );
+    assert.equal(
+      result.data.setup.commands.check,
+      "spyglass check verify --run adoption --claim CLAIM_ID --json",
+    );
+    assert.match(
+      result.data.setup.commands.up,
+      /--plan verification-plan\.json/,
+    );
+    assert.match(result.data.setup.commands.reopen, /report --run adoption/);
     assert.equal(
       result.run,
       null,
@@ -97,6 +112,50 @@ test("init proposes a profile with discovery provenance without starting the app
   } finally {
     await removeRepo(dir);
   }
+});
+
+test("local installation packages contain only distributable runtime and guidance", async () => {
+  const packed = await spawnCapture(
+    "npm",
+    ["pack", "--dry-run", "--ignore-scripts", "--json"],
+    { cwd: REPO_ROOT },
+  );
+  assert.equal(packed.code, 0, packed.stderr);
+  const [archive] = JSON.parse(packed.stdout);
+  const allowedRoots = new Set([
+    "dist",
+    "schemas",
+    "skills",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+  ]);
+  const unexpected = archive.files
+    .map((file) => file.path)
+    .filter(
+      (path) =>
+        !allowedRoots.has(path.split("/")[0]) &&
+        !["docs/adoption.md", "docs/support.md"].includes(path),
+    );
+  assert.deepEqual(
+    unexpected,
+    [],
+    "local installation must not distribute private plans, evidence or unrelated checkout files",
+  );
+  for (const path of [
+    "dist/cli.js",
+    "dist/supervisor.js",
+    "dist/browser-proxy.js",
+    "schemas/profile.schema.json",
+    "skills/spyglass/SKILL.md",
+    "docs/adoption.md",
+    "docs/support.md",
+  ])
+    assert.ok(
+      archive.files.some((file) => file.path === path),
+      `package needs ${path}`,
+    );
 });
 
 test("up, status and down retain one run record and stop only its app", async () => {
@@ -2715,6 +2774,53 @@ test("a state permission failure is distinct from an active run lock", async () 
     if (stateDir) await chmod(stateDir, 0o700);
     if (run) await runCli(dir, ["down", "--run", run, "--json"]);
     await removeRepo(dir);
+  }
+});
+
+test("reserved run bindings are rejected before external readiness starts", async () => {
+  for (const fromCli of [false, true]) {
+    const dir = await makeRepo({
+      profile: baseProfile({
+        launch: {
+          mode: "external",
+          doctor: [
+            process.execPath,
+            "-e",
+            "require('node:fs').writeFileSync('owner-started', 'unexpected')",
+          ],
+        },
+        web: undefined,
+        api: undefined,
+        bindings: fromCli ? {} : { port: "43187" },
+      }),
+    });
+    try {
+      const result = assertEnvelope(
+        await runCli(dir, [
+          "up",
+          "--run",
+          "reserved",
+          "--json",
+          ...(fromCli ? ["--binding", "port=43187"] : []),
+        ]),
+        { ok: false, code: 2 },
+      );
+      assert.equal(result.error.code, "RESERVED_BINDING");
+      assert.match(result.error.next, /ownerPort/);
+      assert.equal(
+        result.run,
+        null,
+        "invalid bindings must not allocate a run",
+      );
+      assert.equal(
+        existsSync(join(dir, "owner-started")),
+        false,
+        "owner readiness must not execute",
+      );
+    } finally {
+      await runCli(dir, ["down", "--run", "reserved", "--json"]);
+      await removeRepo(dir);
+    }
   }
 });
 

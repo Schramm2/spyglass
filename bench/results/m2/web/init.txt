@@ -1,0 +1,28 @@
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:39:42Z
++ cd /tmp/spyglass-m2-polka.dtXryw/polka
++ find . -name AGENTS.md -o -name GLOSSARY.md -o -name GLOSSARY-MAP.md
++ find examples/with-sirv/public -type f
+examples/with-sirv/public/index.html
+examples/with-sirv/public/style.css
+examples/with-sirv/public/app.js
++ ls tests
+polka.js
+send-type.js
+send.js
+url.js
+util
++ /tmp/spyglass-m2-polka.dtXryw/current-tool/node_modules/.bin/spyglass init --help
+Usage: spyglass init [--force]
+
+Read repository verification guidance and task runners. Write spyglass.json with observed and guessed fields. Review owner setup, guessed readiness and addresses before up. No app starts. --force prints changed fields before replacement.
+
+Example: spyglass init --json
+
+Options: --json, --help. Run selection: --run ID or SPYGLASS_RUN.
+Exit codes: 0 success; 1 failed verification; 2 invalid input; 3 environment failure.
++ /tmp/spyglass-m2-polka.dtXryw/current-tool/node_modules/.bin/spyglass init --json
+{"schemaVersion":1,"ok":true,"status":"passed","run":null,"step":null,"data":{"profile":"spyglass.json","proposal":{"version":1,"app":"polka","evidence":".spyglass/runs/${run}","launch":{"mode":"none"},"checks":{"test":{"command":["npm","run","test"],"timeoutMs":300000}},"provenance":{"app":{"status":"guessed","source":"repository directory name"},"version":{"status":"observed","source":"Spyglass schema version 1"},"evidence":{"status":"guessed","source":"default ignored run evidence location"},"launch":{"status":"guessed","source":"no persistent process discovered"},"checks":{"status":"observed","source":"repository task runners"},"checks.test":{"status":"observed","source":"package.json scripts.test"}}},"difference":null,"discovery":[{"path":"package.json","sha256":"c0b8d8a8c7f13fb0d438d2714a7bf87b39fe61cea040ac77b13c5563647b3abe","reviewRequired":true},{"path":"README.md","sha256":"4e62e7ca4c9a62f3f79ccc70dccf00900a1afcfc772d73e735168e82de56a61c","reviewRequired":true}],"capabilities":{"ui":{"available":false,"tool":"agent-browser","testedVersion":"0.38.2"},"api":{"available":false,"tool":"Node fetch"},"db":{"available":false,"tool":"node-postgres"},"compose":{"available":false,"tool":"docker compose"},"check":{"available":true,"names":["test"]},"exec":{"available":true},"skill":null,"features":null},"guidance":[],"next":"Review guessed fields and the existing verification skill; add .spyglass/ to .gitignore, then run spyglass up."},"artifacts":[],"error":null}
++ /tmp/spyglass-m2-polka.dtXryw/current-tool/node_modules/.bin/spyglass schema profile
++ /tmp/spyglass-m2-polka.dtXryw/current-tool/node_modules/.bin/spyglass schema plan
++ /tmp/spyglass-m2-polka.dtXryw/current-tool/node_modules/.bin/spyglass ui --help --json

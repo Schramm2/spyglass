@@ -6,8 +6,16 @@ retained evidence. Dates and version numbers are assigned at release time.
 
 ## Product direction
 
-Help an agent or person verify a code change with less work, then let another
-operator inspect the proof without the original conversation or shell.
+Help coding agents verify their changes with real tools, less repeated work
+and retained proof. Another operator must be able to inspect that proof
+without the original conversation or shell.
+
+Spyglass is agent-first. Judge improvements by verification quality, operator
+tool calls, setup repairs and time to equal proof. Keep coverage, controls,
+source identity and cleanup intact when reducing work. Human trials are not
+planned for the current milestones and are not a delivery requirement.
+Readable reports remain useful for inspection, but human adoption is not the
+current target.
 
 Keep the boundary clear: Spyglass records and validates mechanical facts.
 The operator selects coverage, judges behavior and inspects images. More
@@ -33,13 +41,13 @@ release: see [operator comparison](operator-comparison.md).
 
 ## Priority order
 
-| Priority | Milestone                             | Status        | Depends on                           |
-| -------- | ------------------------------------- | ------------- | ------------------------------------ |
+| Priority | Milestone                             | Status            | Depends on                           |
+| -------- | ------------------------------------- | ----------------- | ------------------------------------ |
 | Done     | M1. Prove the current workflow        | Done, with limits | Current CLI and public fixtures      |
-| Now      | M2. Reduce first-adoption work        | Ready to start | M1 findings; fresh adoption attempts |
-| Next     | M3. Support review and CI             | Proposed      | M1; a repeatable adoption recipe     |
-| Later    | M4. Expand from repeated adapter gaps | Demand-led    | Evidence from adoption               |
-| Later    | M5. Evaluate shared evidence services | Not committed | Demonstrated team needs after M3     |
+| Done     | M2. Reduce first-adoption work        | Done, with limits | M1 findings; fresh adoption attempts |
+| Now      | M3. Support review and CI             | Proposed          | M1; a repeatable adoption recipe     |
+| Later    | M4. Expand from repeated adapter gaps | Demand-led        | Evidence from adoption               |
+| Later    | M5. Evaluate shared evidence services | Not committed     | Demonstrated team needs after M3     |
 
 Independent discovery can overlap. Do not use this order to delay a safety
 fix. Record scope changes and their reasons here.
@@ -161,7 +169,7 @@ remains visible; it is not a reason to weaken completion rules.
 
 ## M2. Reduce first-adoption work
 
-Observe fresh operators in repositories outside the original pilots. Measure
+Observe fresh agent operators in repositories outside the original pilots. Measure
 time to the first useful report, setup repairs and undocumented help.
 
 - Improve `init` and repair guidance from observed failures.
@@ -171,10 +179,27 @@ time to the first useful report, setup repairs and undocumented help.
 - Evaluate versioned installation and upgrade paths. npm publication is a
   separate approval, not an action authorized by this roadmap.
 
-**Completion:** a fresh operator installs Spyglass, adopts an existing check,
-records an intended failure and restored pass, cleans up and reopens the
-report without undocumented help. Record observed human use separately from
-agent use.
+**Completion:** a fresh agent operator installs Spyglass, adopts an existing
+check, records an intended failure and restored pass, cleans up and reopens
+the report without undocumented help. No human trial is required.
+
+**M2 status: done, with limits for agent adoption.** The
+[M2 adoption record](adoption-m2.md) retains baseline attempts in two public
+repositories and a fresh delivered-candidate trial in a third. The fresh
+operator installed the candidate, adopted an existing check, detected an
+intended failure, restored the same expectations, cleaned up and reopened the
+complete report without undocumented product help. Human use remains untested
+and is outside this milestone's delivery scope.
+
+The [adoption recipes](adoption.md) cover existing checks, an isolated web app
+and a repository-owned installation or library host. The
+[support guide](support.md) states tested configurations and unverified
+platforms. Observed failures led to first-run `init` guidance, early reserved
+binding rejection, and built local archives with a public-file allowlist.
+Pinned source and isolated-prefix upgrade/rollback paths were evaluated;
+npm publication remains disabled. The stable build passed 89 core and 25
+real-surface E2E checks. Evidence, assistance and timing limits are explicit
+in the record. This is not a general speed or human-usability claim.
 
 ## M3. Support review and CI
 

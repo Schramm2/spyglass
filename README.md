@@ -8,8 +8,9 @@
   <img src="https://img.shields.io/badge/node-%3E%3D24-339933.svg" alt="Node.js 24+">
 </p>
 
-Spyglass is a command-line tool for coding agents and the people who review
-their work. It connects browser actions, HTTP calls, database reads and
+Spyglass is an agent-first command-line tool that helps coding agents verify
+their work with real tools and less repeated setup. It connects browser
+actions, HTTP calls, database reads and
 repository checks to one **run**. Each run records its source identity, every
 attempt (failed attempts too) and its artifacts. The evidence stays after
 cleanup, so another agent or person can inspect the result later without the
@@ -61,6 +62,8 @@ These tools are necessary only for some surfaces:
 | A PostgreSQL database                                                 | Database reads (`db`). The driver is included.                                        |
 
 Spyglass does not install tools, fetch secrets or start your app during `init`.
+See [platform and external-tool support](docs/support.md) for tested
+configurations and unverified platforms.
 
 ## Installation
 
@@ -75,11 +78,22 @@ npm link
 spyglass --version
 ```
 
+For an isolated prefix, a local archive, upgrades and rollback, see
+[installation and version selection](docs/adoption.md#install-and-keep-a-version).
+Local `npm pack` builds the CLI and includes only the runtime, schemas and
+public guidance. It excludes local plans, run evidence and unrelated files.
+This does not authorize npm publication.
+
 ## Quick start
 
 The [terminal quickstart](docs/quickstart.md) runs a local demo app. It records
 a deliberate failure and a passing check, and keeps the report after cleanup.
 It takes approximately five minutes and uses no paid services.
+
+For your own repository, use the complete [adoption recipes](docs/adoption.md):
+an existing suite or CLI, an isolated web app, or a repository-owned
+installation or library host. Each recipe covers a plan, intended failure,
+restored pass, cleanup and report reopening.
 
 In your own repository, the workflow is:
 
@@ -104,8 +118,8 @@ Add `.spyglass/` to your `.gitignore`. It holds the evidence folder.
 
 `up --plan` writes a pending result file and prints its path. Run each step
 with `--claim ID`: when the step passes, Spyglass adds its step ID and its
-artifact paths to that claim in the pending file. You write only what a person
-must judge: what you observed and the outcome of each claim, with
+artifact paths to that claim in the pending file. You write only what the
+operator must judge: what you observed and the outcome of each claim, with
 `spyglass result set`. Check the file with `spyglass result --check`. It lists
 every finding at once in `data.findings`, and each finding has a `repair`. Then
 record it with `spyglass result`, which reads the pending file when you give no
@@ -352,7 +366,11 @@ result.
 
 `spyglass init` writes a **profile** (`spyglass.json`). It contains the tools,
 commands, bindings and evidence rules for one repository. Review the guessed
-fields before you run `up`. See the [example profile](examples/demo.profile.json)
+fields before you run `up`. The `init` output includes `setup.reviewFields`,
+`setup.prerequisites`, `setup.commands` and `setup.notes`. These name the
+plan, a discovered check, result validation, cleanup and report reopening.
+Replace `CLAIM_ID` with a claim from your plan; write observations with
+`result set` after you read the evidence. See the [example profile](examples/demo.profile.json)
 and the [example plan](examples/demo.plan.json).
 
 The JSON schemas are in [`schemas/`](schemas). You can also print them:
@@ -376,7 +394,10 @@ A profile selects one lifecycle mode:
 For a long command, use `spyglass exec --timeout-ms 900000 --run ID -- COMMAND`.
 The default is 300 seconds; the maximum is 24 hours. The selected deadline is
 retained with the result. CLI binding overrides are retained with their resolved
-values, including bindings added only on the command line.
+values, including bindings added only on the command line. The names `repo`,
+`run`, `port`, `web`, `api` and `evidence` are reserved run values. `up` rejects
+conflicting bindings before allocation with `RESERVED_BINDING`. Use `ownerPort`
+for a repository-owned port; `${port}` is allocated by Spyglass.
 
 ### Credentials
 
@@ -449,8 +470,10 @@ back-merges.
 See the [product roadmap](docs/roadmap.md) for priorities, completion checks
 and the next development task. The first operator comparison and its
 [API read-after-write repair](docs/operator-comparison-m1.2.md) are complete,
-with limits. The next milestone is to reduce first-adoption work through
-fresh adoption attempts.
+with limits. [First adoption](docs/adoption-m2.md) now has retained agent
+trials, complete recipes and observed setup repairs. Human trials are not
+planned or required for delivery; the current target is more effective agent
+verification. The next milestone is review and CI support.
 
 ## Contributing
 

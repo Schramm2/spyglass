@@ -1,0 +1,81 @@
++ export PATH=/tmp/spyglass-m2-polka.dtXryw/tool-bin:/usr/bin:/bin:/usr/sbin:/sbin
++ PATH=/tmp/spyglass-m2-polka.dtXryw/tool-bin:/usr/bin:/bin:/usr/sbin:/sbin
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:50:45Z
++ cd /tmp/spyglass-m2-polka.dtXryw/polka
++ spyglass --help
++ spyglass ui --help --json
++ git diff --check
++ cd examples/with-sirv
++ echo 83097
++ PORT=43187
++ nohup npm start
+++ seq 1 50
++ for n in '$(seq 1 50)'
++ curl --fail --silent http://127.0.0.1:43187/health
++ sleep 0.1
++ for n in '$(seq 1 50)'
++ curl --fail --silent http://127.0.0.1:43187/health
+OK+ break
++ lsof -tiTCP:43187 -sTCP:LISTEN
++ cd ../..
++ spyglass up --run m2-web-safe --plan verification-plan.json --warm --seat guest --json
++ echo UP_EXIT=0
+UP_EXIT=0
++ spyglass doctor --run m2-web-safe --json
++ echo DOCTOR_EXIT=0
+DOCTOR_EXIT=0
++ spyglass api GET /health --expect 200 --expect-body-contains OK --claim health-ready --run m2-web-safe --json
++ echo BASELINE_EXIT=0
+BASELINE_EXIT=0
++ spyglass check --gates --run m2-web-safe --json
++ echo GATE_EXIT=0
+GATE_EXIT=0
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:50:47Z
+++ head -1 /tmp/spyglass-m2-polka.dtXryw/owner.pid
++ kill 83120
++ cd examples/with-morgan
++ echo 83288
++ PORT=43187
++ nohup npm start
+++ seq 1 50
++ for n in '$(seq 1 50)'
++ curl --fail --silent http://127.0.0.1:43187/
+/bin/bash: line 1: 83097 Terminated: 15          PORT=43187 nohup npm start > /tmp/spyglass-m2-polka.dtXryw/safe-owner-start.log 2>&1  (wd: /tmp/spyglass-m2-polka.dtXryw/polka/examples/with-sirv)
++ sleep 0.1
++ for n in '$(seq 1 50)'
++ curl --fail --silent http://127.0.0.1:43187/
+Index+ break
++ lsof -tiTCP:43187 -sTCP:LISTEN
++ cd ../..
++ spyglass api GET /health --expect 200 --expect-body-contains OK --control wrong-owner:failed --run m2-web-safe --json
++ echo INTENDED_FAILURE_EXIT=1
+INTENDED_FAILURE_EXIT=1
+++ head -1 /tmp/spyglass-m2-polka.dtXryw/owner.pid
++ kill 83303
++ cd examples/with-sirv
++ echo 83318
++ PORT=43187
++ nohup npm start
+++ seq 1 50
++ for n in '$(seq 1 50)'
++ curl --fail --silent http://127.0.0.1:43187/health
+/bin/bash: line 1: 83288 Terminated: 15          PORT=43187 nohup npm start > /tmp/spyglass-m2-polka.dtXryw/safe-owner-control.log 2>&1  (wd: /tmp/spyglass-m2-polka.dtXryw/polka/examples/with-morgan)
++ sleep 0.1
++ for n in '$(seq 1 50)'
++ curl --fail --silent http://127.0.0.1:43187/health
+OK+ break
++ lsof -tiTCP:43187 -sTCP:LISTEN
++ cd ../..
++ spyglass api GET /health --expect 200 --expect-body-contains OK --control wrong-owner:restored --run m2-web-safe --json
++ echo RESTORED_EXIT=0
+RESTORED_EXIT=0
++ spyglass ui --seat guest verify --open / --expect 'title=Example: Sirv' --expect count=#app=1 --proof local-page --viewport 1280x800 --claim local-page --run m2-web-safe --json
++ echo BROWSER_EXIT=0
+BROWSER_EXIT=0
++ spyglass api GET /style.css --expect 200 --expect-body-contains '#app' --claim local-page --run m2-web-safe --json
++ echo STYLESHEET_EXIT=0
+STYLESHEET_EXIT=0
++ date -u +%Y-%m-%dT%H:%M:%SZ
+2026-11-04T13:50:48Z
