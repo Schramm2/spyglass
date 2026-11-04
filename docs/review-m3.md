@@ -133,6 +133,20 @@ script tags; the assertion is now case-insensitive with mixed-case input.
 This was a test-coverage finding, not evidence of a production sanitization
 bypass. Initial archives and review findings remain unchanged.
 
+## Second hosted artifact review
+
+[Run 41861617920](https://github.com/Schramm2/spyglass/actions/runs/41861617920)
+tested candidate `1c0cbfc4d98d76c3ee97f2bd5da5051a443ba3a9` through merge
+checkout `f045ade58d415b0eef10a78109c93ba603dea868`. The artifact-only reviewer
+repeated the 13-artifact/77-reference checksum check and offline page review.
+It confirmed all three HTML findings fixed, but found that the compact
+Markdown still used the ambiguous unvalidated failed/restored labels. The
+existing incomplete-report E2E check then failed on its missing validated
+label before the Markdown repair. The generated summary now labels those
+submitted-result fields as validated too. This changes no control-validation
+rule or recorded-attempt status. The [unchanged second review and artifacts](../bench/results/m3/hosted/41861617920/)
+retain that intermediate finding.
+
 ## Remaining real-PR acceptance
 
 Delivery authority was granted. For the repaired candidate:

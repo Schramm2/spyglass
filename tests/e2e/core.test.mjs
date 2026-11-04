@@ -808,6 +808,8 @@ test("an incomplete claim matrix produces a readable report and stays incomplete
       "interrupted review identifies the retained failed attempt",
     );
     assert.match(review, /Recorded attempt/);
+    assert.match(review, /Validated intended failure: run/);
+    assert.match(review, /Validated restored pass: step not recorded/);
     const html = await readFile(report.data.reportPath, "utf8");
     assert.deepEqual(
       {

@@ -1007,8 +1007,8 @@ function renderReview(summary: Record<string, unknown>, ctx: Context): string {
           row.command
             ? `  Command: ${text(JSON.stringify(row.command))}; expected failure: ${text(JSON.stringify(row.failure))}`
             : `  Assertion: ${text(row.assertion)}`,
-          `  Intended failure: run ${text((row.baseline as Record<string, unknown> | undefined)?.run ?? summary.run)}, step ${text(row.failedStep)} — ${text(row.observedFailure)}`,
-          `  Restored pass: step ${text(row.restoredStep)} — ${text(row.observedPass)}`,
+          `  Validated intended failure: run ${text((row.baseline as Record<string, unknown> | undefined)?.run ?? summary.run)}, step ${text(row.failedStep)} — ${text(row.observedFailure)}`,
+          `  Validated restored pass: step ${text(row.restoredStep)} — ${text(row.observedPass)}`,
           ...(row.recordedAttempts as Array<Record<string, unknown>>).map(
             (attempt) =>
               `  Recorded attempt (not validated control proof): ${text(attempt.state)}, step ${text(attempt.step)}, status ${text(attempt.status)}`,
