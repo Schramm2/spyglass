@@ -78,6 +78,7 @@ jobs:
           node --test --test-concurrency=1 \
             --test-reporter=tap --test-reporter-destination="$RUNNER_TEMP/e2e/default.tap" \
             --test-reporter=junit --test-reporter-destination="$RUNNER_TEMP/e2e/default.xml" \
+            --test-reporter=spec --test-reporter-destination=stdout \
             tests/e2e/*.test.mjs
       - name: Retain default results
         if: always()
@@ -103,6 +104,33 @@ jobs:
       - run: npm ci
       - run: npm install --global agent-browser@0.38.2
       - run: agent-browser install --with-deps
+      - name: Allow installed Chromium to use its sandbox
+        # Ubuntu 24.04 restricts user namespaces for downloaded Chrome builds.
+        # Follow Chromium's AppArmor option 2, with exact installed binary paths:
+        # https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
+        run: |
+          cache="$HOME/.agent-browser/browsers"
+          mapfile -d '' browsers < <(find "$cache" -maxdepth 3 -type f -executable \
+            \( -path "$cache/chrome-*/chrome" -o -path "$cache/chrome-*/chrome-linux64/chrome" \) -print0)
+          if (( ${#browsers[@]} == 0 )); then
+            echo '::error::agent-browser install produced no supported Chromium executable'
+            exit 1
+          fi
+          profile="$RUNNER_TEMP/spyglass-ci-chromium.apparmor"
+          printf 'abi <abi/4.0>,\ninclude <tunables/global>\n' > "$profile"
+          for index in "${!browsers[@]}"; do
+            binary="$(realpath "${browsers[$index]}")"
+            case "$binary" in
+              "$cache"/*) ;;
+              *) echo '::error::Chromium executable resolved outside its install cache'; exit 1 ;;
+            esac
+            printf 'profile spyglass-ci-chromium-%s "%s" flags=(unconfined) {\n  userns,\n}\n' \
+              "$index" "$binary" >> "$profile"
+          done
+          sudo install -m 0644 "$profile" /etc/apparmor.d/spyglass-ci-chromium
+          sudo apparmor_parser --replace /etc/apparmor.d/spyglass-ci-chromium
+          # Keep the global restriction enabled; only these executables are allowed.
+          sysctl kernel.apparmor_restrict_unprivileged_userns
       - name: Check real tools
         run: |
           agent-browser --version
@@ -118,6 +146,7 @@ jobs:
           node --test --test-concurrency=1 \
             --test-reporter=tap --test-reporter-destination="$RUNNER_TEMP/e2e/surfaces.tap" \
             --test-reporter=junit --test-reporter-destination="$RUNNER_TEMP/e2e/surfaces.xml" \
+            --test-reporter=spec --test-reporter-destination=stdout \
             tests/e2e/surfaces.test.mjs
       - name: Retain surface results and safe visual proof
         if: always()

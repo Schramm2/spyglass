@@ -36,11 +36,27 @@ no changed-path filter that can silently omit a surface check.
 code scanning; a successful analysis job means the analysis ran, not that the
 code has no security defects. Review new findings as well as job status.
 
-Each E2E job uploads TAP and JUnit output, including on failure when files
-exist. The surface job also uploads the checked visual journey's self-contained
+Each E2E job prints test results in its job log and uploads TAP and JUnit
+output, including on failure when files exist. The surface job also uploads the checked visual journey's self-contained
 report, two screenshots and provenance. These artifacts have 14-day retention.
 They are examples of the actual suite's retained proof, not a report for every
 test. A failure before the visual journey completes can leave only test logs.
+
+## Ubuntu browser setup
+
+Ubuntu 24.04 restricts unprivileged user namespaces for downloaded Chromium
+builds. The real-surface job installs an AppArmor profile for only the exact
+Chromium executables that the pinned `agent-browser` installer put in its
+cache. It grants those binaries `userns` access, following Chromium's
+[AppArmor guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md).
+The global namespace restriction and Chromium sandbox stay enabled. The
+profile exists only on the disposable hosted runner; CI does not change a
+contributor's machine or pass `--no-sandbox`.
+
+A `No usable sandbox` error is a runner setup failure, not a reason to skip
+browser checks. Inspect the install path and profile-loading step first.
+The first hosted attempts exposed this failure and their TAP/JUnit artifacts
+remain in the PR run history.
 
 ## Review a run
 
