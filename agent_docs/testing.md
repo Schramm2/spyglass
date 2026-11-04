@@ -38,6 +38,13 @@ beside the temporary repository, so run state never touches your own
 `${port}` binding, a web and API origin, a source scope and a browser
 allowlist. Override fields with its argument.
 
+Direct browser-session probes must address the same run-owned daemon as
+Spyglass. The `browserActive` probe in `tests/e2e/surfaces.test.mjs` clears
+inherited `XDG_RUNTIME_DIR` and `AGENT_BROWSER_SOCKET_DIR` overrides: Spyglass
+isolates its browser environment and uses the HOME socket root. A probe of
+another socket directory can report an active browser as absent and make a
+cleanup assertion pass for the wrong reason.
+
 ## Requirements
 
 | Suite                | Needs                                                                                                                                                                                |

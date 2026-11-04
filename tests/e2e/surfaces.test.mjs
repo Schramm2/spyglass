@@ -767,15 +767,26 @@ async function browserRunning(session) {
 }
 
 async function browserActive(session) {
-  const info = await spawnCapture("agent-browser", [
-    "--namespace",
-    session.namespace,
-    "--session",
-    session.name,
-    "--json",
-    "session",
-    "info",
-  ]);
+  const info = await spawnCapture(
+    "agent-browser",
+    [
+      "--namespace",
+      session.namespace,
+      "--session",
+      session.name,
+      "--json",
+      "session",
+      "info",
+    ],
+    {
+      // Spyglass excludes host socket overrides from its browser environment.
+      // Probe the run daemon's HOME-based socket root, not the host's root.
+      env: {
+        XDG_RUNTIME_DIR: undefined,
+        AGENT_BROWSER_SOCKET_DIR: undefined,
+      },
+    },
+  );
   return JSON.parse(info.stdout).data.active;
 }
 
