@@ -1,11 +1,11 @@
 # M3 review and CI record
 
 **Status: M3 complete, with the limits below.**
-[PR #28](https://github.com/Schramm2/spyglass/pull/28) is open into `dev` and
-remains unmerged. The closing implementation/test candidate passed required
-CI, and its downloaded report artifacts passed independent offline review.
-The closing follow-up changes documentation and retained evidence only.
-No release, npm publication or merge is claimed.
+[PR #28](https://github.com/Schramm2/spyglass/pull/28) targets `dev`; the PR
+records its current merge state. The closing implementation/test candidate
+passed required CI, and its downloaded report artifacts passed independent
+offline review. The closing follow-up changes documentation and retained
+evidence only. No release or npm publication is claimed.
 
 ## Candidate and scope
 
@@ -74,8 +74,9 @@ Retained public output is indexed under
   (89 core checks and 25 real Chromium/HTTP/PostgreSQL/Compose checks).
 - `npm run format:check`, `actionlint .github/workflows/ci.yml` and
   `git diff --check` passed. A TruffleHog filesystem scan of the intended
-  changes found zero verified, unknown or unverified secrets. The pre-push
-  Git-history scan remains a delivery check after a commit exists.
+  changes found zero verified, unknown or unverified secrets. These initial
+  working-tree checks preceded the pre-push Git-history scans, which also
+  passed before the delivered commits were pushed.
 - The public recipe's complete path exited 0. Its interrupted path exited 1,
   retained the intended failed assertion, cleaned up and generated an
   incomplete report. The interruption marker was explicit; no unexpected
@@ -215,8 +216,12 @@ previous failed surface check, which remains in the third record.
 
 This meets M3's real-PR/artifact-review completion check. The final evidence
 follow-up does not change the verified implementation or owning E2E checks.
-Required CI on that documentation/evidence follow-up is still monitored; it
-is not substituted by a prior source fingerprint or claimed as already green.
+[Run 41869814650](https://github.com/Schramm2/spyglass/actions/runs/41869814650)
+then passed required CI on documentation/evidence head
+`aaf1e6300ff8f71f1d08a840c726a6f9270eb6ee`. That check is separate from the
+implementation/test acceptance above. Later documentation or merge commits
+must pass their own applicable checks; an earlier source fingerprint is not a
+substitute.
 
 ## Limits and separate follow-ups
 

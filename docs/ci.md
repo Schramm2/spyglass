@@ -18,7 +18,7 @@ node examples/ci-run.mjs passed
 node examples/ci-run.mjs incomplete
 ```
 
-The first command must exit 0. The second must exit 1: it deliberately stops
+The `passed` recipe must exit 0. The `incomplete` recipe must exit 1: it deliberately stops
 after the intended failure, before the restored pass and result submission.
 Both runs attempt `down` and `report`. Their evidence stays in
 `.spyglass/runs/`; their delivery folders are
@@ -33,8 +33,8 @@ and then pass. This is an environment control, not a product-source mutation.
 The driver clears automatic pending gate citations after `up` and reruns the
 planned gate in this run, so the delivery has its own gate evidence. Result
 validation still requires that planned gate; no assertion or source rule is
-relaxed. The script records only the fixture observations its assertions check. It is
-not an automatic semantic verdict for an arbitrary change.
+relaxed. The script records only the fixture observations its assertions
+check. It is not an automatic semantic verdict for an arbitrary change.
 
 ## Use it in Actions
 
@@ -47,7 +47,8 @@ The `incomplete` matrix entry uses `continue-on-error` only so the next step
 can inspect the failed verification. A later assertion requires the expected
 nonzero outcome, the explicit interruption marker, an incomplete report, the
 exact failed assertion and error, stable source, artifact integrity and
-successful cleanup. Unexpected driver or transport failures cannot qualify. A setup failure, absent report or failed cleanup fails the job. The
+successful cleanup. Unexpected driver or transport failures cannot qualify.
+A setup failure, absent report or failed cleanup fails the job. The
 `passed` entry requires complete claims, control and gate proof. A green
 matrix entry for the negative scenario means **failure retention worked**;
 it does not mean that its incomplete report passed verification.
@@ -112,6 +113,8 @@ validation to get a green CI result.
 ## Review a real pull request
 
 1. Open the Actions run for the PR's current candidate. Read its job summary.
+   If the summary is not visible, use the downloaded `review.md` and report
+   instead; the signed-out page did not show summaries in the recorded trial.
    Find the source commit, fingerprint, claims, intended failure, restored
    pass, cleanup and limits. An incomplete status is not a pass, even when
    some claims say `passed`.
