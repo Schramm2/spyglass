@@ -219,9 +219,12 @@ original conversation. Verify the workflow on a real pull request.
 complete and interrupted-run paths, retained offline reports and Markdown
 review summaries, source context and required CI checks. Command-form controls
 now show their command and expected failure. The [M3 evidence record](review-m3.md)
-separates local proof from the real-PR completion check. M3 remains incomplete
-until the actual PR artifacts and reviewer outcome are recorded; a workflow
-file or a local passing run does not meet that check.
+retains real-PR artifacts and an artifact-only reviewer outcome: source,
+failure/restoration, cleanup and limits were traceable offline, all checksums
+matched, and the reviewer-led presentation repairs passed recheck. M3 remains
+open while an existing surface test is changed to await navigation completion
+and the delivered candidate completes every required CI check. Report acceptance
+does not override a failed or pending repository check.
 
 ## M4. Expand from repeated adapter gaps
 

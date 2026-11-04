@@ -760,9 +760,8 @@ surfaceTest(
         "ui",
         "click",
         "#other-port",
+        "--settle",
       ]);
-      if (attempted.json?.ok)
-        await runCli(dir, ["--json", "--run", run, "ui", "get", "url"]);
       assert.equal(
         otherPortHits,
         0,

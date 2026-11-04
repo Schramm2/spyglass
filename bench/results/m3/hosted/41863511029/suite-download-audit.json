@@ -1,0 +1,16 @@
+[
+  {
+    "scenario": "default-e2e",
+    "artifactId": 13341751267,
+    "name": "default-e2e-41863511029-1",
+    "sha256": "764030ed3f0aab4ba9426b29751054f2a77c5f3fc2f0b5069dc79b391f381df4",
+    "metadataDigestMatched": true
+  },
+  {
+    "scenario": "real-surface-e2e",
+    "artifactId": 13340548589,
+    "name": "real-surface-e2e-41863511029-1",
+    "sha256": "85c190c4de27012272a36036888c86d199f963ad3e70171e3a7432ae03dd0659",
+    "metadataDigestMatched": true
+  }
+]

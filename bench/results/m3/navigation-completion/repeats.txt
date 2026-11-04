@@ -1,0 +1,80 @@
+Round 1
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (3356.558ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3424.429041
+Round 2
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (1640.859542ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1720.242917
+Round 3
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (1753.704792ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1830.961334
+Round 4
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (2141.88975ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2215.401125
+Round 5
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (2649.776625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2777.847958
+Round 6
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (2720.20025ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2806.672042
+Round 7
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (2809.142125ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2956.317292
+Round 8
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (2610.637833ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2711.261958

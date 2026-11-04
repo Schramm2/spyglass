@@ -25,7 +25,7 @@ results and retained evidence.
 | Claim | A side-effect claim has no independent read after the action completes. | The claim cannot pass. |
 | Evidence | An imported artifact is missing, outside an approved root, changes during import, or `evidence add` is given missing or extra arguments. | The import fails and does not claim the artifact as evidence. |
 | Secret | A request, page or command output reflects a test credential. | Reports and artifacts do not expose credential values, cookies, or authorization headers. |
-| Browser | A browser action targets an origin outside the profile allowlist. | The action fails with the required capability or policy named. It does not use another browser session. |
+| Browser | A browser action targets an origin outside the profile allowlist. | The action fails with the required capability or policy named. It does not use another browser session. A navigation control awaits the public `--settle` completion path before judging its result. |
 | Browser | A screenshot succeeds but a visual claim has no inspection record. | The visual claim remains incomplete. |
 | Browser | An inspection for a viewport names a missing or unrelated screenshot. | The result fails and names the inspection's missing proof. |
 | Operator | A child exits zero but its assertions fail. | Status names the child and Spyglass exit codes separately. Default output is readable text. |

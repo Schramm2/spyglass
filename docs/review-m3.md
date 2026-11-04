@@ -1,9 +1,9 @@
 # M3 review and CI record
 
-**Status: first hosted acceptance recorded; reviewer-led repairs in progress.**
-M3 is not yet complete on the repaired candidate. [PR #28](https://github.com/Schramm2/spyglass/pull/28)
-is open into `dev`. Its first hosted artifacts passed an independent review;
-the presentation repairs below must also pass on the delivered source.
+**Status: report artifact acceptance passed; required CI recovery in progress.**
+M3 is not yet complete. [PR #28](https://github.com/Schramm2/spyglass/pull/28)
+is open into `dev`. The final report artifacts passed independent review;
+a separate surface-test completion repair must pass the required checks.
 No release, npm publication or merge is claimed.
 
 ## Candidate and scope
@@ -147,25 +147,52 @@ submitted-result fields as validated too. This changes no control-validation
 rule or recorded-attempt status. The [unchanged second review and artifacts](../bench/results/m3/hosted/41861617920/)
 retain that intermediate finding.
 
+## Final report artifact acceptance
+
+[Run 41863511029](https://github.com/Schramm2/spyglass/actions/runs/41863511029)
+tested head `9330f4eeb618c64616157e1b1aa45e05be6005b8` through merge checkout
+`2e7a3df7a2a227ccc08f2a84ca962f152f439364`. Both fixture runs recorded unchanged
+fingerprint `f149436d3d53e0872ccb4f674d9c0fd44ec337e90a9ecdf0268a3f8d1ba85d0b`.
+The [retained third record](../bench/results/m3/hosted/41863511029/) includes
+byte-exact review and E2E archives, service metadata and digest audits, merge
+parents, the unchanged artifact-only review and opened offline screenshots.
+
+The reviewer again matched all 13 unique artifacts and 77 checksum references,
+opened both selected HTML files offline without source or chat, and traced the
+new source and attempts. All HTML findings and the remaining Markdown label
+ambiguity were fixed. No new report defect was found. The complete fixture
+passes; the interrupted fixture remains incomplete with its intended failure,
+cleanup and limits. This is report acceptance, not a verdict on every CI job.
+
+The same workflow's retained surface TAP has 24 passes and one failure in the
+existing cross-port navigation control; default TAP has 89 passes, no failures
+and 25 opt-in skips. The click returned while its original allowed URL was
+still current, before navigation completed. The denied-service counter was
+zero at the assertion. The test now awaits the existing public `--settle`
+completion path before asserting the same nonzero command, exact
+`BROWSER_ORIGIN_BLOCKED` error and zero denied-service requests. No browser
+policy, adapter, timing budget or assertion is weakened. Original failed TAP
+and report acceptance remain separate and unchanged.
+
+GitHub reported queued jobs even after their artifacts were available; its
+run conclusion later reported failure. A cancellation request against the
+previous run said it was already complete while reads still showed pending.
+The service's delayed states are not treated as success. Earlier run
+41861617920 eventually reported every required job successful.
+
 ## Remaining real-PR acceptance
 
-Delivery authority was granted. For the repaired candidate:
-
-1. Commit and push the verified candidate and open a PR into `dev`.
-2. Require all gates on its current head, including both Review proof entries.
-   Check the actual tested merge commit against the PR head and provenance.
-3. Download both review artifacts. Open each selected offline report without
-   the target, source checkout or Spyglass state. Validate retained checksums.
-4. Have a fresh reviewer use the artifacts and [review procedure](ci.md), not
-   the original conversation. Record its answers and any repairs.
-5. Retain the run URL, candidate/merge identities, artifact identifiers,
-   download/checksum results and reviewer findings here. Preserve the local
-   and historical records. Only then mark M3 complete in the roadmap.
+1. Verify and publish the existing surface-test completion repair.
+2. Require every current-head CI check, including both Review proof entries,
+   to report success. Keep actual failure output even if service status lags.
+3. Check the delivered source/merge context and retain the closing record.
+   The report implementation is unchanged by this test/evidence follow-up.
+   Only then mark M3 complete in the roadmap.
 
 ## Limits and separate follow-ups
 
-- The first hosted artifacts and reviewer outcome are recorded above. The
-  repaired candidate needs its own repeated proof. Artifacts have 14-day
+- Hosted report acceptance is recorded above; the current-head required CI
+  checks still need confirmation after the test completion repair. Artifacts have 14-day
   service retention; byte-exact downloaded archives remain in Git. Cancellation
   and runner loss can prevent upload. The signed-out Actions page did not show
   the job summary, so its presentation is not a claimed browser check; the
