@@ -48,13 +48,19 @@ SPYGLASS_TEST_SURFACES=1 npm test
 
 ## Send a change
 
-1. Fork the repository and make a branch from `main`.
+1. Fork the repository and make a typed branch from `dev`, the default integration branch.
 2. Write the failure case and its test before the implementation.
 3. Make the change. Keep it small and on one subject.
 4. Run `npm test` and `npm run format:check`. Use `npm run format` to fix the
    format.
-5. Open a pull request into `main`. Tell what changed, why, and how you
-   verified it.
+5. Open a pull request into `dev`. Tell what changed, why, and how you
+   verified it. CI must pass before the PR is merged with a merge commit.
+
+Spyglass uses Git Flow: `main` receives release and urgent hotfix PRs, not
+ordinary feature work. The [Git workflow](agent_docs/git-workflow.md) defines
+branch roles, release back-merges and merge requirements. Maintainers run
+the [delivery checks](agent_docs/delivery.md) before pushing. Release and npm
+publication require separate approval.
 
 ### Rules for changes
 
@@ -66,8 +72,9 @@ SPYGLASS_TEST_SURFACES=1 npm test
   specific repository. A repository profile holds its integration details.
 - **Keep the record honest.** Do not remove failed attempts, source identity
   or cleanup records.
-- **No private data.** Never commit credentials, browser state, evidence
-  folders or private application data.
+- **Public data only.** Keep credentials, browser state, private run evidence
+  and private application data out of Git. Approved, sanitized public-fixture
+  benchmark evidence belongs in `bench/results/`; follow the delivery guide.
 - **Skills.** The skills in `skills/` are the source of truth. Keep the
   `LICENSE` file of each adapted skill.
 
