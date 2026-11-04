@@ -7,7 +7,10 @@ results and retained evidence.
 | Area | Failure case | Required result |
 | --- | --- | --- |
 | Input | The profile has an unsupported version or an unknown field. | The command exits with usage/profile status and names the invalid field. It does not launch the app. |
+| Installation | A local package is made from a checkout with private plans, retained run evidence or unrelated files. | The package contains only the distributable runtime, schemas and public guidance. `npm pack` builds the runtime before packaging. |
+| Setup | A fresh operator receives a proposed profile but has no plan or report procedure. | `init` identifies guessed fields and gives plan, check, cleanup and report commands. It names a discovered check and starts nothing. |
 | Setup | Two profiles match the repository. | The command asks for an explicit profile through an error and next action. It does not prompt. |
+| Setup | A profile or CLI binding uses a reserved run value (`repo`, `run`, `port`, `web`, `api` or `evidence`). | `up` rejects it before run allocation or owner readiness, with `RESERVED_BINDING` and a repair that uses a separate owner binding. |
 | Setup | A CLI binding overrides a profile default. | Execution and retained binding records use the same resolved override. |
 | Command | A command exceeds its selected deadline. | The attempt retains timeout status and output; an invalid deadline is rejected before execution. |
 | Run | The app exits before its readiness check succeeds. | The run remains recorded as failed, its ID is returned, and status and cleanup remain available. |

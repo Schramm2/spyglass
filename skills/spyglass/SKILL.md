@@ -56,15 +56,24 @@ control or a limit.
 
 Review the profile against the repository's own instructions. If there is no
 profile, run `spyglass init` and review every guessed field and its
-provenance. Check the launch mode, readiness, commands, bindings, seats,
-evidence path, browser origins and source inputs. Add the evidence folder to
-`.gitignore`.
+provenance. `setup.reviewFields` lists guesses; `setup.prerequisites`,
+`setup.commands` and `setup.notes` give the first planned run and report path.
+Replace `CLAIM_ID` with a claim from the plan. Check the launch mode,
+readiness, commands, bindings, seats, evidence path, browser origins and source
+inputs. Add the evidence folder to `.gitignore`. Install dependencies and build
+the target before `up`; its checks can use a different runtime from Spyglass.
+For first adoption, package installation, upgrades or setup repairs, read the
+[adoption recipes](https://github.com/Schramm2/spyglass/blob/dev/docs/adoption.md)
+and [tested support](https://github.com/Schramm2/spyglass/blob/dev/docs/support.md).
 
 Follow the profile's lifecycle mode. `none` runs checks without a persistent
 target. `owned` starts the app for the run. `external` uses resources that the
 repository **owner** starts and cleans up: create isolated installations,
 databases and services with the owner's tool, bind them as external
 resources, and confirm that the owner's build matches the source under test.
+Use a separate binding such as `ownerPort` for an external port. `repo`, `run`,
+`port`, `web`, `api` and `evidence` are reserved run values; `up` rejects
+conflicting profile or CLI bindings before it allocates a run.
 
 Give secrets only as secret references (`env:`, `file:`, `dotenv:`, `op://`).
 Keep passwords, tokens, cookies and private keys out of arguments, profiles,

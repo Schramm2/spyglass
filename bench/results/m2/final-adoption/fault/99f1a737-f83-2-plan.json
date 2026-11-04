@@ -1,0 +1,42 @@
+{
+  "controls": [
+    {
+      "id": "detects-fault",
+      "claim": "existing-check",
+      "expectation": "The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.",
+      "command": [
+        "check",
+        "verify"
+      ],
+      "failure": {
+        "code": "CHECK_FAILED",
+        "contains": "not ok 1 should be truthy"
+      }
+    }
+  ],
+  "claims": [
+    {
+      "id": "existing-check",
+      "behavior": "The existing isarray checks accept the candidate.",
+      "entryPoint": "npm run tests-only",
+      "precondition": "The existing npm lockfile dependencies are installed.",
+      "expected": "All 28 existing Tape assertions pass in both named cases, with no skips.",
+      "case": "Unchanged candidate and an isolated always-false export fault.",
+      "checks": [
+        "verify"
+      ],
+      "evidence": [
+        "Tape output and command exit status"
+      ],
+      "kind": "behavior",
+      "required": true
+    }
+  ],
+  "gates": [],
+  "limits": [
+    "Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.",
+    "Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.",
+    "The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.",
+    "Legacy browser compatibility, package publication, browser behavior and human use are untested."
+  ]
+}

@@ -1,0 +1,613 @@
+{
+  "label": "local-page-1280x800",
+  "seat": "guest",
+  "step": "cd93a21d-3fb",
+  "pageContent": true,
+  "results": [
+    {
+      "command": [
+        "snapshot",
+        "-i",
+        "-c",
+        "--delta"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:43187/",
+        "snapshot": {
+          "kind": "full",
+          "refs": {},
+          "revision": 1,
+          "tree": "(no interactive elements)"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "url"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "url": "http://127.0.0.1:43187/"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "get",
+        "title"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "title": "Example: Sirv"
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "messages": []
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "console",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors"
+      ],
+      "error": null,
+      "result": {
+        "errors": [
+          {
+            "column": 1,
+            "line": 14,
+            "text": "ReferenceError: onloaded is not defined\n    at http://127.0.0.1:43187/app.js:15:2\n    at http://127.0.0.1:43187/app.js:20:3",
+            "url": null
+          }
+        ],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "errors",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "errors": [
+          {
+            "column": 1,
+            "line": 14,
+            "text": "ReferenceError: onloaded is not defined\n    at http://127.0.0.1:43187/app.js:15:2\n    at http://127.0.0.1:43187/app.js:20:3",
+            "url": null
+          }
+        ],
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "(() => {\n  const element = document.activeElement;\n  if (!element || element === document.body || element === document.documentElement) return null;\n  const text = (value) => (value || \"\").replace(/\\s+/g, \" \").trim();\n  const labelledBy = (element.getAttribute(\"aria-labelledby\") || \"\")\n    .split(/\\s+/).map((id) => document.getElementById(id)?.textContent || \"\").join(\" \");\n  // A wrapping label also holds its controls' option and default text.\n  const labelText = (label) => {\n    if (!label) return \"\";\n    const copy = label.cloneNode(true);\n    copy.querySelectorAll(\"input, select, textarea\").forEach((control) => control.remove());\n    return text(copy.textContent);\n  };\n  const tag = element.tagName.toLowerCase();\n  const type = tag === \"input\" ? element.type : element.getAttribute(\"type\") || undefined;\n  const inputRoles = { checkbox: \"checkbox\", radio: \"radio\", button: \"button\", submit: \"button\",\n    reset: \"button\", range: \"slider\", search: \"searchbox\", email: \"textbox\", tel: \"textbox\",\n    text: \"textbox\", url: \"textbox\" };\n  const implicit = tag === \"input\" ? (type ? inputRoles[type] : \"textbox\")\n    : { a: \"link\", button: \"button\", select: \"combobox\", textarea: \"textbox\" }[tag];\n  return {\n    tag,\n    type,\n    role: element.getAttribute(\"role\") || implicit,\n    label: text(element.getAttribute(\"aria-label\")) || text(labelledBy)\n      || labelText(element.labels?.[0]) || text(element.getAttribute(\"title\"))\n      || text(element.getAttribute(\"placeholder\"))\n      || (tag === \"button\" || tag === \"a\" ? text(element.textContent) : \"\"),\n    id: element.id || undefined,\n  };\n})()"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:43187/",
+        "result": null
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "requests": [
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "mimeType": "text/html",
+            "requestId": "3BF545890F6C7DBDAEC53383EF9A40CE",
+            "resourceType": "Document",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "content-length": "314",
+              "content-type": "text/html;charset=utf-8",
+              "date": "Wed, 04 Nov 2026 13:50:47 GMT",
+              "last-modified": "Wed, 04 Nov 2026 13:38:52 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793800248001,
+            "url": "http://127.0.0.1:43187/"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "mimeType": "text/css",
+            "requestId": "83196.2",
+            "resourceType": "Stylesheet",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "content-length": "332",
+              "content-type": "text/css",
+              "date": "Wed, 04 Nov 2026 13:50:47 GMT",
+              "last-modified": "Wed, 04 Nov 2026 13:38:52 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793800248002,
+            "url": "http://127.0.0.1:43187/style.css"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.3",
+            "resourceType": "Script",
+            "timestamp": 1793800248002,
+            "url": "https://unpkg.com/onloaded@1.0.0/dist/onloaded.min.js"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "mimeType": "text/javascript",
+            "requestId": "83196.4",
+            "resourceType": "Script",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "content-length": "532",
+              "content-type": "text/javascript",
+              "date": "Wed, 04 Nov 2026 13:50:47 GMT",
+              "last-modified": "Wed, 04 Nov 2026 13:38:52 GMT"
+            },
+            "status": 200,
+            "timestamp": 1793800248002,
+            "url": "http://127.0.0.1:43187/app.js"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.8",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/uOi3lg8fGl4"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.9",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/OjVIrvBKWP8"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.10",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/uSFOwYo1qEw"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.11",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/tZaA8VqJG3g"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.12",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/9yWcy5B-haM"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.13",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/_MeRaXKnEYo"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.14",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/HrkyU8bVwYI"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.15",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/Yohivf5JWvg"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.16",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/78A265wPiO4"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.17",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/TAhsXhWipwg"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.18",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/dQBZY7yEVpc"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "requestId": "83196.19",
+            "resourceType": "Image",
+            "timestamp": 1793800248002,
+            "url": "https://source.unsplash.com/6k2FqycNmwU"
+          },
+          {
+            "headers": {
+              "Accept-Language": "en-GB,en;q=0.9",
+              "Referer": "http://127.0.0.1:43187/",
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+              "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\"",
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": "\"macOS\""
+            },
+            "method": "GET",
+            "mimeType": "text/plain",
+            "requestId": "83196.20",
+            "resourceType": "Other",
+            "responseHeaders": {
+              "Connection": "keep-alive",
+              "Keep-Alive": "timeout=5",
+              "content-length": "9",
+              "date": "Wed, 04 Nov 2026 13:50:47 GMT"
+            },
+            "status": 404,
+            "timestamp": 1793800248002,
+            "url": "http://127.0.0.1:43187/favicon.ico"
+          }
+        ]
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "network",
+        "requests",
+        "--clear"
+      ],
+      "error": null,
+      "result": {
+        "cleared": true,
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        }
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "eval",
+        "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "origin": "http://127.0.0.1:43187/",
+        "result": 297.9
+      },
+      "success": true
+    },
+    {
+      "command": [
+        "screenshot",
+        "/private/tmp/spyglass-m2-polka.dtXryw/polka/.spyglass/runs/m2-web-safe/spyglass/browser-cd93a21d-3fb-proof-local-page-1280x800-2263083e.png"
+      ],
+      "error": null,
+      "result": {
+        "lifecycle": {
+          "effectiveLaunch": {
+            "browserLaunched": true,
+            "engine": "chrome",
+            "launchHash": 17285217037798360000
+          },
+          "launched": false,
+          "relaunchedBrowser": false,
+          "restartedBackground": false,
+          "restoreStatus": "not_configured",
+          "reused": true,
+          "saveStatus": "not_attempted"
+        },
+        "path": "/private/tmp/spyglass-m2-polka.dtXryw/polka/.spyglass/runs/m2-web-safe/spyglass/browser-cd93a21d-3fb-proof-local-page-1280x800-2263083e.png"
+      },
+      "success": true
+    }
+  ]
+}

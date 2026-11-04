@@ -8,12 +8,30 @@ This file records the notable changes to Spyglass. The format follows
 
 ### Added
 
+- `init` returns `setup.reviewFields`, `setup.prerequisites`, `setup.commands`
+  and `setup.notes` for the first planned run, a discovered check, result
+  observations, cleanup and report reopening.
+- Adoption recipes cover existing checks, isolated web apps and
+  repository-owned installations or library hosts. Support guidance separates
+  tested configurations from unverified platforms and tools.
+
 - `api POST|PUT|PATCH|DELETE --then GET PATH` makes an immediate read after
   a successful write in one recorded step. `--then-expect` and repeatable
   `--then-expect-json` check the read; `{body.id}` fills a URL-encoded,
   non-secret scalar from the write response. Both requests retain masked
   evidence. A failed write skips the read. The combined step cannot count
   as a side-effect claim's independent read.
+
+### Fixed
+
+- `up` rejects bindings named `repo`, `run`, `port`, `web`, `api` or `evidence`
+  with `RESERVED_BINDING` before allocation. An external port must use a
+  separate binding, such as `ownerPort`, instead of silently using a different
+  run-allocated port.
+- Local `npm pack` builds the CLI before packaging. An explicit file allowlist
+  excludes private local plans, run evidence and unrelated checkout files.
+  The two public adoption/support guides are included for installed use.
+  npm publication remains disabled.
 
 ## [1.3.1] - 2026-11-02
 

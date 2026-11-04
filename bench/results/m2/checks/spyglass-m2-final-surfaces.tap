@@ -1,0 +1,33 @@
+✔ API waits for async work, reads the result independently, and records the side effect (1879.369ms)
+✔ agent-browser uses a fresh allowed session, retains visual proof, and protects login secrets (5283.062125ms)
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (1362.773125ms)
+✔ ui wait refuses page JavaScript, downloads and saved state but still waits for page text (1474.669542ms)
+✔ a screenshot inside a browser batch cannot write outside run evidence (1352.627042ms)
+✔ down stops the run browser and proxy when the operator's locale and time zone differ from the ones that started them (1398.453125ms)
+✔ an idle run browser and its proxy shut down, and the next ui command reports the expiry (14343.514042ms)
+✔ Docker and PostgreSQL inspection use a unique project, reject writes, and keep owner services (6642.822458ms)
+✔ ui focused names the focused field without its value and fails on another expected label (1389.18575ms)
+✔ down from the main worktree closes the browser of a run whose worktree was removed (1313.616625ms)
+✔ ui expect polls inside one call and retains the last observation when a condition never holds (4632.469417ms)
+✔ a selector that matches nothing returns the nearest interactive roles and labels (2282.33875ms)
+✔ ui --settle waits for the navigation that a click starts (2626.084584ms)
+✔ ui verify runs actions, expectations and a two-viewport proof as one step and links the claim (3268.51175ms)
+✔ ui verify keeps passed sub-steps, fails at the first bad expectation and cannot back a claim (3511.457917ms)
+✔ ui verify refuses an action outside the origin allowlist and keeps the actions that ran (2524.347125ms)
+✔ ui verify --expect-focus-moved keeps both focus records and fails when focus did not move (3142.792958ms)
+✔ a viewport that fails its expectation keeps the earlier screenshots and no visual claim passes (3279.551709ms)
+✔ a proof right after ui open does not wait for the first browser frame (14325.069959ms)
+✔ the browser proxy stays up when clients reset their connections (2541.76075ms)
+✔ db --expect-col and --expect-empty record assertions, and the role inspection is read once per run (4286.679334ms)
+✔ ps --wait polls a required container to healthy and fails at its deadline while it is starting (13371.650458ms)
+✔ up --warm starts the browser and signs the seat in while the app starts, and cleans up when the app never becomes ready (5723.3175ms)
+✔ ui --relogin signs a seat in again after its browser expired, and keeps the expiry in the step (12848.189459ms)
+✔ ui snapshot, ui proof and ui verify return a bounded observation and keep a long snapshot in an artifact (2082.31825ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116948.345

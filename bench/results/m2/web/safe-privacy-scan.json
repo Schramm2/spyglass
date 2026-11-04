@@ -1,0 +1,6 @@
+{
+  "scannedDirectory": "/tmp/spyglass-m2-polka.dtXryw/polka/.spyglass/runs/m2-web-safe",
+  "fileCount": 21,
+  "personalPathMatches": [],
+  "method": "Byte scan of all run files, including HTML, JSON, text and PNG. Match personal home paths case-sensitively to distinguish public /users API routes."
+}

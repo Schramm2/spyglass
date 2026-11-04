@@ -291,6 +291,36 @@ export function init(repo: string, force = false): Record<string, unknown> {
       features: raw.features ?? null,
     },
     guidance: guidance.map((g) => ({ path: g.path, reviewRequired: true })),
-    next: "Review guessed fields and the existing verification skill; add .spyglass/ to .gitignore, then run spyglass up.",
+    setup: {
+      reviewFields: Object.entries(provenance)
+        .filter(([, field]) => field.status === "guessed")
+        .map(([path]) => path),
+      prerequisites: [
+        "Read the repository instructions and owner guidance. Review the proposed lifecycle and every guessed field.",
+        "Install dependencies and build with the repository's tools before up. The target can use a different runtime from Spyglass.",
+        "Add .spyglass/ and generated check output to .gitignore; do not ignore product source.",
+        "Write verification-plan.json with claims, intended failure controls and limits. init does not select acceptance conditions.",
+      ],
+      commands: {
+        planSchema: "spyglass schema plan --json",
+        up: "spyglass up --run adoption --plan verification-plan.json --json",
+        ...(Object.keys(checks)[0]
+          ? {
+              check: `spyglass check ${Object.keys(checks)[0]} --run adoption --claim CLAIM_ID --json`,
+            }
+          : {}),
+        work: "spyglass status --work --run adoption --json",
+        result: "spyglass result --check --run adoption --json",
+        finish: "spyglass finish --run adoption --json",
+        reopen: "spyglass report --run adoption --json",
+      },
+      notes: [
+        "Replace CLAIM_ID with a claim from your plan. Keep the intended failure and restored pass with the same expectation.",
+        "Read the evidence, then use result set to record outcomes and observations. Linking steps does not write a verdict.",
+        "For external resources, configure a cleanup:true check and use finish --cleanup CHECK. down alone does not prove owner cleanup.",
+        "Open reportPath after cleanup. A report without required proof remains incomplete.",
+      ],
+    },
+    next: "Review setup.reviewFields and setup.prerequisites, write verification-plan.json, then use setup.commands. Full recipes: https://github.com/Schramm2/spyglass/blob/dev/docs/adoption.md",
   };
 }

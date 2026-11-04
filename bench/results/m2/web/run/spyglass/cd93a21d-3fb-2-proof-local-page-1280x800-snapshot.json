@@ -1,0 +1,32 @@
+{
+  "command": [
+    "snapshot",
+    "-i",
+    "-c",
+    "--delta"
+  ],
+  "error": null,
+  "result": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 17285217037798360000
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:43187/",
+    "snapshot": {
+      "kind": "full",
+      "refs": {},
+      "revision": 1,
+      "tree": "(no interactive elements)"
+    }
+  },
+  "success": true
+}

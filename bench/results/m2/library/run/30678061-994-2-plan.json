@@ -1,0 +1,43 @@
+{
+  "controls": [
+    {
+      "id": "detect-disabled-colors",
+      "claim": "existing-ansi-contract",
+      "expectation": "The unchanged existing uvu assertions fail when NO_COLOR=1 disables colors; the same check passes after that environment fault is removed.",
+      "command": [
+        "check",
+        "test"
+      ],
+      "failure": {
+        "code": "CHECK_FAILED",
+        "contains": "colors enabled by default"
+      }
+    }
+  ],
+  "claims": [
+    {
+      "id": "existing-ansi-contract",
+      "behavior": "Existing kleur checks verify enabled ANSI codes, chains, nesting, integers and disabled output.",
+      "entryPoint": "Existing test/colors.js and test/index.js through the repository uvu runner",
+      "precondition": "Public kleur commit fa3454483899ddab550d08c18c028e6db1aab0e5; existing dependencies installed; isolated Node 16; FORCE_COLOR=1; NO_COLOR and NODE_DISABLE_COLORS absent for restored pass.",
+      "expected": "All 15 existing checks pass, including colors enabled by default and exact ANSI output assertions.",
+      "case": "Existing success cases; NO_COLOR=1 causes the same enabled-color expectations to fail without edits to source or tests.",
+      "checks": [
+        "test"
+      ],
+      "evidence": [
+        "Retained command output, child exit code and Spyglass step log"
+      ],
+      "kind": "behavior",
+      "required": true
+    }
+  ],
+  "gates": [
+    "test"
+  ],
+  "limits": [
+    "Agent-operated adoption only; no human use is claimed.",
+    "Only the 15 existing uvu checks are adopted. Linux-specific env.sh, coverage upload, CommonJS build, other Node versions and performance are not checked.",
+    "NO_COLOR is the deliberate environment fault. Source files and test expectations are unchanged."
+  ]
+}

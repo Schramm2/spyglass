@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "app": "isarray-checks",
+  "launch": {"mode": "none"},
+  "checks": {
+    "verify": {
+      "command": ["npm", "run", "tests-only"],
+      "timeoutMs": 300000,
+      "result": "exit"
+    }
+  }
+}

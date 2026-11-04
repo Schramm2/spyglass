@@ -1,0 +1,45 @@
+stdout:
+
+> isarray@2.0.5 tests-only
+> tape test.js
+
+TAP version 13
+# is array (only polyfill)
+ok 1 should be truthy
+ok 2 should be falsy
+ok 3 should be falsy
+ok 4 should be falsy
+ok 5 should be falsy
+ok 6 should be falsy
+ok 7 should be falsy
+ok 8 should be falsy
+ok 9 should be falsy
+ok 10 should be falsy
+ok 11 should be falsy
+ok 12 should be falsy
+ok 13 should be falsy
+ok 14 should be truthy
+# is array (native)
+ok 15 should be truthy
+ok 16 should be falsy
+ok 17 should be falsy
+ok 18 should be falsy
+ok 19 should be falsy
+ok 20 should be falsy
+ok 21 should be falsy
+ok 22 should be falsy
+ok 23 should be falsy
+ok 24 should be falsy
+ok 25 should be falsy
+ok 26 should be falsy
+ok 27 should be falsy
+ok 28 should be truthy
+
+1..28
+# tests 28
+# pass  28
+
+# ok
+
+
+stderr:

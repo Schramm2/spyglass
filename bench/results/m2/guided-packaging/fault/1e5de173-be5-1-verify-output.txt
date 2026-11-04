@@ -1,0 +1,116 @@
+stdout:
+
+> isarray@2.0.5 tests-only
+> tape test.js
+
+TAP version 13
+# is array (only polyfill)
+not ok 1 should be truthy
+  ---
+    operator: ok
+    expected: true
+    actual:   false
+    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:10:5)
+    stack: |-
+      Error: should be truthy
+          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)
+          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)
+          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:10:5)
+          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)
+          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)
+          at process.processImmediate (node:internal/timers:504:21)
+  ...
+ok 2 should be falsy
+ok 3 should be falsy
+ok 4 should be falsy
+ok 5 should be falsy
+ok 6 should be falsy
+ok 7 should be falsy
+ok 8 should be falsy
+ok 9 should be falsy
+ok 10 should be falsy
+ok 11 should be falsy
+ok 12 should be falsy
+ok 13 should be falsy
+not ok 14 should be truthy
+  ---
+    operator: ok
+    expected: true
+    actual:   false
+    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:29:5)
+    stack: |-
+      Error: should be truthy
+          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)
+          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)
+          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:29:5)
+          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)
+          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)
+          at process.processImmediate (node:internal/timers:504:21)
+  ...
+# is array (native)
+not ok 15 should be truthy
+  ---
+    operator: ok
+    expected: true
+    actual:   false
+    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:36:5)
+    stack: |-
+      Error: should be truthy
+          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)
+          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)
+          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:36:5)
+          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)
+          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)
+          at process.processImmediate (node:internal/timers:504:21)
+  ...
+ok 16 should be falsy
+ok 17 should be falsy
+ok 18 should be falsy
+ok 19 should be falsy
+ok 20 should be falsy
+ok 21 should be falsy
+ok 22 should be falsy
+ok 23 should be falsy
+ok 24 should be falsy
+ok 25 should be falsy
+ok 26 should be falsy
+ok 27 should be falsy
+not ok 28 should be truthy
+  ---
+    operator: ok
+    expected: true
+    actual:   false
+    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:55:5)
+    stack: |-
+      Error: should be truthy
+          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)
+          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)
+          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:55:5)
+          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)
+          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)
+          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)
+          at process.processImmediate (node:internal/timers:504:21)
+  ...
+
+1..28
+# tests 28
+# pass  24
+# fail  4
+
+
+stderr:

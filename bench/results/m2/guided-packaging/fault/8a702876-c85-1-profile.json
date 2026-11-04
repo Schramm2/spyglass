@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "app": "isarray-checks",
+  "evidence": ".spyglass/runs/guided-m2-fault",
+  "launch": {
+    "mode": "none"
+  },
+  "bindings": {},
+  "checks": {
+    "verify": {
+      "command": [
+        "npm",
+        "run",
+        "tests-only"
+      ],
+      "timeoutMs": 300000,
+      "result": "exit",
+      "artifacts": [],
+      "cleanup": false
+    }
+  },
+  "seats": {},
+  "imports": []
+}

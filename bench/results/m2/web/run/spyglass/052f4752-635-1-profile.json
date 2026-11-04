@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "app": "polka",
+  "evidence": ".spyglass/runs/m2-web-safe",
+  "launch": {
+    "mode": "external",
+    "ready": {
+      "url": "http://127.0.0.1:43187/health",
+      "status": 200,
+      "timeoutMs": 10000
+    },
+    "doctor": [
+      "sh",
+      "-c",
+      "test -s /tmp/spyglass-m2-polka.dtXryw/owner.pid && kill -0 $(head -1 /tmp/spyglass-m2-polka.dtXryw/owner.pid) && curl --fail --silent http://127.0.0.1:43187/health"
+    ]
+  },
+  "web": "http://127.0.0.1:43187",
+  "api": "http://127.0.0.1:43187",
+  "bindings": {
+    "ownerPort": "43187"
+  },
+  "checks": {
+    "test": {
+      "command": [
+        "npm",
+        "run",
+        "test"
+      ],
+      "env": {
+        "PATH": "/tmp/spyglass-m2-polka.dtXryw/tool-bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "timeoutMs": 300000,
+      "result": "exit",
+      "artifacts": [],
+      "cleanup": false
+    },
+    "owner-cleanup": {
+      "command": [
+        "sh",
+        "-c",
+        "pid=$(head -1 /tmp/spyglass-m2-polka.dtXryw/owner.pid); kill $pid; n=0; while curl --silent --max-time 1 http://127.0.0.1:43187/health >/dev/null; do n=$((n+1)); test $n -lt 30 || exit 1; sleep 0.1; done; printf 'Owner listener stopped on port 43187\\n'"
+      ],
+      "timeoutMs": 10000,
+      "result": "exit",
+      "artifacts": [],
+      "cleanup": true
+    }
+  },
+  "seats": {
+    "guest": {}
+  },
+  "browser": {
+    "allowedOrigins": [
+      "http://127.0.0.1:43187"
+    ],
+    "idleTimeoutMs": 3600000
+  },
+  "source": {
+    "include": [
+      "examples/with-sirv/package-lock.json",
+      "examples/with-morgan/package-lock.json",
+      "package-lock.json"
+    ]
+  },
+  "imports": [],
+  "provenance": {
+    "app": {
+      "status": "guessed",
+      "source": "repository directory name"
+    },
+    "version": {
+      "status": "observed",
+      "source": "Spyglass schema version 1"
+    },
+    "evidence": {
+      "status": "guessed",
+      "source": "default ignored run evidence location"
+    },
+    "launch": {
+      "status": "guessed",
+      "source": "operator review: examples/with-sirv/readme.md uses npm start; repository has no stop command, so operator records listener PID and supplies cleanup"
+    },
+    "checks": {
+      "status": "observed",
+      "source": "repository task runners"
+    },
+    "checks.test": {
+      "status": "observed",
+      "source": "package.json scripts.test"
+    }
+  }
+}

@@ -62,7 +62,9 @@ The command ownership below is a search map, not a separate layering system.
 1. **Init.** `init` reads the target repository and writes a proposed
    `spyglass.json` with the provenance of each guessed field. It starts
    nothing.
-2. **Up.** `allocate` validates the profile and plan, reserves a port,
+2. **Up.** `allocate` validates the profile and plan, rejects bindings that
+   conflict with reserved run values (`repo`, `run`, `port`, `web`, `api`,
+   `evidence`), reserves a port,
    creates the run directory and the evidence folder, and records the source
    identity. `launch` then starts the app through the supervisor (`owned`),
    or runs the owner's readiness check (`external`), and waits for readiness.

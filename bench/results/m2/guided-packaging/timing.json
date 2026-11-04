@@ -1,0 +1,111 @@
+{
+  "kind": "guided retest; not fresh adoption time",
+  "start": "2026-11-04T13:59:09Z",
+  "firstCompleteReport": "2026-11-04T14:00:27.693Z",
+  "seconds": 78.693,
+  "newShellReopenEnd": "2026-11-04T14:00:27Z",
+  "phases": [
+    {
+      "phase": "fault up",
+      "start": "2026-11-04T14:00:02.257Z",
+      "end": "2026-11-04T14:00:02.323000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "fault check",
+      "start": "2026-11-04T14:00:02.363Z",
+      "end": "2026-11-04T14:00:02.591000+00:00",
+      "exitCode": 1
+    },
+    {
+      "phase": "fault down",
+      "start": "2026-11-04T14:00:02.630Z",
+      "end": "2026-11-04T14:00:02.666000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "fault report",
+      "start": "2026-11-04T14:00:02.704Z",
+      "end": "2026-11-04T14:00:02.743000+00:00",
+      "exitCode": 1
+    },
+    {
+      "phase": "pass up",
+      "start": "2026-11-04T14:00:02.830Z",
+      "end": "2026-11-04T14:00:02.894000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass check",
+      "start": "2026-11-04T14:00:02.933Z",
+      "end": "2026-11-04T14:00:03.141000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass result",
+      "start": "2026-11-04T14:00:27.333Z",
+      "end": "2026-11-04T14:00:27.352000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass result",
+      "start": "2026-11-04T14:00:27.386Z",
+      "end": "2026-11-04T14:00:27.403000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass result",
+      "start": "2026-11-04T14:00:27.436Z",
+      "end": "2026-11-04T14:00:27.454000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass result",
+      "start": "2026-11-04T14:00:27.552Z",
+      "end": "2026-11-04T14:00:27.570000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass result",
+      "start": "2026-11-04T14:00:27.620Z",
+      "end": "2026-11-04T14:00:27.624000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass doctor",
+      "start": "2026-11-04T14:00:27.624Z",
+      "end": "2026-11-04T14:00:27.667000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass down",
+      "start": "2026-11-04T14:00:27.667Z",
+      "end": "2026-11-04T14:00:27.679000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass report",
+      "start": "2026-11-04T14:00:27.680Z",
+      "end": "2026-11-04T14:00:27.695000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pass report",
+      "start": "2026-11-04T14:00:27.818Z",
+      "end": "2026-11-04T14:00:27.863000+00:00",
+      "exitCode": 0
+    },
+    {
+      "phase": "pack",
+      "start": "2026-11-04T13:59:09.670693+00:00",
+      "end": "2026-11-04T13:59:10.852707+00:00",
+      "clockSource": "output-file creation/last write"
+    },
+    {
+      "phase": "install",
+      "start": "2026-11-04T13:59:10.856271+00:00",
+      "end": "2026-11-04T13:59:11.626956+00:00",
+      "clockSource": "output-file creation/last write"
+    }
+  ]
+}

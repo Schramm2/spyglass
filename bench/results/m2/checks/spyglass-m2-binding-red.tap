@@ -1,0 +1,31 @@
+✖ reserved run bindings are rejected before external readiness starts (266.926333ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 304.674167
+
+✖ failing tests:
+
+test at tests/e2e/core.test.mjs:2774:1
+✖ reserved run bindings are rejected before external readiness starts (266.926333ms)
+  AssertionError [ERR_ASSERTION]: stdout: {"schemaVersion":1,"ok":false,"status":"failed","run":"reserved","step":"37a31d11-1a1","data":{"changed":["owner-started"],"id":"reserved"},"artifacts":[{"path":"37a31d11-1a1-1-profile.json","sha256":"ab18855a9fa2f9d9acb3833983bb89baf903cf1b9df8784a4213a57de60c9b0a","kind":"configuration","step":"37a31d11-1a1"},{"path":"37a31d11-1a1-2-plan.json","sha256":"303605bedb514311779e6c875d5a0afe3b9610a3378629a4d593e364824e89af","kind":"configuration","step":"37a31d11-1a1"},{"path":"37a31d11-1a1-3-doctor-output.json","sha256":"77613b87a6bda3fad413490ccadc2cd9dc877c9f72d5a38f6fc645eea6c44cae","kind":"text","step":"37a31d11-1a1"}],"error":{"code":"STALE_SOURCE","message":"Source changed since up: owner-started.","next":"Rebuild through the owner and create a new run; keep the earlier evidence."}}
+  
+  stderr: 
+  
+  1 !== 2
+  
+      at assertEnvelope (file://[SPYGLASS_SOURCE]/tests/e2e/helper.mjs:158:12)
+      at TestContext.<anonymous> (file://[SPYGLASS_SOURCE]/tests/e2e/core.test.mjs:2785:22)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

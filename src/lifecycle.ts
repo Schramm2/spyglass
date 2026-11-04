@@ -96,6 +96,16 @@ export async function allocate(repo: string, opts: UpOptions): Promise<Run> {
       "Direct launch requires --ready.",
       'Use up --cmd "npm run dev" --ready http://127.0.0.1:3000.',
     );
+  const reserved = ["repo", "run", "port", "web", "api", "evidence"];
+  const conflicts = Object.keys({ ...raw.bindings, ...opts.bindings }).filter(
+    (name) => reserved.includes(name),
+  );
+  if (conflicts.length)
+    throw new Fault(
+      "RESERVED_BINDING",
+      `Run values cannot be replaced by bindings: ${conflicts.join(", ")}.`,
+      "Rename the binding in the profile and --binding options; for an external port use ownerPort and ${ownerPort}. ${port} is allocated by Spyglass.",
+    );
   const port = await freePort();
   const vars: Record<string, string> = {
     ...raw.bindings,

@@ -1,0 +1,560 @@
+{
+  "schemaVersion": 1,
+  "status": "incomplete",
+  "complete": false,
+  "run": "guided-m2-fault",
+  "app": "isarray-checks",
+  "generatedAt": "2026-11-04T14:00:02.740Z",
+  "source": {
+    "commit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+    "hash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685",
+    "currentHash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685",
+    "changed": []
+  },
+  "claims": [
+    {
+      "id": "existing-check",
+      "kind": "behavior",
+      "required": true,
+      "outcome": "not run",
+      "behavior": "The existing isarray checks accept the candidate.",
+      "entryPoint": "npm run tests-only",
+      "precondition": "The existing npm lockfile dependencies are installed.",
+      "expected": "All 28 existing Tape assertions pass in both named cases, with no skips.",
+      "case": "Unchanged candidate and an isolated always-false export fault.",
+      "checks": [
+        "verify"
+      ],
+      "requiredEvidence": [
+        "Tape output and command exit status"
+      ],
+      "steps": [],
+      "observed": "",
+      "artifacts": [],
+      "inspections": []
+    }
+  ],
+  "gates": [],
+  "controls": [
+    {
+      "id": "detects-fault",
+      "claim": "existing-check",
+      "expectation": "The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.",
+      "command": [
+        "check",
+        "verify"
+      ],
+      "failure": {
+        "code": "CHECK_FAILED",
+        "contains": "not ok 1 should be truthy"
+      },
+      "outcome": "not run"
+    }
+  ],
+  "environment": [
+    {
+      "name": "source identity",
+      "status": "passed",
+      "detail": "Current source matches the baseline recorded at up."
+    },
+    {
+      "name": "artifact integrity",
+      "status": "passed",
+      "detail": "3 of 3 recorded artifacts match their checksums."
+    },
+    {
+      "name": "cleanup",
+      "status": "passed",
+      "detail": "Spyglass cleanup: true; external owner cleanup: true."
+    }
+  ],
+  "visualObservations": [],
+  "cleanup": {
+    "runState": "stopped",
+    "spyglassResourcesCleaned": true,
+    "externalOwnerCleaned": "not required"
+  },
+  "limits": [
+    "Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.",
+    "Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.",
+    "The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.",
+    "Legacy browser compatibility, package publication, browser behavior and human use are untested."
+  ],
+  "attempts": [
+    {
+      "id": "8a702876-c85",
+      "command": "up",
+      "args": [],
+      "startedAt": "2026-11-04T14:00:02.257Z",
+      "durationMs": 66,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+        "hash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685",
+        "files": {
+          ".eslintrc": "2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81",
+          ".github/FUNDING.yml": "0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d",
+          ".github/workflows/node-aught.yml": "ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f",
+          ".github/workflows/node-pretest.yml": "257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca",
+          ".github/workflows/node-tens.yml": "614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1",
+          ".github/workflows/rebase.yml": "7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871",
+          ".github/workflows/require-allow-edits.yml": "256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425",
+          ".gitignore": "43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7",
+          ".travis.yml": "de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95",
+          "CONTRIBUTING.md": "fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b",
+          "LICENSE": "68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14",
+          "Makefile": "928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1",
+          "README.md": "7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5",
+          "SECURITY.md": "2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8",
+          "component.json": "f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731",
+          "index.js": "9cdb3c88d27623399e1cefa7ccff93e58fbaabda66b89feca2da4231e69de1cb",
+          "package-lock.json": "c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a",
+          "package.json": "774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb",
+          "renovate.json": "2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6",
+          "spyglass.json": "1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c",
+          "tea.yaml": "9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5",
+          "test.js": "f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a",
+          "verification-plan.json": "209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "8a702876-c85-1-profile.json",
+          "sha256": "f1b67253a3dc44321bff73f9a29b9901bf889b2828c9037e60683ee73001aff3",
+          "kind": "configuration",
+          "step": "8a702876-c85"
+        },
+        {
+          "path": "8a702876-c85-2-plan.json",
+          "sha256": "e95e3d05b32c09247b550b98da87ed43e79d756ea100e8baada406297260a90e",
+          "kind": "configuration",
+          "step": "8a702876-c85"
+        }
+      ],
+      "data": {
+        "id": "guided-m2-fault",
+        "state": "ready",
+        "repo": "/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault",
+        "evidence": ".spyglass/runs/guided-m2-fault/spyglass",
+        "port": 64715,
+        "source": {
+          "commit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+          "hash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685",
+          "fileCount": 23
+        },
+        "sourceChanges": [],
+        "profile": "/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "detects-fault",
+              "claim": "existing-check",
+              "expectation": "The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.",
+              "command": [
+                "check",
+                "verify"
+              ],
+              "failure": {
+                "code": "CHECK_FAILED",
+                "contains": "not ok 1 should be truthy"
+              }
+            }
+          ],
+          "claims": [
+            {
+              "id": "existing-check",
+              "behavior": "The existing isarray checks accept the candidate.",
+              "entryPoint": "npm run tests-only",
+              "precondition": "The existing npm lockfile dependencies are installed.",
+              "expected": "All 28 existing Tape assertions pass in both named cases, with no skips.",
+              "case": "Unchanged candidate and an isolated always-false export fault.",
+              "checks": [
+                "verify"
+              ],
+              "evidence": [
+                "Tape output and command exit status"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.",
+            "Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.",
+            "The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.",
+            "Legacy browser compatibility, package publication, browser behavior and human use are untested."
+          ]
+        },
+        "result": ".spyglass/runs/guided-m2-fault/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=guided-m2-fault",
+        "active": {
+          "pid": 92224,
+          "processStartedAt": "2026-11-04T14:00:02.164Z",
+          "command": "up",
+          "startedAt": "2026-11-04T14:00:02.257Z"
+        },
+        "activeSeat": "default",
+        "cleanup": false,
+        "capabilities": {
+          "ui": {
+            "available": false,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": false,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "verify"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [],
+        "pendingClaims": [
+          "existing-check"
+        ],
+        "owner": {
+          "mode": "none",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass result --file .spyglass/runs/guided-m2-fault/spyglass/result.json --run guided-m2-fault",
+        "resultRules": [
+          "A passed claim lists its successful steps from this run in steps and states what you saw in observed.",
+          "Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.",
+          "Claims existing-check: cite a successful step of check verify.",
+          "Behavior claims existing-check: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.",
+          "Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control's claim passes and cites restoredStep.",
+          "Control detects-fault: claim existing-check, command check verify fails with CHECK_FAILED containing \"not ok 1 should be truthy\"."
+        ],
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 23,
+          "rehashed": 0
+        }
+      }
+    },
+    {
+      "id": "1e5de173-be5",
+      "command": "check",
+      "args": [
+        "verify"
+      ],
+      "startedAt": "2026-11-04T14:00:02.363Z",
+      "durationMs": 228,
+      "exitCode": 1,
+      "commandExitCode": 1,
+      "status": "failed",
+      "source": {
+        "commit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+        "hash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685",
+        "files": {
+          ".eslintrc": "2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81",
+          ".github/FUNDING.yml": "0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d",
+          ".github/workflows/node-aught.yml": "ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f",
+          ".github/workflows/node-pretest.yml": "257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca",
+          ".github/workflows/node-tens.yml": "614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1",
+          ".github/workflows/rebase.yml": "7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871",
+          ".github/workflows/require-allow-edits.yml": "256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425",
+          ".gitignore": "43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7",
+          ".travis.yml": "de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95",
+          "CONTRIBUTING.md": "fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b",
+          "LICENSE": "68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14",
+          "Makefile": "928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1",
+          "README.md": "7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5",
+          "SECURITY.md": "2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8",
+          "component.json": "f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731",
+          "index.js": "9cdb3c88d27623399e1cefa7ccff93e58fbaabda66b89feca2da4231e69de1cb",
+          "package-lock.json": "c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a",
+          "package.json": "774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb",
+          "renovate.json": "2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6",
+          "spyglass.json": "1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c",
+          "tea.yaml": "9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5",
+          "test.js": "f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a",
+          "verification-plan.json": "209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "1e5de173-be5-1-verify-output.txt",
+          "sha256": "a8f74e07c42a256d25f9c31ccc217b0d2ec08245c04d9baefa1b16eabd5c17bf",
+          "kind": "command-output",
+          "step": "1e5de173-be5"
+        }
+      ],
+      "data": {
+        "check": "verify",
+        "attempt": "1e5de173-be5",
+        "command": [
+          "npm",
+          "run",
+          "tests-only"
+        ],
+        "exitCode": 1,
+        "timedOut": false,
+        "stdout": "\n> isarray@2.0.5 tests-only\n> tape test.js\n\nTAP version 13\n# is array (only polyfill)\nnot ok 1 should be truthy\n  ---\n    operator: ok\n    expected: true\n    actual:   false\n    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:10:5)\n    stack: |-\n      Error: should be truthy\n          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)\n          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)\n          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:10:5)\n          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)\n          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)\n          at process.processImmediate (node:internal/timers:504:21)\n  ...\nok 2 should be falsy\nok 3 should be falsy\nok 4 should be falsy\nok 5 should be falsy\nok 6 should be falsy\nok 7 should be falsy\nok 8 should be falsy\nok 9 should be falsy\nok 10 should be falsy\nok 11 should be falsy\nok 12 should be falsy\nok 13 should be falsy\nnot ok 14 should be truthy\n  ---\n    operator: ok\n    expected: true\n    actual:   false\n    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:29:5)\n    stack: |-\n      Error: should be truthy\n          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)\n          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)\n          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:29:5)\n          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)\n          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)\n          at process.processImmediate (node:internal/timers:504:21)\n  ...\n# is array (native)\nnot ok 15 should be truthy\n  ---\n    operator: ok\n    expected: true\n    actual:   false\n    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:36:5)\n    stack: |-\n      Error: should be truthy\n          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)\n          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)\n          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:36:5)\n          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)\n          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)\n          at process.processImmediate (node:internal/timers:504:21)\n  ...\nok 16 should be falsy\nok 17 should be falsy\nok 18 should be falsy\nok 19 should be falsy\nok 20 should be falsy\nok 21 should be falsy\nok 22 should be falsy\nok 23 should be falsy\nok 24 should be falsy\nok 25 should be falsy\nok 26 should be falsy\nok 27 should be falsy\nnot ok 28 should be truthy\n  ---\n    operator: ok\n    expected: true\n    actual:   false\n    at: Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:55:5)\n    stack: |-\n      Error: should be truthy\n          at Test.assert [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:312:48)\n          at Test.bound [as _assert] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.assert (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:431:7)\n          at Test.bound [as ok] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.<anonymous> (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/test.js:55:5)\n          at Test.bound [as _cb] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Test.run (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:115:28)\n          at Test.bound [as run] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/test.js:95:17)\n          at Immediate.next [as _onImmediate] (/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/node_modules/tape/lib/results.js:157:7)\n          at process.processImmediate (node:internal/timers:504:21)\n  ...\n\n1..28\n# tests 28\n# pass  24\n# fail  4\n\n",
+        "stderr": "",
+        "claims": [],
+        "skips": [],
+        "overall": null,
+        "malformedAssertions": 0,
+        "artifacts": [
+          {
+            "path": "1e5de173-be5-1-verify-output.txt",
+            "sha256": "a8f74e07c42a256d25f9c31ccc217b0d2ec08245c04d9baefa1b16eabd5c17bf",
+            "kind": "command-output",
+            "step": "1e5de173-be5"
+          }
+        ],
+        "importErrors": [],
+        "passed": false,
+        "error": {
+          "code": "CHECK_FAILED",
+          "message": "Check verify failed: command exit 1."
+        },
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 23,
+          "rehashed": 0
+        },
+        "linked": {
+          "claims": [],
+          "controls": [
+            "detects-fault:failed"
+          ],
+          "gates": [],
+          "skipped": []
+        }
+      }
+    },
+    {
+      "id": "d16d1611-885",
+      "command": "down",
+      "args": [],
+      "startedAt": "2026-11-04T14:00:02.630Z",
+      "durationMs": 36,
+      "exitCode": 0,
+      "commandExitCode": 0,
+      "status": "passed",
+      "source": {
+        "commit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+        "hash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685",
+        "files": {
+          ".eslintrc": "2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81",
+          ".github/FUNDING.yml": "0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d",
+          ".github/workflows/node-aught.yml": "ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f",
+          ".github/workflows/node-pretest.yml": "257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca",
+          ".github/workflows/node-tens.yml": "614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1",
+          ".github/workflows/rebase.yml": "7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871",
+          ".github/workflows/require-allow-edits.yml": "256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425",
+          ".gitignore": "43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7",
+          ".travis.yml": "de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95",
+          "CONTRIBUTING.md": "fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b",
+          "LICENSE": "68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14",
+          "Makefile": "928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1",
+          "README.md": "7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5",
+          "SECURITY.md": "2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8",
+          "component.json": "f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731",
+          "index.js": "9cdb3c88d27623399e1cefa7ccff93e58fbaabda66b89feca2da4231e69de1cb",
+          "package-lock.json": "c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a",
+          "package.json": "774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb",
+          "renovate.json": "2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6",
+          "spyglass.json": "1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c",
+          "tea.yaml": "9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5",
+          "test.js": "f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a",
+          "verification-plan.json": "209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed"
+        }
+      },
+      "artifacts": [],
+      "data": {
+        "id": "guided-m2-fault",
+        "state": "stopped",
+        "repo": "/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault",
+        "evidence": ".spyglass/runs/guided-m2-fault/spyglass",
+        "port": 64715,
+        "source": {
+          "commit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+          "hash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685",
+          "fileCount": 23
+        },
+        "sourceChanges": [],
+        "profile": "/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/spyglass.json",
+        "plan": {
+          "controls": [
+            {
+              "id": "detects-fault",
+              "claim": "existing-check",
+              "expectation": "The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.",
+              "command": [
+                "check",
+                "verify"
+              ],
+              "failure": {
+                "code": "CHECK_FAILED",
+                "contains": "not ok 1 should be truthy"
+              }
+            }
+          ],
+          "claims": [
+            {
+              "id": "existing-check",
+              "behavior": "The existing isarray checks accept the candidate.",
+              "entryPoint": "npm run tests-only",
+              "precondition": "The existing npm lockfile dependencies are installed.",
+              "expected": "All 28 existing Tape assertions pass in both named cases, with no skips.",
+              "case": "Unchanged candidate and an isolated always-false export fault.",
+              "checks": [
+                "verify"
+              ],
+              "evidence": [
+                "Tape output and command exit status"
+              ],
+              "kind": "behavior",
+              "required": true
+            }
+          ],
+          "gates": [],
+          "limits": [
+            "Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.",
+            "Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.",
+            "The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.",
+            "Legacy browser compatibility, package publication, browser behavior and human use are untested."
+          ]
+        },
+        "result": ".spyglass/runs/guided-m2-fault/spyglass/result.json",
+        "export": "export SPYGLASS_RUN=guided-m2-fault",
+        "active": {
+          "pid": 92357,
+          "processStartedAt": "2026-11-04T14:00:02.608Z",
+          "command": "down",
+          "startedAt": "2026-11-04T14:00:02.629Z"
+        },
+        "activeSeat": "default",
+        "cleanup": true,
+        "capabilities": {
+          "ui": {
+            "available": false,
+            "tool": "agent-browser",
+            "testedVersion": "0.38.2"
+          },
+          "api": {
+            "available": false,
+            "tool": "Node fetch"
+          },
+          "db": {
+            "available": false,
+            "tool": "node-postgres"
+          },
+          "compose": {
+            "available": false,
+            "tool": "docker compose"
+          },
+          "check": {
+            "available": true,
+            "names": [
+              "verify"
+            ]
+          },
+          "exec": {
+            "available": true,
+            "tool": "process"
+          },
+          "skill": null,
+          "features": null
+        },
+        "completedChecks": [
+          {
+            "name": "verify",
+            "step": "1e5de173-be5",
+            "exitCode": 1,
+            "commandExitCode": 1,
+            "childExitCode": 1,
+            "spyglassExitCode": 1,
+            "status": "failed"
+          }
+        ],
+        "pendingClaims": [
+          "existing-check"
+        ],
+        "owner": {
+          "mode": "none",
+          "bindings": {},
+          "cleanupRequired": false
+        },
+        "next": "spyglass result --file .spyglass/runs/guided-m2-fault/spyglass/result.json --run guided-m2-fault",
+        "ownerCleanupRequired": false,
+        "sourceCheck": {
+          "mode": "fast",
+          "files": 23,
+          "rehashed": 0
+        }
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "8a702876-c85-1-profile.json",
+      "sha256": "f1b67253a3dc44321bff73f9a29b9901bf889b2828c9037e60683ee73001aff3",
+      "kind": "configuration",
+      "step": "8a702876-c85",
+      "valid": true,
+      "sourceStep": "8a702876-c85"
+    },
+    {
+      "path": "8a702876-c85-2-plan.json",
+      "sha256": "e95e3d05b32c09247b550b98da87ed43e79d756ea100e8baada406297260a90e",
+      "kind": "configuration",
+      "step": "8a702876-c85",
+      "valid": true,
+      "sourceStep": "8a702876-c85"
+    },
+    {
+      "path": "1e5de173-be5-1-verify-output.txt",
+      "sha256": "a8f74e07c42a256d25f9c31ccc217b0d2ec08245c04d9baefa1b16eabd5c17bf",
+      "kind": "command-output",
+      "step": "1e5de173-be5",
+      "valid": true,
+      "sourceStep": "1e5de173-be5"
+    }
+  ],
+  "findings": [
+    {
+      "code": "RESULT_MISSING",
+      "message": "No result has been recorded for this run. Submit it with spyglass result --file PATH."
+    },
+    {
+      "code": "CONTROL_INCOMPLETE",
+      "control": "detects-fault",
+      "message": "Required negative control detects-fault has no failed-then-restored result."
+    }
+  ],
+  "report": {
+    "page": {
+      "path": "3c232f94-55d-1-index.html",
+      "sha256": "3d2f18d1e4ea20aec2b71aa9ed0ae3a2226f11a40216590affd24c0614168905"
+    },
+    "summary": {
+      "path": "3c232f94-55d-2-summary.json"
+    }
+  }
+}
