@@ -1,25 +1,230 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [dev, main, "release/**"]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * 1"
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  policy:
+    name: PR branch policy
+    permissions: {}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - name: Check Git Flow routes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          if (process.env.EVENT_NAME !== 'pull_request') process.exit(0);
+          const { pull_request: pr, repository } = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+          const source = pr.head.ref;
+          const target = pr.base.ref;
+          const local = pr.head.repo?.full_name === repository.full_name;
+          const work = /^(feat|feature|features|fix|fixes|docs|chore|refactor|perf|test|ci|build)\/.+/.test(source);
+          const release = /^release\/.+/.test(source);
+          const hotfix = /^hotfix\/.+/.test(source);
+          const releaseRepair = /^(fix|docs|chore)\/.+/.test(source);
+          const dependency = source.startsWith('dependabot/') && pr.user.login === 'dependabot[bot]';
+          const allowed =
+            (target === 'dev' && (work || dependency || (local && (source === 'main' || release || hotfix)))) ||
+            (target === 'main' && local && (release || hotfix)) ||
+            (/^release\/.+/.test(target) && local && (source === 'main' || hotfix || releaseRepair));
+          if (!allowed) {
+            console.error('Invalid PR route. Use work branches -> dev; release/* or hotfix/* -> main; main, release/* or hotfix/* -> dev; main, hotfix/* or release-only fix/docs/chore branches -> release/*. Release routes and long-lived back-merges must come from this repository.');
+            process.exit(1);
+          }
+          console.log('PR branch route is valid. Branch origin and release readiness still require review.');
+          NODE
+
+  test:
+    name: Default E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      # `up` runs `agent-browser --version` for any profile with a web origin.
-      # Chromium is needed only for the opt-in surface tests.
+      # Profiles with a web origin check the supported tool version even without UI steps.
       - run: npm install --global agent-browser@0.38.2
       - run: npm run format:check
-      - run: npm test
+      - run: npm run build
+      - name: Reject generated schema drift
+        run: |
+          git diff --exit-code -- schemas/
+          test -z "$(git ls-files --others --exclude-standard -- schemas/)"
+      - name: Run default E2E with retained results
+        run: |
+          mkdir -p "$RUNNER_TEMP/e2e"
+          node --test --test-concurrency=1 \
+            --test-reporter=tap --test-reporter-destination="$RUNNER_TEMP/e2e/default.tap" \
+            --test-reporter=junit --test-reporter-destination="$RUNNER_TEMP/e2e/default.xml" \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            tests/e2e/*.test.mjs
+      - name: Retain default results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: default-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+  surfaces:
+    name: Real surface E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install --global agent-browser@0.38.2
+      - run: agent-browser install --with-deps
+      - name: Allow installed Chromium to use its sandbox
+        # Ubuntu 24.04 restricts user namespaces for downloaded Chrome builds.
+        # Follow Chromium's AppArmor option 2, with exact installed binary paths:
+        # https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
+        run: |
+          cache="$HOME/.agent-browser/browsers"
+          mapfile -d '' browsers < <(find "$cache" -maxdepth 3 -type f -executable \
+            \( -path "$cache/chrome-*/chrome" -o -path "$cache/chrome-*/chrome-linux64/chrome" \) -print0)
+          if (( ${#browsers[@]} == 0 )); then
+            echo '::error::agent-browser install produced no supported Chromium executable'
+            exit 1
+          fi
+          profile="$RUNNER_TEMP/spyglass-ci-chromium.apparmor"
+          printf 'abi <abi/4.0>,\ninclude <tunables/global>\n' > "$profile"
+          for index in "${!browsers[@]}"; do
+            binary="$(realpath "${browsers[$index]}")"
+            case "$binary" in
+              "$cache"/*) ;;
+              *) echo '::error::Chromium executable resolved outside its install cache'; exit 1 ;;
+            esac
+            printf 'profile spyglass-ci-chromium-%s "%s" flags=(unconfined) {\n  userns,\n}\n' \
+              "$index" "$binary" >> "$profile"
+          done
+          sudo install -m 0644 "$profile" /etc/apparmor.d/spyglass-ci-chromium
+          sudo apparmor_parser --replace /etc/apparmor.d/spyglass-ci-chromium
+          # Keep the global restriction enabled; only these executables are allowed.
+          sysctl kernel.apparmor_restrict_unprivileged_userns
+      - name: Check real tools
+        run: |
+          agent-browser --version
+          docker info
+          docker compose version
+      - run: npm run build
+      - name: Run Chromium, HTTP, PostgreSQL and Compose E2E
+        env:
+          SPYGLASS_TEST_SURFACES: "1"
+          SPYGLASS_TEST_ARTIFACTS: ${{ runner.temp }}/e2e/visual-proof
+        run: |
+          mkdir -p "$RUNNER_TEMP/e2e"
+          node --test --test-concurrency=1 \
+            --test-reporter=tap --test-reporter-destination="$RUNNER_TEMP/e2e/surfaces.tap" \
+            --test-reporter=junit --test-reporter-destination="$RUNNER_TEMP/e2e/surfaces.xml" \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            tests/e2e/surfaces.test.mjs
+      - name: Retain surface results and safe visual proof
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: real-surface-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # PR/push scans use their event range; dispatch/schedule scan full history.
+      - uses: trufflesecurity/trufflehog@ea68ca03c865c5f324e86e849ced20ed3cf9dbbb # v3.99.8
+        with:
+          version: "3.99.8"
+          extra_args: --results=verified,unknown
+
+  dependencies:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: never
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          category: /language:javascript-typescript
+
+  required:
+    name: CI required
+    permissions: {}
+    if: always()
+    needs: [policy, test, surfaces, secrets, dependencies, codeql]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require all applicable checks
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node --input-type=module <<'NODE'
+          const jobs = JSON.parse(process.env.RESULTS);
+          for (const [name, job] of Object.entries(jobs)) {
+            const expected = name === 'dependencies' && process.env.EVENT_NAME !== 'pull_request' ? 'skipped' : 'success';
+            if (job.result !== expected) {
+              console.error(`Required job ${name}: ${job.result} (expected ${expected})`);
+              process.exitCode = 1;
+            }
+          }
+          NODE

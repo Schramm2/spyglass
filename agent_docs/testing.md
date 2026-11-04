@@ -17,13 +17,13 @@ current source. To rerun tests without a rebuild, run `node --test` directly
 
 ## Files
 
-| File | Covers |
-| --- | --- |
-| `tests/e2e/helper.mjs` | Shared helpers: `makeRepo`, `removeRepo`, `runCli`, `startCli`, `assertEnvelope`, `baseProfile`, `readRunFile`, `waitFor`, `spawnCapture` |
-| `tests/e2e/core.test.mjs` | Run lifecycle, checks, evidence, source identity, claims, controls, reports, locks and errors. Needs no browser or Docker. |
-| `tests/e2e/surfaces.test.mjs` | Real Chromium through `agent-browser`, HTTP, PostgreSQL and Compose. Opt-in. |
-| `fixtures/demo-app/` | The app under test: `server.mjs` (HTTP app), `check.mjs` (a named check that passes or fails on request), `compose.yaml` (PostgreSQL 17) |
-| `docs/failure-cases.md` | The failure cases the suite must cover |
+| File                          | Covers                                                                                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/e2e/helper.mjs`        | Shared helpers: `makeRepo`, `removeRepo`, `runCli`, `startCli`, `assertEnvelope`, `baseProfile`, `readRunFile`, `waitFor`, `spawnCapture` |
+| `tests/e2e/core.test.mjs`     | Run lifecycle, checks, evidence, source identity, claims, controls, reports, locks and errors. Needs no browser or Docker.                |
+| `tests/e2e/surfaces.test.mjs` | Real Chromium through `agent-browser`, HTTP, PostgreSQL and Compose. Opt-in.                                                              |
+| `fixtures/demo-app/`          | The app under test: `server.mjs` (HTTP app), `check.mjs` (a named check that passes or fails on request), `compose.yaml` (PostgreSQL 17)  |
+| `docs/failure-cases.md`       | The failure cases the suite must cover                                                                                                    |
 
 `makeRepo` (`tests/e2e/helper.mjs:15`) copies the demo fixture into a
 temporary directory, writes `.gitignore`, `package.json`, an optional
@@ -38,23 +38,52 @@ beside the temporary repository, so run state never touches your own
 `${port}` binding, a web and API origin, a source scope and a browser
 allowlist. Override fields with its argument.
 
+Direct browser-session probes must address the same run-owned daemon as
+Spyglass. The `browserActive` probe in `tests/e2e/surfaces.test.mjs` clears
+inherited `XDG_RUNTIME_DIR` and `AGENT_BROWSER_SOCKET_DIR` overrides: Spyglass
+isolates its browser environment and uses the HOME socket root. A probe of
+another socket directory can report an active browser as absent and make a
+cleanup assertion pass for the wrong reason.
+
 ## Requirements
 
-| Suite | Needs |
-| --- | --- |
+| Suite                | Needs                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `npm test` (default) | Node 24, Git, `agent-browser` 0.38.2 on `PATH`. `up` runs `agent-browser --version` for any profile with a `web` origin, so most core tests fail with `TOOL_UNAVAILABLE` without it. |
-| Surface tests | The above, plus Chromium for `agent-browser` and a running Docker with Compose. Set `SPYGLASS_TEST_SURFACES=1`. |
+| Surface tests        | The above, plus Chromium for `agent-browser` and a running Docker with Compose. Set `SPYGLASS_TEST_SURFACES=1`.                                                                      |
 
 Without `SPYGLASS_TEST_SURFACES=1`, the surface tests show as skipped with
-the reason. CI does not run them. The surface tests start their own
-PostgreSQL from `fixtures/demo-app/compose.yaml` and set
+the reason. CI runs them in a separate required job on every PR to `dev`,
+`main` or a release branch. The surface tests start their own PostgreSQL from `fixtures/demo-app/compose.yaml` and set
 `SPYGLASS_TEST_DATABASE_URL` and `SPYGLASS_TEST_API_TOKEN` themselves; you do
 not supply them.
 
 ```sh
 npm install --global agent-browser@0.38.2
+agent-browser install --with-deps
 SPYGLASS_TEST_SURFACES=1 npm test
 ```
+
+## Retained CI evidence
+
+CI retains TAP and JUnit output for both suites. The real surface job also
+sets `SPYGLASS_TEST_ARTIFACTS` to an output directory. The existing visual
+surface check copies its completed offline report, wide and narrow dashboard
+screenshots and a provenance record there, after checking secret masking.
+It never copies the temporary repository, browser profile or credential file.
+The retained report is self-contained and survives test cleanup.
+
+To produce the same artifact locally after building:
+
+```sh
+SPYGLASS_TEST_SURFACES=1 SPYGLASS_TEST_ARTIFACTS=/tmp/spyglass-e2e-proof node --test --test-concurrency=1 tests/e2e/surfaces.test.mjs
+```
+
+Use a new destination for each run. Open the screenshots before recording a
+visual observation. TAP/JUnit records the whole suite; the copied report
+covers the named visual journey, not every test. An earlier failure can
+prevent that journey from producing its report. `agent_docs/ci.md` owns the
+review and retention limits.
 
 ## Focus one test
 
@@ -89,7 +118,9 @@ helper or fixture needs the maintainer's agreement in the pull request.
 
 ## What a passing suite does not prove
 
-The default suite does not drive a real browser or database. A change to
-`src/browser.ts`, `src/browser-proxy.ts` or the `db`, `ps` and `logs` paths in
-`src/surfaces.ts` needs `SPYGLASS_TEST_SURFACES=1 npm test`. If you cannot run
-it, say so in the pull request.
+The default local suite does not drive a real browser or database. A change
+to `src/browser.ts`, `src/browser-proxy.ts` or the `db`, `ps` and `logs` paths
+in `src/surfaces.ts` needs `SPYGLASS_TEST_SURFACES=1 npm test`. If you cannot
+run it locally, say so in the pull request; the required surface CI job must
+still pass. A green suite does not establish human usability, semantic image
+inspection, every supported platform or the benchmark's timing budget.

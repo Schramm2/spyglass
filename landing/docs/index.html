@@ -3140,7 +3140,24 @@ npm run format:check</code></pre>
             The end-to-end tests run the built CLI in temporary Git
             repositories. They need <code>agent-browser</code> on your
             <code>PATH</code>. The surface tests also need its Chromium and
-            Docker.
+            Docker. CI runs both suites on pull requests and retains test output
+            and offline report artifacts for review after cleanup. See the
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/dev/agent_docs/ci.md"
+              >CI guide</a
+            >
+            for the evidence boundary.
+          </p>
+          <p>
+            Development uses Git Flow: <code>dev</code> is the default
+            integration branch; <code>main</code> receives releases and urgent
+            hotfixes. Ordinary changes branch from and return through a pull
+            request to <code>dev</code>. The
+            <a
+              href="https://github.com/Schramm2/spyglass/blob/dev/agent_docs/git-workflow.md"
+              >Git workflow</a
+            >
+            defines protected gates and release back-merges.
           </p>
           <h3>Roadmap</h3>
           <p>

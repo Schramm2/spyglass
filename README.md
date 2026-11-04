@@ -54,11 +54,11 @@ completed, the artifacts exist, the source is current and the cleanup is done.
 
 These tools are necessary only for some surfaces:
 
-| Tool | Necessary for |
-| --- | --- |
+| Tool                                                                  | Necessary for                                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | [`agent-browser`](https://www.npmjs.com/package/agent-browser) 0.38.2 | `up` for a profile with a `web` origin. Browser checks (`ui`) also need its Chromium. |
-| Docker Compose | Container status and logs (`ps`, `logs`) |
-| A PostgreSQL database | Database reads (`db`). The driver is included. |
+| Docker Compose                                                        | Container status and logs (`ps`, `logs`)                                              |
+| A PostgreSQL database                                                 | Database reads (`db`). The driver is included.                                        |
 
 Spyglass does not install tools, fetch secrets or start your app during `init`.
 
@@ -116,15 +116,15 @@ and start a new run.
 
 ### Surfaces
 
-| Surface | Commands | Evidence |
-| --- | --- | --- |
-| Existing tests and journeys | `check NAME` | Exit status, assertions, declared artifacts |
-| Other commands | `exec -- COMMAND ARGS` | Bounded stdout and stderr, real exit status |
-| Web browser | `ui open /`, `ui snapshot`, `ui expect`, `ui proof LABEL`, `ui focused` | Isolated session, screenshot, DOM, errors and requests |
-| HTTP | `api GET /path --expect 200 --expect-json status=ok --wait-until status=complete` | Masked request and response, assertions and poll record; redirects are not followed |
-| PostgreSQL | `db 'SELECT ...' --expect-rows 1 --expect-col name=alpha` | One statement in a read-only transaction, with rows, assertions and role limits |
-| Docker Compose | `ps --wait`, `mark LABEL`, `logs SERVICE --since-step ID --grep PATTERN` | Project-scoped status and timestamped logs |
-| Other evidence | `evidence add --step ID --file PATH` | Checked copy from a declared import root |
+| Surface                     | Commands                                                                          | Evidence                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Existing tests and journeys | `check NAME`                                                                      | Exit status, assertions, declared artifacts                                         |
+| Other commands              | `exec -- COMMAND ARGS`                                                            | Bounded stdout and stderr, real exit status                                         |
+| Web browser                 | `ui open /`, `ui snapshot`, `ui expect`, `ui proof LABEL`, `ui focused`           | Isolated session, screenshot, DOM, errors and requests                              |
+| HTTP                        | `api GET /path --expect 200 --expect-json status=ok --wait-until status=complete` | Masked request and response, assertions and poll record; redirects are not followed |
+| PostgreSQL                  | `db 'SELECT ...' --expect-rows 1 --expect-col name=alpha`                         | One statement in a read-only transaction, with rows, assertions and role limits     |
+| Docker Compose              | `ps --wait`, `mark LABEL`, `logs SERVICE --since-step ID --grep PATTERN`          | Project-scoped status and timestamped logs                                          |
+| Other evidence              | `evidence add --step ID --file PATH`                                              | Checked copy from a declared import root                                            |
 
 Run `spyglass --help` for all commands, and `spyglass COMMAND --help` for the
 arguments of one command.
@@ -136,18 +136,18 @@ each condition holds or `--timeout-ms` ends (default 5000, maximum 120000), and
 it writes `expect.json`. It exits 1 and keeps the last observation when a
 condition never holds. It never reads an input value: `--attr value` is refused.
 
-| Flag | The condition holds when |
-| --- | --- |
-| `--url PATTERN` | The URL contains `PATTERN`. With `*`, the pattern matches the whole URL, or the path and query when it has no scheme. |
-| `--text TEXT` | The page text contains `TEXT`. |
-| `--title TEXT` | The page title is `TEXT`. |
-| `--selector SEL` | At least one element matches `SEL`. |
-| `--visible SEL` / `--hidden SEL` | An element matches and is visible, or none matches or it is not visible. |
-| `--enabled SEL` / `--checked SEL` | The element is enabled, or checked. |
-| `--count SEL=N` | Exactly `N` elements match `SEL`. |
-| `--focused LABEL` | The focused element has the label `LABEL`. |
-| `--attr SEL:NAME=VALUE` | The attribute `NAME` of the element is `VALUE`. |
-| `--no-errors` | The page has no page error and no console error. |
+| Flag                              | The condition holds when                                                                                              |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `--url PATTERN`                   | The URL contains `PATTERN`. With `*`, the pattern matches the whole URL, or the path and query when it has no scheme. |
+| `--text TEXT`                     | The page text contains `TEXT`.                                                                                        |
+| `--title TEXT`                    | The page title is `TEXT`.                                                                                             |
+| `--selector SEL`                  | At least one element matches `SEL`.                                                                                   |
+| `--visible SEL` / `--hidden SEL`  | An element matches and is visible, or none matches or it is not visible.                                              |
+| `--enabled SEL` / `--checked SEL` | The element is enabled, or checked.                                                                                   |
+| `--count SEL=N`                   | Exactly `N` elements match `SEL`.                                                                                     |
+| `--focused LABEL`                 | The focused element has the label `LABEL`.                                                                            |
+| `--attr SEL:NAME=VALUE`           | The attribute `NAME` of the element is `VALUE`.                                                                       |
+| `--no-errors`                     | The page has no page error and no console error.                                                                      |
 
 ```sh
 spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question" --run ID
@@ -155,17 +155,17 @@ spyglass ui expect --url /dashboard --text "Ask a question" --visible "#question
 
 ### Check data and wait for jobs in one call
 
-| Command | Option | Meaning |
-| --- | --- | --- |
-| `api` | `--expect-json PATH=VALUE` or `PATH!=VALUE` | Check a field of the JSON body. A dotted `PATH` reaches objects, array indexes and `length`, for example `items.length=3`. A path that is not in the body fails both forms. |
-| `api` | `--expect-body-contains TEXT` | The raw body contains `TEXT`. |
+| Command                                    | Option                                                                   | Meaning                                                                                                                                                                                                                                        |
+| ------------------------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api`                                      | `--expect-json PATH=VALUE` or `PATH!=VALUE`                              | Check a field of the JSON body. A dotted `PATH` reaches objects, array indexes and `length`, for example `items.length=3`. A path that is not in the body fails both forms.                                                                    |
+| `api`                                      | `--expect-body-contains TEXT`                                            | The raw body contains `TEXT`.                                                                                                                                                                                                                  |
 | `api POST` (also `PUT`, `PATCH`, `DELETE`) | `--then GET PATH [--then-expect STATUS] [--then-expect-json PATH=VALUE]` | Make one immediate read after a successful write. `{body.id}` fills a URL-encoded scalar, non-secret response field. The GET reuses the seat and expects HTTP 200 by default. Both requests stay in one step; this is not an independent read. |
-| `api GET` | `--wait-until PATH=VALUE` | Poll until the field has the value. Add `--fail-on PATH=VALUE` to stop at a failed state, `--timeout-ms` (default 15000) and `--interval-ms` (default 250). |
-| `db` | `--expect-col COLUMN=VALUE` | The first row has the value. A dotted name reaches into a JSON column. Repeat the flag for more columns. |
-| `db` | `--expect-empty` | The query returns no row (`--expect-rows 0`). |
-| `ps` | `--wait`, `--timeout-ms MS` | Poll every 500 ms until each required service is running and, with a health check, healthy. |
-| `logs` | `--since-step ID`, `--since-last` | Start at a step's start time, or the previous step, with no `mark`. |
-| `logs` | `--grep PATTERN`, `--expect-text TEXT`, `--forbid-text TEXT` | Keep matching lines, then require or refuse text. |
+| `api GET`                                  | `--wait-until PATH=VALUE`                                                | Poll until the field has the value. Add `--fail-on PATH=VALUE` to stop at a failed state, `--timeout-ms` (default 15000) and `--interval-ms` (default 250).                                                                                    |
+| `db`                                       | `--expect-col COLUMN=VALUE`                                              | The first row has the value. A dotted name reaches into a JSON column. Repeat the flag for more columns.                                                                                                                                       |
+| `db`                                       | `--expect-empty`                                                         | The query returns no row (`--expect-rows 0`).                                                                                                                                                                                                  |
+| `ps`                                       | `--wait`, `--timeout-ms MS`                                              | Poll every 500 ms until each required service is running and, with a health check, healthy.                                                                                                                                                    |
+| `logs`                                     | `--since-step ID`, `--since-last`                                        | Start at a step's start time, or the previous step, with no `mark`.                                                                                                                                                                            |
+| `logs`                                     | `--grep PATTERN`, `--expect-text TEXT`, `--forbid-text TEXT`             | Keep matching lines, then require or refuse text.                                                                                                                                                                                              |
 
 For a pending-state control, use `api POST /questions --data @question.json
 --expect 202 --then GET '/questions/{body.id}' --then-expect-json status=complete
@@ -202,15 +202,15 @@ spyglass ui verify --open /dashboard \
   --claim form-works --claim form-looks-right --run ID
 ```
 
-| Flag | Meaning |
-| --- | --- |
-| `--open PATH` | Open a page first. |
-| `--do COMMAND` | One browser command. Repeat the flag for more. A `click`, `fill`, `press` or `select` settles before the next sub-step. A screenshot is not an action: use `--proof`. |
-| `--expect KIND=VALUE` | An expectation of `ui expect`: `url`, `text`, `title`, `selector`, `visible`, `hidden`, `enabled`, `checked`, `count=SEL=N`, `focused`, `attr=SEL:NAME=VALUE` or `no-errors`. Spyglass checks them in order. |
-| `--expect-focus-moved LABEL` | Record the focus before the actions and after them in `focused.json`. It fails when focus was already on `LABEL`, or is not on it afterward. |
-| `--proof LABEL` | Save `proof-LABEL.png`, its snapshot and its details. |
-| `--viewport WxH` | With `--proof`, repeat per viewport: resize, settle, check every `--expect` again and save `proof-LABEL-WxH.png`. |
-| `--timeout-ms MS` | The limit for each expectation (default 5000). |
+| Flag                         | Meaning                                                                                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--open PATH`                | Open a page first.                                                                                                                                                                                           |
+| `--do COMMAND`               | One browser command. Repeat the flag for more. A `click`, `fill`, `press` or `select` settles before the next sub-step. A screenshot is not an action: use `--proof`.                                        |
+| `--expect KIND=VALUE`        | An expectation of `ui expect`: `url`, `text`, `title`, `selector`, `visible`, `hidden`, `enabled`, `checked`, `count=SEL=N`, `focused`, `attr=SEL:NAME=VALUE` or `no-errors`. Spyglass checks them in order. |
+| `--expect-focus-moved LABEL` | Record the focus before the actions and after them in `focused.json`. It fails when focus was already on `LABEL`, or is not on it afterward.                                                                 |
+| `--proof LABEL`              | Save `proof-LABEL.png`, its snapshot and its details.                                                                                                                                                        |
+| `--viewport WxH`             | With `--proof`, repeat per viewport: resize, settle, check every `--expect` again and save `proof-LABEL-WxH.png`.                                                                                            |
+| `--timeout-ms MS`            | The limit for each expectation (default 5000).                                                                                                                                                               |
 
 When sub-step K fails, the sub-steps before it stay `passed`, K keeps its
 failure with a failure screenshot and a delta snapshot, and the later ones are
@@ -248,12 +248,12 @@ the flags, so you can copy it and run it as written.
 
 ### Shorter runs
 
-| Command | What it saves |
-| --- | --- |
-| `up --warm [--seat SEAT]` | Starts the exact-origin proxy and the headless browser of a seat while the app starts. With `--seat`, it signs the seat in once the app is ready, if the seat has a login. `data.warm` shows it. If `up` fails, the warm browser and proxy close. |
-| `check a,b`, `check --gates [--concurrency N]` | Runs checks at the same time (default 4, up to 8). Each check is its own step and keeps its artifacts; the run lock and the log stay whole. The checks must not change the source. `--gates` runs the profile checks named like the planned gates and links each to its gate. |
-| `ui ... --relogin` | When the seat's browser expired and the seat has a login, signs the seat in again, then runs the command. The step keeps the expiry in `data.relogin`. |
-| `finish` | Runs `result`, `doctor`, `down` and `report`. |
+| Command                                         | What it saves                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `up --warm [--seat SEAT]`                       | Starts the exact-origin proxy and the headless browser of a seat while the app starts. With `--seat`, it signs the seat in once the app is ready, if the seat has a login. `data.warm` shows it. If `up` fails, the warm browser and proxy close.                                                                                                                                    |
+| `check a,b`, `check --gates [--concurrency N]`  | Runs checks at the same time (default 4, up to 8). Each check is its own step and keeps its artifacts; the run lock and the log stay whole. The checks must not change the source. `--gates` runs the profile checks named like the planned gates and links each to its gate.                                                                                                        |
+| `ui ... --relogin`                              | When the seat's browser expired and the seat has a login, signs the seat in again, then runs the command. The step keeps the expiry in `data.relogin`.                                                                                                                                                                                                                               |
+| `finish`                                        | Runs `result`, `doctor`, `down` and `report`.                                                                                                                                                                                                                                                                                                                                        |
 | `replay --from RUN [--failed-only] [--execute]` | Lists, or runs again, the `check`, `exec`, `api`, `db` and `ui` steps that the claims of an earlier run cite. Each replayed step is a step of the new run, linked to the same claim. It skips a step with a masked secret, stops at the first failed step and sets `failedRun` and `failedStep` on a control that the earlier run failed. It writes no observed text and no outcome. |
 
 `check`, `exec`, `api` and `db` read again only the source files whose size,
@@ -268,13 +268,13 @@ browser command; see [browser-benchmark.md](docs/browser-benchmark.md).
 A driving command (`ui`, `api`, `db`, `check`, `exec`, `evidence add`) can link
 its step to the pending result while it runs:
 
-| Flag | When the step passes |
-| --- | --- |
-| `--claim ID` | Adds the step ID and the artifacts of the step to claim `ID`. Repeat it for more claims. |
-| `--independent-read` | With `--claim`, sets `independentRead` of the claim to this step. Use it on the read that follows a side effect. |
-| `--control ID:failed` | Sets `failedStep` of control `ID`. The step fails on purpose, so Spyglass links it when it fails. |
-| `--control ID:restored` | Sets `restoredStep` of control `ID` and cites it in the claim of the control. |
-| `--gate NAME` | Adds the step to gate `NAME` and sets its outcome to `passed`. A failed step sets `failed`. |
+| Flag                    | When the step passes                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `--claim ID`            | Adds the step ID and the artifacts of the step to claim `ID`. Repeat it for more claims.                         |
+| `--independent-read`    | With `--claim`, sets `independentRead` of the claim to this step. Use it on the read that follows a side effect. |
+| `--control ID:failed`   | Sets `failedStep` of control `ID`. The step fails on purpose, so Spyglass links it when it fails.                |
+| `--control ID:restored` | Sets `restoredStep` of control `ID` and cites it in the claim of the control.                                    |
+| `--gate NAME`           | Adds the step to gate `NAME` and sets its outcome to `passed`. A failed step sets `failed`.                      |
 
 A failed step is not cited by a claim; it stays in the step log. Spyglass never
 writes `observed`, the `observed` text of an inspection or the `outcome` of a
@@ -313,12 +313,12 @@ Default output is compact, indented text for people. `--json` gives one versione
 result object on stdout and diagnostics on stderr. The two modes use the same
 handler and the same exit code.
 
-| Exit code | Meaning |
-| --- | --- |
-| `0` | Success |
-| `1` | Failed verification |
-| `2` | Incorrect input |
-| `3` | Environment failure |
+| Exit code | Meaning             |
+| --------- | ------------------- |
+| `0`       | Success             |
+| `1`       | Failed verification |
+| `2`       | Incorrect input     |
+| `3`       | Environment failure |
 
 `--run ID` selects a run across shell calls. You can also set `SPYGLASS_RUN`;
 `--run` has priority. `spyglass status --run ID` shows the handoff state of a
@@ -367,11 +367,11 @@ spyglass schema result
 
 A profile selects one lifecycle mode:
 
-| Mode | Who starts and stops the app |
-| --- | --- |
-| `owned` | Spyglass starts a process group and stops it on `down`. |
+| Mode       | Who starts and stops the app                                                                                                                                                                               |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `owned`    | Spyglass starts a process group and stops it on `down`.                                                                                                                                                    |
 | `external` | The repository's own tool starts and stops its resources. Spyglass records its doctor and checks. A named check with `cleanup: true` records the owner's cleanup. `down` closes only the Spyglass browser. |
-| `none` | There is no persistent target, for example a library journey. |
+| `none`     | There is no persistent target, for example a library journey.                                                                                                                                              |
 
 For a long command, use `spyglass exec --timeout-ms 900000 --run ID -- COMMAND`.
 The default is 300 seconds; the maximum is 24 hours. The selected deadline is
@@ -395,11 +395,11 @@ contain private data. Examine the page state before you take one.
 The [`skills/`](skills) directory holds the agent skills for Spyglass. They
 use the [Agent Skills](https://agentskills.io) format.
 
-| Skill | Purpose |
-| --- | --- |
-| [`spyglass`](skills/spyglass/SKILL.md) | Run a verification with Spyglass. |
-| [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Create a repository's own `verify-<app>` skill. |
-| [`maintain-verification-skill`](skills/maintain-verification-skill/SKILL.md) | Keep that skill current as the app changes. |
+| Skill                                                                        | Purpose                                         |
+| ---------------------------------------------------------------------------- | ----------------------------------------------- |
+| [`spyglass`](skills/spyglass/SKILL.md)                                       | Run a verification with Spyglass.               |
+| [`create-verification-skill`](skills/create-verification-skill/SKILL.md)     | Create a repository's own `verify-<app>` skill. |
+| [`maintain-verification-skill`](skills/maintain-verification-skill/SKILL.md) | Keep that skill current as the app changes.     |
 
 Copy a skill folder into the skills directory of your agent harness, for
 example `.claude/skills/` or `.agents/skills/`.
@@ -434,7 +434,15 @@ npm run format:check
 
 The end-to-end tests run the built CLI in temporary Git repositories. They
 need `agent-browser` on your `PATH`. The surface tests also need its Chromium
-and Docker.
+and Docker. CI runs both suites on pull requests; its retained test output and
+offline report artifacts let a reviewer inspect what ran after cleanup.
+See the [CI guide](agent_docs/ci.md) for the evidence boundary.
+
+Development uses Git Flow: `dev` is the default integration branch; `main`
+receives releases and urgent hotfixes. Ordinary changes use a branch from
+`dev` and a pull request back to `dev`. See the
+[Git workflow](agent_docs/git-workflow.md) for protected gates and release
+back-merges.
 
 ## Roadmap
 

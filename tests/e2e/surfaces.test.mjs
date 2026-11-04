@@ -3,7 +3,15 @@ import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { connect } from "node:net";
 import { existsSync } from "node:fs";
-import { readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -619,6 +627,31 @@ surfaceTest(
       }
       assert.ok(existsSync(join(dir, "result.json")));
       assert.ok(errorPage.run === run);
+
+      // Retain only this checked report and signed-in dashboard images, never
+      // browser state, temporary repositories, credentials or arbitrary logs.
+      if (process.env.SPYGLASS_TEST_ARTIFACTS) {
+        const destination = process.env.SPYGLASS_TEST_ARTIFACTS;
+        await mkdir(destination, { recursive: true });
+        await cp(report.data.reportPath, join(destination, "report.html"));
+        await cp(
+          join(evidenceRoot, image.path),
+          join(destination, "dashboard-wide.png"),
+        );
+        await cp(
+          join(evidenceRoot, narrowImage.path),
+          join(destination, "dashboard-narrow.png"),
+        );
+        await writeJson(join(destination, "provenance.json"), {
+          test: "agent-browser uses a fresh allowed session, retains visual proof, and protects login secrets",
+          commit: process.env.GITHUB_SHA ?? null,
+          run,
+          browserVersion: version.stdout.trim(),
+          screenshots: [image, narrowImage],
+          repeat:
+            "SPYGLASS_TEST_SURFACES=1 SPYGLASS_TEST_ARTIFACTS=/tmp/spyglass-e2e-proof node --test --test-concurrency=1 tests/e2e/surfaces.test.mjs",
+        });
+      }
     } finally {
       if (run)
         await runCli(dir, ["--json", "--run", run, "down"], {
@@ -734,15 +767,26 @@ async function browserRunning(session) {
 }
 
 async function browserActive(session) {
-  const info = await spawnCapture("agent-browser", [
-    "--namespace",
-    session.namespace,
-    "--session",
-    session.name,
-    "--json",
-    "session",
-    "info",
-  ]);
+  const info = await spawnCapture(
+    "agent-browser",
+    [
+      "--namespace",
+      session.namespace,
+      "--session",
+      session.name,
+      "--json",
+      "session",
+      "info",
+    ],
+    {
+      // Spyglass excludes host socket overrides from its browser environment.
+      // Probe the run daemon's HOME-based socket root, not the host's root.
+      env: {
+        XDG_RUNTIME_DIR: undefined,
+        AGENT_BROWSER_SOCKET_DIR: undefined,
+      },
+    },
+  );
   return JSON.parse(info.stdout).data.active;
 }
 
