@@ -43,6 +43,7 @@ Docker. To run them, install Chromium for `agent-browser`, start Docker, then
 run:
 
 ```sh
+agent-browser install --with-deps
 SPYGLASS_TEST_SURFACES=1 npm test
 ```
 

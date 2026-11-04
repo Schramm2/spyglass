@@ -16,7 +16,7 @@ and back-merges; use that guide to select the base and target.
 
 The tested `agent-browser` version is pinned in several places. Change all of
 them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:409`,
-`src/profile.ts:280`, `AGENTS.md`, `README.md`, `CONTRIBUTING.md`,
+`src/profile.ts:280`, `README.md`, `CONTRIBUTING.md`,
 `agent_docs/testing.md` and `landing/docs/index.html`.
 
 ## User-visible changes

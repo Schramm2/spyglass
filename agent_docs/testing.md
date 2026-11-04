@@ -53,6 +53,7 @@ not supply them.
 
 ```sh
 npm install --global agent-browser@0.38.2
+agent-browser install --with-deps
 SPYGLASS_TEST_SURFACES=1 npm test
 ```
 

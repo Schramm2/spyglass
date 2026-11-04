@@ -65,7 +65,7 @@ explicitly rather than use the GitHub default.
 GitHub branch protection requires PRs, passing CI and resolved conversations
 on `dev` and `main`, including for administrators. Force pushes and deletion
 are blocked. There is no standing bypass. A failed or missing gate needs a
-repair, not an administrator merge. `CI / Branch policy` checks the PR branch
+repair, not an administrator merge. `PR branch policy` checks the PR branch
 roles; `agent_docs/ci.md` explains the remaining gates.
 
 Automatic head-branch deletion is disabled because a merged back-merge must
@@ -73,8 +73,10 @@ not delete `main` or `dev`. Delete a short-lived branch only with explicit
 approval, after its release or back-merge obligations are complete.
 
 Protected `release/*` branches have the same PR, CI and conversation rules
-through the `Release branch protection` ruleset. Creating the branch is
-allowed; later changes use a PR from a release-only repair branch.
+through the `Release branch protection` ruleset. Its pattern
+`refs/heads/release/**/*` covers direct and nested release names. Creating
+the branch is allowed; later changes use a PR from a release-only repair
+branch.
 
 The required status is `CI required`, from the GitHub Actions app. Its
 aggregate requires each applicable gate in `agent_docs/ci.md`. The settings
