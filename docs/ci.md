@@ -136,7 +136,9 @@ validation to get a green CI result.
    the original files: editing a cited artifact invalidates its proof.
 5. Trace a claim to its steps and artifacts. Check the control's intended
    failed attempt and later restored pass, not just a successful command.
-   Read remaining limits and cleanup. A control's `recordedAttempts` lists
+   Read the visible Findings section, remaining limits and cleanup. The
+   validated failed/restored labels refer to submitted control proof, not every
+   recorded execution. A control's `recordedAttempts` lists
    mechanically linked steps even before result submission. These are labelled
    as unvalidated references: they do not replace operator observations or
    establish a passed control. The Markdown is an index, not a

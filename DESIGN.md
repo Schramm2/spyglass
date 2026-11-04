@@ -78,7 +78,9 @@ states truthfully. CLI excerpts and report-state examples must come from real
 runs; copied output keeps its original text. Keep long IDs and paths readable. The report wraps long source fingerprints,
 commands and artifact paths without document-width overflow at narrow widths.
 Command controls show their command and expected failure. Recorded control
-attempts stay distinct from validated control proof.
+attempts stay distinct from validated control proof. Findings appear directly
+below the source and status. External cleanup uses “not required” when the
+profile has no external owner.
 
 ## Colors
 

@@ -1,8 +1,11 @@
 # M3 local evidence
 
-This folder retains selected public evidence for the uncommitted M3 candidate.
-It is not a hosted CI run, real-PR acceptance, release or general performance
-claim. Read [the M3 record](../../../docs/review-m3.md) for scope and open checks.
+The original files in this folder retain selected public evidence for the
+initial uncommitted M3 candidate. They are local proof, not a hosted CI run,
+release or general performance claim. The separate
+[first hosted record](hosted/41858307522/README.md) retains real-PR artifacts
+and artifact-only review. Read [the M3 record](../../../docs/review-m3.md) for
+scope, feedback and repeated acceptance.
 
 ## Files
 
@@ -30,7 +33,8 @@ claim. Read [the M3 record](../../../docs/review-m3.md) for scope and open check
   inputs and the complete local `dist` file set. It identifies the checked
   local build, not an immutable published release.
 
-`checksums.json` covers the public files in this folder and excludes itself.
+`checksums.json` covers the original local files directly in this folder and
+excludes itself. Each hosted record has its own checksum manifest.
 No checksummed run artifact was rewritten. Raw local run diagnostics and
 operator transcripts are not distributed. These selected logs have no private
 source paths or credentials. The GFM input/output use only the public fixture

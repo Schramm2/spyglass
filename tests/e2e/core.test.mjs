@@ -808,6 +808,24 @@ test("an incomplete claim matrix produces a readable report and stays incomplete
       "interrupted review identifies the retained failed attempt",
     );
     assert.match(review, /Recorded attempt/);
+    const html = await readFile(report.data.reportPath, "utf8");
+    assert.deepEqual(
+      {
+        visibleFindings: html.includes("<h2>Findings</h2>"),
+        validatedAttemptLabel: html.includes(
+          "<strong>Validated failed attempt:</strong>",
+        ),
+        externalCleanupNotRequired: html.includes(
+          "external owner cleanup: not required",
+        ),
+      },
+      {
+        visibleFindings: true,
+        validatedAttemptLabel: true,
+        externalCleanupNotRequired: true,
+      },
+      "the offline report must explain missing proof without denying a recorded attempt or claiming external cleanup",
+    );
     const evidence = join(dir, ".spyglass/runs", run);
     const files = await readdir(evidence, { recursive: true });
     assert.ok(
@@ -2203,7 +2221,7 @@ test("a declared command control matches the intended failure and the same resto
           outcome: "passed",
           steps: [good.step],
           observed:
-            "The expected button is present. <script>alert(1)</script>\n# forged heading https://example.invalid www.example.invalid user@example.invalid",
+            "The expected button is present. <ScRiPt>alert(1)</ScRiPt>\n# forged heading https://example.invalid www.example.invalid user@example.invalid",
 
           artifacts: good.artifacts.map((a) => a.path),
         },
@@ -2260,7 +2278,7 @@ test("a declared command control matches the intended failure and the same resto
     assert.match(review, /No browser appearance proof/);
     assert.doesNotMatch(
       review,
-      /<script>|\n# forged heading|https:\/\/example.invalid|www\.example.invalid|user@example.invalid/,
+      /<script\b|\n# forged heading|https:\/\/example.invalid|www\.example.invalid|user@example.invalid/i,
     );
   } finally {
     if (run) await runCli(dir, ["--json", "down", "--run", run]);

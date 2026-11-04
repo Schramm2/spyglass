@@ -1075,7 +1075,7 @@ function renderHtml(
     controls
       .map(
         (item) =>
-          `<article><h3>${htmlEscape(item.id, ctx)} · ${htmlEscape(item.outcome, ctx)}</h3><p><strong>Claim:</strong> ${htmlEscape(item.claim, ctx)}<br><strong>Expectation:</strong> ${htmlEscape(item.expectation, ctx)}<br>${item.command ? `<strong>Command:</strong> ${htmlEscape(JSON.stringify(item.command), ctx)}<br><strong>Expected failure:</strong> ${htmlEscape(JSON.stringify(item.failure), ctx)}` : `<strong>Assertion:</strong> ${htmlEscape(item.assertion, ctx)}`}</p><p><strong>Failed attempt:</strong> ${htmlEscape(item.failedStep ?? "none", ctx)} — ${htmlEscape(item.observedFailure ?? "not recorded", ctx)}<br><strong>Restored pass:</strong> ${htmlEscape(item.restoredStep ?? "none", ctx)} — ${htmlEscape(item.observedPass ?? "not recorded", ctx)}</p>${(item.recordedAttempts as Array<Record<string, unknown>>).map((attempt) => `<p><strong>Recorded attempt (not validated control proof):</strong> ${htmlEscape(attempt.state, ctx)}, step ${htmlEscape(attempt.step, ctx)}, status ${htmlEscape(attempt.status, ctx)}</p>`).join("")}</article>`,
+          `<article><h3>${htmlEscape(item.id, ctx)} · ${htmlEscape(item.outcome, ctx)}</h3><p><strong>Claim:</strong> ${htmlEscape(item.claim, ctx)}<br><strong>Expectation:</strong> ${htmlEscape(item.expectation, ctx)}<br>${item.command ? `<strong>Command:</strong> ${htmlEscape(JSON.stringify(item.command), ctx)}<br><strong>Expected failure:</strong> ${htmlEscape(JSON.stringify(item.failure), ctx)}` : `<strong>Assertion:</strong> ${htmlEscape(item.assertion, ctx)}`}</p><p><strong>Validated failed attempt:</strong> ${htmlEscape(item.failedStep ?? "none", ctx)} — ${htmlEscape(item.observedFailure ?? "not recorded", ctx)}<br><strong>Validated restored pass:</strong> ${htmlEscape(item.restoredStep ?? "none", ctx)} — ${htmlEscape(item.observedPass ?? "not recorded", ctx)}</p>${(item.recordedAttempts as Array<Record<string, unknown>>).map((attempt) => `<p><strong>Recorded attempt (not validated control proof):</strong> ${htmlEscape(attempt.state, ctx)}, step ${htmlEscape(attempt.step, ctx)}, status ${htmlEscape(attempt.status, ctx)}</p>`).join("")}</article>`,
       )
       .join("\n") || "<p>No negative controls are selected.</p>";
   const envHtml = env
@@ -1104,6 +1104,13 @@ function renderHtml(
   const limitHtml =
     limits.map((value) => `<li>${htmlEscape(value, ctx)}</li>`).join("\n") ||
     "<li>No coverage limits recorded.</li>";
+  const findingsHtml =
+    (summary.findings as Finding[])
+      .map(
+        (finding) =>
+          `<li><strong>${htmlEscape(finding.code, ctx)}:</strong> ${htmlEscape(finding.message, ctx)}</li>`,
+      )
+      .join("\n") || "<li>No findings.</li>";
   const cleanupHtml = Object.entries(cleanup)
     .map(
       ([key, value]) =>
@@ -1115,6 +1122,7 @@ function renderHtml(
 :root{color-scheme:light dark;font:16px/1.5 system-ui,sans-serif}body{max-width:1100px;margin:2rem auto;padding:0 1rem;overflow-wrap:anywhere}h1,h2{line-height:1.2}article,details,section{border:1px solid #8886;border-radius:.5rem;padding:1rem;margin:1rem 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:32rem;overflow:auto;background:#8881;padding:.75rem}img{max-width:100%;height:auto;border:1px solid #8886}code{overflow-wrap:anywhere}.status{font-size:1.2rem;font-weight:700}li{margin:.5rem 0}
 </style></head><body>
 <header><h1>Spyglass verification report</h1><p class="status">${htmlEscape(summary.status, ctx)}</p><p>Run ${htmlEscape(summary.run, ctx)} · ${htmlEscape(summary.app, ctx)} · operator ${htmlEscape(summary.operator ?? "not recorded", ctx)}</p><p>Source commit ${htmlEscape((summary.source as Record<string, unknown>)?.commit, ctx)} · fingerprint ${htmlEscape((summary.source as Record<string, unknown>)?.hash, ctx)}</p></header>
+<section><h2>Findings</h2><ul>${findingsHtml}</ul></section>
 <section><h2>Behavioral claims</h2>${claimHtml || "<p>No claims are in the plan.</p>"}</section>
 <section><h2>Repository gates</h2><ul>${gateHtml}</ul></section>
 <section><h2>Negative controls</h2>${controlHtml}</section>
@@ -1303,7 +1311,7 @@ function reportSummary(
         (ctx.run.profile.launch.mode !== "external" || ctx.run.ownerCleaned)
           ? "passed"
           : "pending",
-      detail: `Spyglass cleanup: ${ctx.run.cleanup}; external owner cleanup: ${ctx.run.ownerCleaned}.`,
+      detail: `Spyglass cleanup: ${ctx.run.cleanup}; external owner cleanup: ${cleanup.externalOwnerCleaned}.`,
     },
   ];
   return ctx.vault.clean({

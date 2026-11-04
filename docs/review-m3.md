@@ -1,10 +1,10 @@
 # M3 review and CI record
 
-**Status: local implementation verified; real-PR acceptance pending.** M3 is
-not complete. The remaining completion check is a real pull request with
-hosted Actions artifacts and a reviewer who can identify the tested source,
-intended failure, restored pass, cleanup and limits from those artifacts.
-No release, npm publication, push, PR creation or merge is claimed here.
+**Status: first hosted acceptance recorded; reviewer-led repairs in progress.**
+M3 is not yet complete on the repaired candidate. [PR #28](https://github.com/Schramm2/spyglass/pull/28)
+is open into `dev`. Its first hosted artifacts passed an independent review;
+the presentation repairs below must also pass on the delivered source.
+No release, npm publication or merge is claimed.
 
 ## Candidate and scope
 
@@ -103,9 +103,39 @@ public renderer artifacts, not edited versions of checksummed run artifacts.
 The build/input manifest identifies the local runtime; it is not a release
 attestation.
 
+## First hosted acceptance
+
+[Actions run 41858307522](https://github.com/Schramm2/spyglass/actions/runs/41858307522)
+passed every required job for implementation head
+`561cea397b2329c799772d3a7b78313b78e9aa3e`. GitHub tested merge checkout
+`3fb71f3d920c07ab453698663be4d85f36d205ec`, not that head directly. Both runs
+recorded unchanged fingerprint
+`7348cdb49bd41baf4f2baf2b9c312facc8b04085b8c6f4aafd7b86f77753aed4`.
+
+The [retained hosted record](../bench/results/m3/hosted/41858307522/) contains
+byte-exact artifact archives, GitHub metadata, download and internal artifact
+audits, and the artifact-only review. The complete archive is artifact
+`13338742077`; the interrupted archive is `13337234752`. Both archive digests
+matched GitHub metadata. All 13 unique recorded artifacts matched their
+checksums; the fresh reviewer independently checked 77 reference occurrences.
+It opened both selected HTML files offline, after target cleanup, without
+reading the source checkout or original conversation. It could identify the
+tested source, intended failure, restored pass where present, cleanup and
+limits. No blocking integrity or trace defect was found.
+
+The reviewer identified three presentation ambiguities: an unvalidated failed
+attempt looked absent, findings were visible only inside report data, and
+external cleanup appeared both true and not required. An existing E2E check
+failed on all three before the repairs: validated attempt labels, a visible
+Findings section beside status, and consistent not-required cleanup text.
+CodeQL also reported that the new test assertion did not match uppercase
+script tags; the assertion is now case-insensitive with mixed-case input.
+This was a test-coverage finding, not evidence of a production sanitization
+bypass. Initial archives and review findings remain unchanged.
+
 ## Remaining real-PR acceptance
 
-After delivery authority is granted:
+Delivery authority was granted. For the repaired candidate:
 
 1. Commit and push the verified candidate and open a PR into `dev`.
 2. Require all gates on its current head, including both Review proof entries.
@@ -120,9 +150,12 @@ After delivery authority is granted:
 
 ## Limits and separate follow-ups
 
-- No hosted Actions run or real-PR artifact review is claimed. Artifact upload,
-  14-day retention and job-summary integration are implemented but need that
-  real check. Cancellation and runner loss can prevent any upload.
+- The first hosted artifacts and reviewer outcome are recorded above. The
+  repaired candidate needs its own repeated proof. Artifacts have 14-day
+  service retention; byte-exact downloaded archives remain in Git. Cancellation
+  and runner loss can prevent upload. The signed-out Actions page did not show
+  the job summary, so its presentation is not a claimed browser check; the
+  compact summaries inside the downloaded artifacts were reviewed.
 - The supplied GFM payload is covered; this is not an exhaustive Markdown
   security or accessibility audit.
 - The public fixture is command-only. Its ignored marker is an environment
@@ -131,6 +164,12 @@ After delivery authority is granted:
 - The example's complete evidence-directory copy and raw diagnostics are safe
   only for its fixed public data. Other targets must select reviewed paths;
   no runner environment, browser state or credentials belong in an upload.
+- Separate maintenance work remains: GitHub reports 38 Dependabot alerts in
+  the retained M2 target's `bench/results/m2/web/adoption/package-lock.json`,
+  and existing CodeQL findings on `dev`. M3 adds no dependency. A successful
+  CodeQL job is not a zero-finding claim. Triage source findings separately and
+  use maintained dependencies for new benchmark runs; do not rewrite old proof
+  to represent unverified upgrades.
 - An existing generic gate-link problem remains outside the changed owner:
   linking a new local step to an automatically cited gate can retain the old
   `gate.run` while appending the new step ID. The safe generic repair is to

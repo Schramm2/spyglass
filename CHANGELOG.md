@@ -32,7 +32,9 @@ This file records the notable changes to Spyglass. The format follows
 ### Fixed
 
 - Command-form controls in the offline report show the declared command and
-  expected failure instead of an empty Assertion label.
+  expected failure instead of an empty Assertion label. Validated attempt
+  labels stay distinct from recorded attempts; findings are visible beside
+  the report status, and external cleanup says not required consistently.
 - `up` rejects bindings named `repo`, `run`, `port`, `web`, `api` or `evidence`
   with `RESERVED_BINDING` before allocation. An external port must use a
   separate binding, such as `ownerPort`, instead of silently using a different
