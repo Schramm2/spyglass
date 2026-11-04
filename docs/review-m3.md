@@ -1,9 +1,10 @@
 # M3 review and CI record
 
-**Status: report artifact acceptance passed; required CI recovery in progress.**
-M3 is not yet complete. [PR #28](https://github.com/Schramm2/spyglass/pull/28)
-is open into `dev`. The final report artifacts passed independent review;
-a separate surface-test completion repair must pass the required checks.
+**Status: M3 complete, with the limits below.**
+[PR #28](https://github.com/Schramm2/spyglass/pull/28) is open into `dev` and
+remains unmerged. The closing implementation/test candidate passed required
+CI, and its downloaded report artifacts passed independent offline review.
+The closing follow-up changes documentation and retained evidence only.
 No release, npm publication or merge is claimed.
 
 ## Candidate and scope
@@ -180,20 +181,48 @@ previous run said it was already complete while reads still showed pending.
 The service's delayed states are not treated as success. Earlier run
 41861617920 eventually reported every required job successful.
 
-## Remaining real-PR acceptance
+## Closing real-PR acceptance
 
-1. Verify and publish the existing surface-test completion repair.
-2. Require every current-head CI check, including both Review proof entries,
-   to report success. Keep actual failure output even if service status lags.
-3. Check the delivered source/merge context and retain the closing record.
-   The report implementation is unchanged by this test/evidence follow-up.
-   Only then mark M3 complete in the roadmap.
+[Run 41867158951](https://github.com/Schramm2/spyglass/actions/runs/41867158951)
+passed on implementation/test head
+`07ecaa6ec26ffc6d6e464bd099f5b387bc7afc1b`, tested as merge checkout
+`df214f3584234feba03d8cf528ab9a4a36ad101c`. Both fixture records retained
+unchanged fingerprint
+`83e22ea5849b586b7d71ff843b5ba8ae97c2d10e51e2474aee1218d633bb8dc4`.
+The workflow and `CI required` job reported success. Default E2E TAP records
+89 passes and 25 expected opt-in skips; separate real-surface TAP records
+25 passes, no failures or skips. The navigation-control repair also passed
+eight independent local focused checks and the full 114-check real-tool suite.
+No production browser behavior or assertion was weakened.
+
+The [closing record](../bench/results/m3/hosted/41867158951/) retains byte-exact
+review archives `13341319631` / `13343715105`, E2E archives `13343991032` /
+`13342961352`, matching service digest audits, merge parents, the successful
+workflow/required-gate records and the unchanged artifact-only review. All 13
+unique report artifacts and 77 reference occurrences matched. The reviewer
+opened both selected HTML files offline, without source or original chat,
+and identified source, intended failure, restored pass where present, cleanup
+and limits. All presentation findings remained fixed; no new blocking report
+defect was found. The coordinator's separate 390-pixel offline check had no
+horizontal document overflow. Opened screenshots remain with the archives.
+
+The fixture reviewer does not establish the navigation-test repair or overall
+CI outcome; the separate TAP and workflow/gate records establish those checks.
+Node differs between fixture scenarios: passed uses v24.22.1, incomplete uses
+v24.22.2. These are supported Node 24 runs, not identical environments or an
+isolated runtime-version comparison. A green required gate does not erase the
+previous failed surface check, which remains in the third record.
+
+This meets M3's real-PR/artifact-review completion check. The final evidence
+follow-up does not change the verified implementation or owning E2E checks.
+Required CI on that documentation/evidence follow-up is still monitored; it
+is not substituted by a prior source fingerprint or claimed as already green.
 
 ## Limits and separate follow-ups
 
-- Hosted report acceptance is recorded above; the current-head required CI
-  checks still need confirmation after the test completion repair. Artifacts have 14-day
-  service retention; byte-exact downloaded archives remain in Git. Cancellation
+- Hosted acceptance covers the fixed public recipe and the recorded sources,
+  not arbitrary changes or every adoption configuration. Artifacts have
+  14-day service retention; byte-exact downloaded archives remain in Git. Cancellation
   and runner loss can prevent upload. The signed-out Actions page did not show
   the job summary, so its presentation is not a claimed browser check; the
   compact summaries inside the downloaded artifacts were reviewed.

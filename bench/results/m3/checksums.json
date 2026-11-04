@@ -1,7 +1,7 @@
 {
   "algorithm": "sha256",
   "files": {
-    "README.md": "1783b0980c7b882cb7ddedb81216b6dc18707065c80a84a96b94b9b9416dc6c2",
+    "README.md": "a1d06690dc4cace13a706b35cb63eb9326014d747b2182a9980dde1de3436efc",
     "format.txt": "092dc9e918f7293fa071cbcad41368fef51a4badce535a17d3ac5f29eaedd1f3",
     "gfm-after.html": "b336c69cfeecb69d38c1969a3c5cf935ca86531490164b14b7e5751646cfb222",
     "gfm-before.html": "d468866836df6e1a7f42273db853b783d914d1348418a0ed7fc40cff1205ca71",

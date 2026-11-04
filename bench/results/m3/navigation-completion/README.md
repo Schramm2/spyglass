@@ -19,6 +19,6 @@ passes, no failures or skips. Formatting and diff checks also passed. Source,
 tests, recipe, workflow and bundle hashes are in `runtime-inputs.json`.
 This is local working-tree proof, not a hosted source identity.
 
-`checksums.json` covers these files except itself. Current-head required CI
-checks must still pass before M3 closes; prior report acceptance cannot
-substitute for them. No new test file or fixture was added.
+`checksums.json` covers these files except itself. The subsequent [closing hosted record](../hosted/41867158951/README.md)
+contains successful required CI and all 25 surface checks; prior report
+acceptance was not substituted for those checks. No new test file or fixture was added.

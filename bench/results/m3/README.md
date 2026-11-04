@@ -4,11 +4,13 @@ The original files in this folder retain selected public evidence for the
 initial uncommitted M3 candidate. They are local proof, not a hosted CI run,
 release or general performance claim. The separate
 [first hosted record](hosted/41858307522/README.md) retains real-PR artifacts
-and artifact-only review. The [final report artifact acceptance](hosted/41863511029/README.md)
+and artifact-only review. The [third record](hosted/41863511029/README.md)
 closes the presentation findings and preserves a separate surface-test failure;
-a passed fixture report is not an overall CI pass. Read
-[the M3 record](../../../docs/review-m3.md) for scope, feedback and required-check
-recovery.
+a passed fixture report is not an overall CI pass. The
+[closing acceptance](hosted/41867158951/README.md) records successful required
+CI, separate E2E TAP and repeated artifact-only review after the existing test
+awaited navigation completion. Read [the M3 record](../../../docs/review-m3.md)
+for completion, sources, feedback and limits.
 
 ## Files
 
