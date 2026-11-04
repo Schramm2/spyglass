@@ -1,0 +1,158 @@
+
+> @schramm2/spyglass@1.3.1 test
+> npm run build && node --test --test-concurrency=1 tests/e2e/*.test.mjs
+
+
+> @schramm2/spyglass@1.3.1 build
+> tsc --noEmit && node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && esbuild src/*.ts --bundle --splitting --format=esm --platform=node --packages=external --external:./browser-proxy.js --outdir=dist --entry-names='[name]' --chunk-names='chunks/[name]-[hash]' && esbuild src/browser.ts --bundle --format=esm --platform=node --external:./browser-proxy.js --external:./state.js --external:./errors.js --outfile=dist/browser.js && node dist/export-schemas.js
+
+
+  dist/browser.js                83.3kb
+  dist/report.js                 74.5kb
+  dist/surfaces.js               50.0kb
+  dist/lifecycle.js              28.6kb
+  dist/browser-proxy.js          27.0kb
+  dist/cli.js                    20.7kb
+  dist/chunks/chunk-W5PJWTQC.js  18.2kb
+  dist/chunks/chunk-TUFRZCN2.js  18.2kb
+  dist/checks.js                 15.6kb
+  dist/chunks/chunk-KEC264VX.js  10.8kb
+  dist/chunks/chunk-5JXO3JIA.js   6.1kb
+  dist/replay.js                  5.6kb
+  dist/chunks/chunk-7IZSZ7GR.js   3.7kb
+  dist/chunks/chunk-LLBKP6HR.js   3.2kb
+  dist/supervisor.js              2.0kb
+  dist/chunks/chunk-ZTRXX4BX.js   1.9kb
+  dist/export-schemas.js          878b 
+  dist/chunks/chunk-G54ZP5H6.js   768b 
+  dist/state.js                   762b 
+  dist/schema.js                  419b 
+  ...and 6 more output files...
+
+⚡ Done in 17ms
+
+  dist/browser.js  84.5kb
+
+⚡ Done in 3ms
+✔ help works without a profile and explains the main commands and exit codes (162.5435ms)
+✔ init proposes a profile with discovery provenance without starting the app (121.345292ms)
+✔ local installation packages contain only distributable runtime and guidance (319.585833ms)
+✔ up, status and down retain one run record and stop only its app (1599.225042ms)
+✔ down stops the owned app when the operator's locale and time zone differ from the ones that started it (1489.381625ms)
+✔ a startup failure returns a run ID and leaves status and cleanup available (1427.699208ms)
+✔ exec preserves the child exit and output in the run log (1566.758ms)
+✔ named checks retain failed assertions and automatically import declared artifacts (1665.813833ms)
+✔ evidence import copies a declared artifact with a checksum and rejects an outside path (1727.174375ms)
+✔ status can inspect a busy run while a second mutation is rejected (2748.576083ms)
+✔ a source change blocks later evidence from claiming the original run is current (1435.5005ms)
+✔ up shows the result rules that this plan's claims, controls and gates need (1447.856375ms)
+✔ text output keeps the whole next command and the result rules of a plan (2766.450834ms)
+✔ an incomplete claim matrix produces a readable report and stays incomplete (1586.479ms)
+✔ a result cannot pass a required claim with no completed step or evidence (1343.537708ms)
+✔ an invalid profile returns a structured error before launch (125.465167ms)
+✔ unknown options fail before allocating a run and JSON remains parseable (171.425292ms)
+✔ doctor never advances a changed source baseline (459.279667ms)
+✔ a timed out named check retains its failure and allows cleanup (555.744291ms)
+✔ stopped runs reject drive commands and keep diagnostic commands (440.515791ms)
+✔ external readiness is checked without starting or stopping the owner (567.337958ms)
+✔ ambiguous profiles and missing runs have actionable errors without a prompt (168.409709ms)
+✔ a report validates completed proof after cleanup and detects artifact tampering (1342.806667ms)
+✔ status exposes capabilities and supports a handoff without chat context (514.449ms)
+✔ profiles reject literal credentials before creating a run (141.9705ms)
+✔ a reflected credential is masked even when its text starts like a secret reference (432.258333ms)
+✔ negative controls require the declared failed assertion followed by its restored pass (774.942ms)
+✔ long status text is cut with a pointer to the full JSON result (368.971ms)
+✔ text and JSON modes keep the same exit status and text gives a short next action (903.522375ms)
+✔ concurrent allocation of one run name creates exactly one run (336.60675ms)
+✔ different runs cannot overwrite a shared evidence folder (501.495458ms)
+✔ JSON checks reject empty and malformed assertion rows (650.714ms)
+✔ a failed required named check cannot be replaced by an unrelated successful command (763.627792ms)
+✔ a cleanup-only named check cannot prove a behavior claim (744.467583ms)
+✔ an imported screenshot alone cannot prove a behavior claim (636.447ms)
+✔ a claim cannot cite an artifact produced by a step it does not cite (785.345167ms)
+✔ down stops owned descendants that ignore the first termination signal (1636.125334ms)
+✔ source identity includes submodule worktree changes (938.679417ms)
+✔ unreadable source fails verification instead of becoming a stable missing input (165.8405ms)
+✔ readiness rejects a structured owner failure even when its command exits zero (418.273ms)
+✔ init exposes owner guidance before proposing a framework launch (107.85075ms)
+✔ each command help includes its own usage without a run or profile (486.899709ms)
+✔ run evidence retains its profile, plan and tool identity for a handoff (475.829458ms)
+✔ engine assertions remain distinct from domain counts and nested response flags (412.7505ms)
+✔ a declared command control matches the intended failure and the same restored command (773.1475ms)
+✔ a defect control links a retained failing source run to a restored candidate (1181.263834ms)
+✔ repeated reports retain history without recursively embedding previous reports (728.183084ms)
+✔ report detects a changed commit even when source file bytes are unchanged (457.556292ms)
+✔ init records discovery sources and exposes capabilities without launching tools (110.860875ms)
+✔ a failed owner doctor with child exit zero cannot pass a repository gate (316.564167ms)
+✔ exec forwards child version flags instead of treating them as Spyglass flags (523.01075ms)
+✔ a named check retains distinct artifacts that have the same basename (422.210708ms)
+✔ a configured database with a missing secret cannot report ready (260.811042ms)
+✔ a refused concurrent command never rewrites the run state file (3701.9105ms)
+✔ a failed launch child cannot borrow readiness from another server (1681.139916ms)
+✔ handoff output distinguishes command failure, keeps source compact and prepares controls (1520.663375ms)
+✔ owned launch refuses unavailable process inspection before starting its child (714.579458ms)
+✔ a state permission failure is distinct from an active run lock (965.587458ms)
+✔ reserved run bindings are rejected before external readiness starts (406.487417ms)
+✔ CLI binding overrides are retained and used by named checks (549.926542ms)
+✔ exec applies its explicit deadline and preserves child timeout arguments (1214.27825ms)
+✔ a control links a failed run from a fault worktree to the candidate in the main worktree (1101.415125ms)
+✔ a gate from another run counts only on the same source, profile and used bindings (5220.720541ms)
+✔ a binding of a launch that Spyglass owns blocks every cited gate step (4940.666166ms)
+✔ a run whose worktree was removed stays listed and can still be stopped (1507.832833ms)
+✔ result and result --check report every finding with a repair, and --check records nothing (791.267291ms)
+✔ result without --file reads the pending result of the run (590.991ms)
+✔ steps run with --claim, --control and --gate link themselves into the pending result without judgement (2277.476417ms)
+✔ a failed claim step cannot support a passed claim (786.345166ms)
+✔ step-linking flags are checked before the step runs (494.925875ms)
+✔ result set rejects unknown IDs and leaves the pending result unchanged (644.0925ms)
+✔ api --then retains an immediate failing GET control and still needs a later independent read (2424.886583ms)
+✔ api --then stops on a failed write and refuses unsafe follow-up requests (3077.4155ms)
+✔ api --wait-until polls one job to completion and satisfies the independent read (1685.682084ms)
+✔ api --wait-until that times out or reaches a --fail-on state cannot satisfy an independent read (2162.712917ms)
+✔ api --expect-json and --expect-body-contains fail on a wrong or missing value despite HTTP 200 and keep the masked response (1825.400583ms)
+✔ logs --since-step, --since-last, --grep, --expect-text and --forbid-text read the app log without a mark (1656.71375ms)
+✔ finish records the result, checks, stops and reports in one call (616.907708ms)
+✔ finish stops at a result that is refused and writes no report (387.716667ms)
+✔ finish stops at doctor when the source changed, and at down when cleanup fails (1154.490625ms)
+✔ finish --cleanup runs the owner cleanup check before down (742.123875ms)
+✔ up cites a gate that an earlier run passed on the same source, and refuses other source (1501.79725ms)
+✔ up --cite-gates-from and result set --gate-run cite the gates of a named run (1205.21425ms)
+✔ status --work lists what each claim, control and gate still needs (1561.723792ms)
+✔ a changed file is found by the fast source check, and doctor and report hash every file (659.652875ms)
+✔ check a,b runs checks in parallel and keeps both steps when one fails (2078.992292ms)
+✔ up --warm needs a web address and a known seat, and creates no run without them (215.114333ms)
+✔ every failing command names its run in the next action (1479.283916ms)
+✔ replay lists, then runs again, the steps that an earlier run cited (1816.155292ms)
+✔ API waits for async work, reads the result independently, and records the side effect (2190.380542ms)
+✔ agent-browser uses a fresh allowed session, retains visual proof, and protects login secrets (6917.207666ms)
+✔ browser blocks page navigation to another port on an allowed host before it reaches that port (1483.274625ms)
+✔ ui wait refuses page JavaScript, downloads and saved state but still waits for page text (1514.234958ms)
+✔ a screenshot inside a browser batch cannot write outside run evidence (1323.692166ms)
+✔ down stops the run browser and proxy when the operator's locale and time zone differ from the ones that started them (1383.261ms)
+✔ an idle run browser and its proxy shut down, and the next ui command reports the expiry (13876.291834ms)
+✔ Docker and PostgreSQL inspection use a unique project, reject writes, and keep owner services (7364.408333ms)
+✔ ui focused names the focused field without its value and fails on another expected label (1423.152125ms)
+✔ down from the main worktree closes the browser of a run whose worktree was removed (1677.597459ms)
+✔ ui expect polls inside one call and retains the last observation when a condition never holds (5171.703125ms)
+✔ a selector that matches nothing returns the nearest interactive roles and labels (2858.978583ms)
+✔ ui --settle waits for the navigation that a click starts (2868.270208ms)
+✔ ui verify runs actions, expectations and a two-viewport proof as one step and links the claim (3456.46975ms)
+✔ ui verify keeps passed sub-steps, fails at the first bad expectation and cannot back a claim (3646.086292ms)
+✔ ui verify refuses an action outside the origin allowlist and keeps the actions that ran (2746.933416ms)
+✔ ui verify --expect-focus-moved keeps both focus records and fails when focus did not move (3339.437167ms)
+✔ a viewport that fails its expectation keeps the earlier screenshots and no visual claim passes (3553.293ms)
+✔ a proof right after ui open does not wait for the first browser frame (20879.024792ms)
+✔ the browser proxy stays up when clients reset their connections (3402.899125ms)
+✔ db --expect-col and --expect-empty record assertions, and the role inspection is read once per run (5793.107541ms)
+✔ ps --wait polls a required container to healthy and fails at its deadline while it is starting (13098.997459ms)
+✔ up --warm starts the browser and signs the seat in while the app starts, and cleans up when the app never becomes ready (5927.911875ms)
+✔ ui --relogin signs a seat in again after its browser expired, and keeps the expiry in the step (14299.233083ms)
+✔ ui snapshot, ui proof and ui verify return a bounded observation and keep a long snapshot in an artifact (3996.926709ms)
+ℹ tests 114
+ℹ suites 0
+ℹ pass 114
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 231876.568208

@@ -41,7 +41,7 @@ Commands:
   finish [--cleanup CHECK]     Run result, doctor, down and report in order
   replay --from RUN [--failed-only] [--execute]
                                List or run the steps that RUN's claims cite
-  report                       Write an offline evidence report
+  report                       Write offline HTML, JSON and a Markdown review summary
 
 Step flags on ui, api, db, check, exec, evidence: --claim ID --independent-read
   --control ID:failed|restored --gate NAME link the step into the pending result.

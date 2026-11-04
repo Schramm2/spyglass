@@ -1,0 +1,16 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "82a067ef50aa48785b64a9d2da285af45a0e1cf5616ed1ad9cfdba173636992e",
+    "artifact-audit.json": "8b23608489532dee04a548af19749934bc3e133d3619b2c4f912ae717386eb32",
+    "artifacts.json": "8c286ed981def3d5f50be989ea30cacab26adda9d4870b51c6b14a143285b8ea",
+    "ci-run.json": "caab0809aef9ab9f3005869bea9357ded637347e4cd3e9d2f8cc7be9e38d959d",
+    "download-audit.json": "5130e6c86acb67dc3815e94982bc683ead688b8cc68fa0e2f9b2cbcde7a5d73a",
+    "incomplete-browser.png": "cec37354fad531b6da844be61779c286b18953b81bd1ab99fba4ad390ad98515",
+    "incomplete.zip": "c86b165ce42079ef9b568c5811802fddf7b6cd88a707091f6fb78b7a146d1988",
+    "merge-identity.json": "cf57a87b6ef3d59ef3ba991b1fad3a4c8fdf43d8353aed6c0e3cca61d2618c17",
+    "passed-browser.png": "eb77d69eba006fd87d3ebd255a6e93f90fa81a6598f46637fc0a6d0fff41d781",
+    "passed.zip": "cdd1b4f9123be4e9613e895a17f7d6ccc2a5f8f42ed9a8d1d679479ccbace01e",
+    "reviewer.md": "e84509b372a6114ce8c8bd35be2b829134403e305293669333375ef0dffa3869"
+  }
+}

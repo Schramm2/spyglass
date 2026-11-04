@@ -386,6 +386,13 @@ limits and cleanup. Keep the self-contained HTML, summary and cited artifacts
 in durable storage before deleting disposable worktrees. Local paths alone
 are not retained proof. Do not distribute browser profiles or secret files.
 
+`data.reviewPath` selects the generated Markdown review summary;
+`data.report.review` records its artifact path and SHA-256. It remains
+available when `report` exits 1 with incomplete proof. Read its findings and
+limits, then inspect the detailed HTML and cited artifacts; the summary does
+not replace them. For an upload recipe, source context and offline review,
+see [review proof in GitHub Actions](ci.md).
+
 ## Setup repairs
 
 | Symptom                               | Repair                                                                                                                                                                                                                                                                                                    |

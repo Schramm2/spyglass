@@ -126,6 +126,22 @@ record it with `spyglass result`, which reads the pending file when you give no
 `--file`. If a check fails, keep the original expectation. Repair the source
 and start a new run.
 
+## Review and CI
+
+Use the [GitHub Actions recipe](docs/ci.md) to retain reports on success and
+failure and review them without the original conversation. `report` writes a
+checksummed Markdown summary at `data.reviewPath`, alongside the offline HTML
+at `data.reportPath` and JSON summary. `data.report.review` names the Markdown
+artifact and checksum. It lists source identity, claim/control/gate outcomes,
+intended failure and restored pass references, cleanup, limits and findings.
+An incomplete report still writes these files and exits 1. Each control's
+`recordedAttempts` lists mechanically linked attempts separately from validated
+control proof; it supplies no operator observation or passed outcome.
+
+CI must attempt cleanup and `report` even when verification fails; `finish`
+alone stops too early for that failure path. Keep local and CI proof separate,
+and identify the actual checkout commit, not only the PR head.
+
 ## Usage
 
 ### Surfaces

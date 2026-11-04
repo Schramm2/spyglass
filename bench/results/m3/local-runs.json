@@ -1,0 +1,127 @@
+{
+  "note": "Selected local command outcomes; raw reports remain ignored. Not CI or a clean release. Repeated passed recipe also exited 0 on unchanged source.",
+  "runs": [
+    {
+      "execution": "local",
+      "scenario": "passed",
+      "run": "ci-passed-1793805566754-1",
+      "source": {
+        "commit": "d3985d3bca8ecd5948d04fbb80e766a970329329",
+        "hash": "d7639808e9cdc9b01eed39fda3f8176c7321c911f79f4b80ecccb8d135a6945a",
+        "currentHash": "d7639808e9cdc9b01eed39fda3f8176c7321c911f79f4b80ecccb8d135a6945a",
+        "changed": []
+      },
+      "complete": true,
+      "status": "passed",
+      "report": {
+        "path": "22c08efa-2ab-1-index.html",
+        "sha256": "f23495cec8dbb6b5fcedc68e5da5b05beea6ceb483a58fd1bdd9cc42c8329e34",
+        "kind": "report",
+        "step": "22c08efa-2ab"
+      },
+      "review": {
+        "path": "22c08efa-2ab-2-review.md",
+        "sha256": "0158781c2d68b097818725fd6822ba11c9dcf758e8a302201b2fd0e727ea59b9",
+        "kind": "report-review",
+        "step": "22c08efa-2ab"
+      },
+      "cleanup": {
+        "runState": "stopped",
+        "spyglassResourcesCleaned": true,
+        "externalOwnerCleaned": "not required"
+      },
+      "interruption": null,
+      "problem": null,
+      "claims": [
+        {
+          "id": "fixture-ready",
+          "outcome": "passed",
+          "steps": [
+            "65a216d1-5f0"
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "id": "detect-fault",
+          "outcome": "passed",
+          "failedStep": "55645a88-64f",
+          "restoredStep": "65a216d1-5f0",
+          "recordedAttempts": [
+            {
+              "state": "failed",
+              "step": "55645a88-64f",
+              "status": "failed"
+            },
+            {
+              "state": "restored",
+              "step": "65a216d1-5f0",
+              "status": "passed"
+            }
+          ]
+        }
+      ],
+      "findings": []
+    },
+    {
+      "execution": "local",
+      "scenario": "incomplete",
+      "run": "ci-incomplete-1793805568267-1",
+      "source": {
+        "commit": "d3985d3bca8ecd5948d04fbb80e766a970329329",
+        "hash": "d7639808e9cdc9b01eed39fda3f8176c7321c911f79f4b80ecccb8d135a6945a",
+        "currentHash": "d7639808e9cdc9b01eed39fda3f8176c7321c911f79f4b80ecccb8d135a6945a",
+        "changed": []
+      },
+      "complete": false,
+      "status": "incomplete",
+      "report": {
+        "path": "c1e9b816-cfe-1-index.html",
+        "sha256": "c5f40eac2f8a64ffb5f1105587c986425511a804847a62cfbd00a1b8057f6229",
+        "kind": "report",
+        "step": "c1e9b816-cfe"
+      },
+      "review": {
+        "path": "c1e9b816-cfe-2-review.md",
+        "sha256": "6ea19e4ffe9d034cb27d294409eee98490790f04290b8dad3c4d89ce82b62299",
+        "kind": "report-review",
+        "step": "c1e9b816-cfe"
+      },
+      "cleanup": {
+        "runState": "stopped",
+        "spyglassResourcesCleaned": true,
+        "externalOwnerCleaned": "not required"
+      },
+      "interruption": "after-intended-failure",
+      "problem": null,
+      "claims": [
+        {
+          "id": "fixture-ready",
+          "outcome": "not run",
+          "steps": []
+        }
+      ],
+      "controls": [
+        {
+          "id": "detect-fault",
+          "outcome": "not run",
+          "recordedAttempts": [
+            {
+              "state": "failed",
+              "step": "beaaec6c-636",
+              "status": "failed"
+            }
+          ]
+        }
+      ],
+      "findings": [
+        {
+          "code": "RESULT_MISSING"
+        },
+        {
+          "code": "CONTROL_INCOMPLETE"
+        }
+      ]
+    }
+  ]
+}

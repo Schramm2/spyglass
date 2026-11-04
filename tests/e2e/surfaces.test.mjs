@@ -14,6 +14,7 @@ import {
 } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { Client } from "pg";
 import {
@@ -611,6 +612,55 @@ surfaceTest(
       assert.match(observations, /1280x800/);
       assert.match(observations, /390x844/);
 
+      const reportSession = `offline-report-${randomUUID()}`;
+      const inspectReport = async (...args) => {
+        const result = await spawnCapture("agent-browser", [
+          "--session",
+          reportSession,
+          "--allow-file-access",
+          "--json",
+          ...args,
+        ]);
+        assert.equal(result.code, 0, result.stderr || result.stdout);
+        const envelope = JSON.parse(result.stdout);
+        assert.equal(envelope.success, true, result.stdout);
+        return envelope.data;
+      };
+      try {
+        await inspectReport("open", pathToFileURL(report.data.reportPath).href);
+        await inspectReport("set", "offline", "on");
+        await inspectReport("reload");
+        for (const [width, height] of [
+          [1280, 800],
+          [390, 844],
+        ]) {
+          await inspectReport("set", "viewport", String(width), String(height));
+          const page = (
+            await inspectReport(
+              "eval",
+              "({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,status:document.querySelector('.status').textContent,resources:performance.getEntriesByType('resource').length})",
+            )
+          ).result;
+          assert.equal(
+            page.scrollWidth <= page.width,
+            true,
+            `offline report must not overflow at ${width}px`,
+          );
+          assert.equal(page.status, "passed");
+          assert.equal(
+            page.resources,
+            0,
+            "offline report must need no network resources",
+          );
+        }
+      } finally {
+        await spawnCapture("agent-browser", [
+          "--session",
+          reportSession,
+          "close",
+        ]);
+      }
+
       const files = await readdir(evidenceRoot, { recursive: true });
       for (const relative of files) {
         const path = join(evidenceRoot, relative);
@@ -710,9 +760,8 @@ surfaceTest(
         "ui",
         "click",
         "#other-port",
+        "--settle",
       ]);
-      if (attempted.json?.ok)
-        await runCli(dir, ["--json", "--run", run, "ui", "get", "url"]);
       assert.equal(
         otherPortHits,
         0,

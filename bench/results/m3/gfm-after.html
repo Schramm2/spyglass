@@ -1,0 +1,44 @@
+<h1>Spyglass review</h1>
+<p>Status: passed<br>
+Run: ci-passed-1793805214929-1<br>
+Source commit: 522bec2295256069e208fa2c612ad1c0889e66d7<br>
+Source fingerprint: 2ca10b3c154b2db2b07df5460a047390ced8c0f57098033b17fd083567debe84<br>
+Current fingerprint: 2ca10b3c154b2db2b07df5460a047390ced8c0f57098033b17fd083567debe84</p>
+<p>This summary records this run only. Workflow provenance identifies CI proof; local proof is separate.<br>
+Open the offline HTML report for attempts and artifacts. A passed claim does not prove behavior outside its plan.</p>
+<h2>Claims</h2>
+<ul>
+<li>fixture-ready: passed — &lt;script&gt;alert(1)&lt;/script&gt; # forged heading ![image](https://example.invalid/a.png) https://example.invalid www.example.invalid user@example.invalid<br>
+Expected: The unchanged fixture-ready assertion passes after the fault is removed.<br>
+Observed: The unchanged fixture-ready assertion passed after the fault marker was removed.<br>
+Steps: 8506948c-ad9<br>
+Artifacts: 8506948c-ad9-1-verify-output.txt</li>
+</ul>
+<h2>Controls</h2>
+<ul>
+<li>detect-fault: passed — The same assertion fails with the fault marker and passes without it.<br>
+Assertion: fixture-ready<br>
+Intended failure: run ci-passed-1793805214929-1, step 7cb81a3b-b0c — The fixture-ready assertion was false with the marker present.<br>
+Restored pass: step 8506948c-ad9 — The same assertion was true after removal.<br>
+Recorded attempt (not validated control proof): failed, step 7cb81a3b-b0c, status failed<br>
+Recorded attempt (not validated control proof): restored, step 8506948c-ad9, status passed</li>
+</ul>
+<h2>Gates</h2>
+<ul>
+<li>verify: passed — run ci-passed-1793805214929-1, steps 8506948c-ad9</li>
+</ul>
+<h2>Cleanup</h2>
+<ul>
+<li>Run state: stopped</li>
+<li>Spyglass resources cleaned: true</li>
+<li>External owner cleaned: not required</li>
+</ul>
+<h2>Limits</h2>
+<ul>
+<li>Scripted public fixture proof only; no agent speed, browser, database or human-usability claim.</li>
+<li>The ignored marker is an environment control, not a product-source mutation.</li>
+</ul>
+<h2>Findings</h2>
+<ul>
+<li>None.</li>
+</ul>

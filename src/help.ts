@@ -113,7 +113,7 @@ const details: Record<
   report: {
     usage: "report --run ID",
     description:
-      "Write retained offline HTML and JSON from the run log, recorded result, source and artifact checksums. Only a result recorded with spyglass result counts. data.reportPath is the absolute path of the HTML page. Works after cleanup without contacting the app. Missing claims, controls, required gates, cleanup, altered evidence or source changes produce a diagnostic report and exit 1. Prior failed attempts remain visible.",
+      "Write retained offline HTML and JSON from the run log, recorded result, source and artifact checksums. Only a result recorded with spyglass result counts. data.reportPath is the absolute path of the HTML page. data.reviewPath selects the Markdown review summary; data.report.review records its path and checksum. Every report retains source identity, claim/control/gate outcomes, intended failure and restored pass references, cleanup, limits and findings in that summary, including on exit 1. controls[].recordedAttempts lists mechanically linked attempts separately from validated control proof, without inventing observations or passed outcomes. The offline page shows findings below its source and status, labels validated attempts separately, and states when external cleanup is not required. Works after cleanup without contacting the app. Missing claims, controls, required gates, cleanup, altered evidence or source changes produce a diagnostic report and exit 1. Prior failed attempts remain visible.",
     example: "spyglass report --run change-42 --json",
   },
   schema: {

@@ -49,7 +49,7 @@ The command ownership below is a search map, not a separate layering system.
 | `src/browser.ts`                   | `ui`: calls `agent-browser`, seats and sign-in, expectations, `verify` and `proof`, screenshots                                                 | `browser`, `pollConditions`, `runVerify`, `browserDoctor`, `closeBrowsers`                                                |
 | `src/browser-proxy.ts`             | Separate process: an exact-origin HTTP proxy for the run browser                                                                                | `ensureBrowserProxy`, `stopBrowserProxy`                                                                                  |
 | `src/surfaces.ts`                  | `api` (with expectations, polling and one immediate follow-up GET), `db`, `ps`, `logs` and `mark`                                               | `surfaces`, `readDatabaseRole`                                                                                            |
-| `src/report.ts`                    | `result` validation with a repair for each finding, `result set`, `status --work`, gate citation, and `report` (JSON summary and HTML page)     | `report`, `workFor`, `citeGates`                                                                                          |
+| `src/report.ts`                    | `result` validation with a repair for each finding, `result set`, `status --work`, gate citation, and `report` (JSON summary, Markdown review summary and offline HTML page)     | `report`, `workFor`, `citeGates`                                                                                          |
 | `src/secrets.ts`                   | Secret reference resolution and masking                                                                                                         | `Secrets`                                                                                                                 |
 | `src/files.ts`                     | Safe paths, hashing and JSON I/O                                                                                                                | `safePath`, `beneath`, `hash`                                                                                             |
 | `src/errors.ts`                    | The `Fault` error with code, next action and exit code                                                                                          | `Fault`, `fault`                                                                                                          |
@@ -83,7 +83,8 @@ The command ownership below is a search map, not a separate layering system.
    group and sets the run to `stopped`. In `external` mode, a check with
    `cleanup: true` records the owner's cleanup.
 6. **Report.** `report` rechecks every cited step and artifact checksum,
-   writes `index.html` and a summary into the evidence folder, and exits with
+   writes an offline HTML page, JSON summary and checksummed Markdown review
+   summary into the evidence folder, and exits with
    a failed status while required proof or cleanup is missing.
 
 Authoritative state changes in step 2 (run record and source identity), at

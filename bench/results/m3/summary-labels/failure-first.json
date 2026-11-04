@@ -1,0 +1,9 @@
+{
+  "command": "node --test --test-concurrency=1 --test-name-pattern='incomplete claim matrix' tests/e2e/core.test.mjs",
+  "baseline": "1c0cbfc4d98d76c3ee97f2bd5da5051a443ba3a9 built CLI",
+  "result": "1 failed",
+  "expected": "Validated intended failure: run",
+  "actualLabel": "Intended failure: run",
+  "repair": "Both submitted-control fields now explicitly say Validated; mechanically linked recorded attempts remain separate.",
+  "afterRepair": "Full real-tool E2E suite: 114 passed, no failures or skips."
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "scenario": "passed",
+    "artifactId": 13338742077,
+    "name": "review-proof-passed-41858307522-1",
+    "archiveDigest": "sha256:0d4f8fee6359fca725093ab794bafb070259a09d2e89fa2fd8c940e38d5794b3",
+    "files": 14
+  },
+  {
+    "scenario": "incomplete",
+    "artifactId": 13337234752,
+    "name": "review-proof-incomplete-41858307522-1",
+    "archiveDigest": "sha256:2ce18d88dc694fc12210da4c50057abbb61c2e5ac1504d548ec0665ac47e1dcb",
+    "files": 13
+  }
+]

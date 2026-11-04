@@ -157,6 +157,96 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  review-proof:
+    name: Review proof (${{ matrix.scenario }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [passed, incomplete]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Run the public CI recipe
+        id: recipe
+        continue-on-error: true
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/review-proof"
+          node examples/ci-run.mjs "$SCENARIO" > "$RUNNER_TEMP/review-proof/recipe.log" 2>&1
+      - name: Retain evidence even when verification fails
+        if: always()
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/review-proof"
+          if test -d ".spyglass/ci-delivery/$SCENARIO"; then
+            cp -R ".spyglass/ci-delivery/$SCENARIO/." "$RUNNER_TEMP/review-proof/"
+          fi
+      - name: Check the recipe outcome and retained report
+        if: always()
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+          RECIPE_OUTCOME: ${{ steps.recipe.outcome }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          const root = join(process.env.RUNNER_TEMP, 'review-proof');
+          const read = (path) => JSON.parse(readFileSync(join(root, path), 'utf8'));
+          const provenance = read('provenance.json');
+          const report = read('report.json');
+          const pass = process.env.SCENARIO === 'passed';
+          assert.equal(process.env.RECIPE_OUTCOME, pass ? 'success' : 'failure');
+          assert.equal(provenance.execution, 'github-actions');
+          assert.equal(provenance.checkoutCommit, process.env.GITHUB_SHA);
+          assert.equal(report.data.source.commit, provenance.checkoutCommit);
+          assert.equal(report.data.complete, pass);
+          assert.equal(report.code, pass ? 0 : 1);
+          assert.equal(report.error?.code ?? null, pass ? null : 'REPORT_INCOMPLETE');
+          assert.equal(provenance.problem, null, 'unexpected driver failure');
+          assert.equal(provenance.allocationUncertain, false);
+          assert.equal(provenance.interruption, pass ? null : 'after-intended-failure');
+          assert.equal(report.data.source.currentHash, report.data.source.hash);
+          assert.deepEqual(report.data.source.changed, []);
+          assert.equal(report.data.cleanup.spyglassResourcesCleaned, true);
+          assert.ok(readFileSync(join(root, provenance.report), 'utf8').includes('Spyglass verification report'));
+          assert.ok(readFileSync(join(root, provenance.review), 'utf8').includes(`Status: ${pass ? 'passed' : 'incomplete'}`));
+          const summary = read(provenance.summary);
+          const attempts = summary.attempts;
+          assert.ok(summary.artifacts.every((artifact) => artifact.valid));
+          const failed = attempts.find((step) => step.command === 'check' && step.status === 'failed');
+          assert.equal(failed?.data.error?.code, 'CHECK_FAILED');
+          assert.ok(failed.data.claims.some((row) => row.id === 'fixture-ready' && row.ok === false));
+          assert.ok(read('commands.json').every((call) => !call.error && !call.parseError), 'driver diagnostics contain an unexpected transport failure');
+          if (pass) {
+            assert.equal(report.data.controls[0].outcome, 'passed');
+            assert.equal(report.data.gates[0].outcome, 'passed');
+          } else {
+            assert.deepEqual(report.data.findings.map((finding) => finding.code).sort(), ['CONTROL_INCOMPLETE', 'RESULT_MISSING']);
+            assert.ok(report.data.controls[0].recordedAttempts.some((attempt) => attempt.step === failed.id && attempt.state === 'failed'));
+          }
+          NODE
+      - name: Upload public review proof
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: review-proof-${{ matrix.scenario }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/review-proof/
+          if-no-files-found: error
+          retention-days: 14
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-24.04
@@ -209,7 +299,7 @@ jobs:
     name: CI required
     permissions: {}
     if: always()
-    needs: [policy, test, surfaces, secrets, dependencies, codeql]
+    needs: [policy, test, surfaces, review-proof, secrets, dependencies, codeql]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:

@@ -1,0 +1,17 @@
+{
+  "command": "node --test --test-concurrency=1 --test-name-pattern='incomplete claim matrix|declared command control' tests/e2e/core.test.mjs",
+  "baseline": "561cea397b2329c799772d3a7b78313b78e9aa3e built CLI",
+  "result": "1 failed, 1 passed",
+  "failure": "The offline report must explain missing proof without denying a recorded attempt or claiming external cleanup.",
+  "actual": {
+    "visibleFindings": false,
+    "validatedAttemptLabel": false,
+    "externalCleanupNotRequired": false
+  },
+  "expected": {
+    "visibleFindings": true,
+    "validatedAttemptLabel": true,
+    "externalCleanupNotRequired": true
+  },
+  "repair": "Visible findings, validated attempt labels and not-required external cleanup; the owning full suite then passed 114/114."
+}

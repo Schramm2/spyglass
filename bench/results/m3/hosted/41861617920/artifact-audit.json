@@ -1,0 +1,28 @@
+[
+  {
+    "scenario": "passed",
+    "run": "ci-passed-41861617920-1",
+    "candidateHead": "1c0cbfc4d98d76c3ee97f2bd5da5051a443ba3a9",
+    "sourceCommit": "f045ade58d415b0eef10a78109c93ba603dea868",
+    "sourceHash": "fa42b4258cfa5baea220b03016e104371a9f8145ef937b2c02f40f59f57af59b",
+    "uniqueRecordedArtifacts": 7,
+    "allChecksumsMatched": true,
+    "reportReferenceChecksumsMatched": true,
+    "deliveryReviewMatchesRecordedArtifact": true,
+    "sourceUnchanged": true,
+    "allThreePresentationRepairsPresent": true
+  },
+  {
+    "scenario": "incomplete",
+    "run": "ci-incomplete-41861617920-1",
+    "candidateHead": "1c0cbfc4d98d76c3ee97f2bd5da5051a443ba3a9",
+    "sourceCommit": "f045ade58d415b0eef10a78109c93ba603dea868",
+    "sourceHash": "fa42b4258cfa5baea220b03016e104371a9f8145ef937b2c02f40f59f57af59b",
+    "uniqueRecordedArtifacts": 6,
+    "allChecksumsMatched": true,
+    "reportReferenceChecksumsMatched": true,
+    "deliveryReviewMatchesRecordedArtifact": true,
+    "sourceUnchanged": true,
+    "allThreePresentationRepairsPresent": true
+  }
+]

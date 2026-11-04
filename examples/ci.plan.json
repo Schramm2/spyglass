@@ -1,0 +1,29 @@
+{
+  "claims": [
+    {
+      "id": "fixture-ready",
+      "behavior": "The fixture check detects the fault and passes after restoration.",
+      "entryPoint": "spyglass check verify",
+      "precondition": "The public command-only fixture is available.",
+      "expected": "The unchanged fixture-ready assertion passes after the fault is removed.",
+      "case": "An ignored fault marker changes fixture state, not source or assertions.",
+      "checks": ["verify"],
+      "evidence": ["retained command assertions"],
+      "kind": "behavior",
+      "required": true
+    }
+  ],
+  "controls": [
+    {
+      "id": "detect-fault",
+      "claim": "fixture-ready",
+      "expectation": "The same assertion fails with the fault marker and passes without it.",
+      "assertion": "fixture-ready"
+    }
+  ],
+  "gates": ["verify"],
+  "limits": [
+    "Scripted public fixture proof only; no agent speed, browser, database or human-usability claim.",
+    "The ignored marker is an environment control, not a product-source mutation."
+  ]
+}

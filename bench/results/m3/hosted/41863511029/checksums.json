@@ -1,0 +1,19 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "ffa4856d5aa0443ca049e525d0f7e6e05d48c49cd42b83b5ce610b982b0e3bb3",
+    "artifact-audit.json": "0a82b203769051706586cbcf9bb2e5ab6cf4f806c1ac4e262989e8e588f42801",
+    "artifacts.json": "2fad0d9726a32b03fe5868918f4c4bbcabbef0237215b19f071d39f68ff9d394",
+    "ci-run.json": "ecee2ea924a8ca3ee7e29e0084d52b01ee7fc500400bc5301fdde0cfacd32fd3",
+    "default-e2e.zip": "764030ed3f0aab4ba9426b29751054f2a77c5f3fc2f0b5069dc79b391f381df4",
+    "download-audit.json": "1a012bfadc8e799efd4ffc43ef85ac5e86b2245bdcc39b354f3ef8f3ec77e5ab",
+    "incomplete-browser.png": "0639eaae22231e836031223e409b15e49f90cd04b61d94f2b79063a124a2b31b",
+    "incomplete.zip": "54d9ad34faad7f2f7acc2a46b3ca87875ceeb80d91439ba76f980ef6d8b96f91",
+    "merge-identity.json": "000ecc1ba226b9739da8da36fdc1136964f1e4b8742aa27adab2ad2e56406dfe",
+    "passed-browser.png": "22595513b87b1975dd2e6496136d4699a50cee4533ccdca441e16fe18885c874",
+    "passed.zip": "4e95377f945ced5d99307127f4cc2d4bc10bfe637e758f13024145a0db804f36",
+    "real-surface-e2e.zip": "85c190c4de27012272a36036888c86d199f963ad3e70171e3a7432ae03dd0659",
+    "reviewer.md": "49e5d11a7a0ac532d86167e8bfbe98a0c513aff9b408145f1df89127fb440348",
+    "suite-download-audit.json": "5f107dcb0eb2bddba203103bb941c8830da16734e08fe0d0797feef993a27356"
+  }
+}
