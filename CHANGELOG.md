@@ -8,6 +8,13 @@ This file records the notable changes to Spyglass. The format follows
 
 ### Added
 
+- Every report retains a checksummed Markdown review summary with source
+  identity, claims, controls, gates, cleanup, limits and findings, including
+  incomplete reports. `data.reviewPath` selects it; `data.report.review`
+  names its artifact and checksum.
+- A public GitHub Actions recipe retains passing and interrupted-run evidence,
+  records checkout/PR source context and publishes a job summary. Both paths
+  are required by CI; the review guide explains downloading offline reports.
 - `init` returns `setup.reviewFields`, `setup.prerequisites`, `setup.commands`
   and `setup.notes` for the first planned run, a discovered check, result
   observations, cleanup and report reopening.
@@ -24,6 +31,8 @@ This file records the notable changes to Spyglass. The format follows
 
 ### Fixed
 
+- Command-form controls in the offline report show the declared command and
+  expected failure instead of an empty Assertion label.
 - `up` rejects bindings named `repo`, `run`, `port`, `web`, `api` or `evidence`
   with `RESERVED_BINDING` before allocation. An external port must use a
   separate binding, such as `ownerPort`, instead of silently using a different

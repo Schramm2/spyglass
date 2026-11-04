@@ -1335,7 +1335,7 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
           <article
             class="cmd"
             id="cmd-report"
-            data-keys="report html json offline"
+            data-keys="report html json markdown review ci offline"
           >
             <h3><code>report</code></h3>
             <pre class="usage"><code>spyglass report --run ID</code></pre>
@@ -1343,10 +1343,27 @@ spyglass finish --run my-change --json          # result, doctor, down and repor
               Write retained offline HTML and JSON from the run log, recorded
               result, source and artifact checksums. Only a result recorded with
               spyglass result counts. data.reportPath is the absolute path of
-              the HTML page. Works after cleanup without contacting the app.
-              Missing claims, controls, required gates, cleanup, altered
-              evidence or source changes produce a diagnostic report and exit 1.
-              Prior failed attempts remain visible.
+              the HTML page. <code>data.reviewPath</code> selects the Markdown
+              review summary; <code>data.report.review</code> records its path
+              and checksum. Every report includes source identity,
+              claim/control/gate outcomes, intended failure and restored pass
+              references, cleanup, limits and findings in that summary, even
+              when it exits 1. Each control's <code>recordedAttempts</code>
+              lists mechanically linked attempts separately from validated
+              control proof, without inventing observations or passed outcomes.
+              Works after cleanup without contacting the app. Missing claims,
+              controls, required gates, cleanup, altered evidence or source
+              changes produce a diagnostic report and exit 1. Prior failed
+              attempts remain visible. In CI, attempt cleanup and
+              <code>report</code> even after verification fails;
+              <code>finish</code> alone stops before the diagnostic report. Keep
+              local proof separate from CI proof and identify the actual
+              checkout commit, not only the PR head. Use the
+              <a href="https://github.com/Schramm2/spyglass/blob/dev/docs/ci.md"
+                >GitHub Actions recipe</a
+              >
+              to retain and download offline reports. Command-form controls show
+              the declared command and expected failure.
             </p>
             <div class="call">
               <pre><code>spyglass report --run change-42 --json</code></pre>

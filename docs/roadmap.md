@@ -45,7 +45,7 @@ release: see [operator comparison](operator-comparison.md).
 | -------- | ------------------------------------- | ----------------- | ------------------------------------ |
 | Done     | M1. Prove the current workflow        | Done, with limits | Current CLI and public fixtures      |
 | Done     | M2. Reduce first-adoption work        | Done, with limits | M1 findings; fresh adoption attempts |
-| Now      | M3. Support review and CI             | Proposed          | M1; a repeatable adoption recipe     |
+| Now      | M3. Support review and CI             | In progress       | M1; a repeatable adoption recipe     |
 | Later    | M4. Expand from repeated adapter gaps | Demand-led        | Evidence from adoption               |
 | Later    | M5. Evaluate shared evidence services | Not committed     | Demonstrated team needs after M3     |
 
@@ -214,6 +214,14 @@ artifact navigation before adding a new dashboard.
 **Completion:** a reviewer can identify the tested source, intended failure,
 restored pass and remaining limits from retained evidence without the
 original conversation. Verify the workflow on a real pull request.
+
+**M3 status: in progress.** The [CI recipe](ci.md) implements public
+complete and interrupted-run paths, retained offline reports and Markdown
+review summaries, source context and required CI checks. Command-form controls
+now show their command and expected failure. The [M3 evidence record](review-m3.md)
+separates local proof from the real-PR completion check. M3 remains incomplete
+until the actual PR artifacts and reviewer outcome are recorded; a workflow
+file or a local passing run does not meet that check.
 
 ## M4. Expand from repeated adapter gaps
 

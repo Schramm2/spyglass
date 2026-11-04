@@ -1,0 +1,6 @@
+{"scenario":"passed","gateAccepted":true,"problem":null,"interruption":null}
+{"scenario":"incomplete","gateAccepted":true,"problem":null,"interruption":"after-intended-failure"}
+{"scenario":"incomplete","gateAccepted":false,"problem":"Error: The intended fixture assertion did not fail.","interruption":null}
+{"control":"wrong assertion","failedCommandRetained":true,"cleanupPassed":true,"reportAttempted":true}
+{"scenario":"incomplete","gateAccepted":false,"problem":"Error: The intended fixture assertion did not fail.","interruption":null}
+{"control":"truncated JSON","failedCommandRetained":true,"cleanupPassed":true,"reportAttempted":true}

@@ -21,7 +21,10 @@ CLI is missing, follow the terminal setup in the
 --json` and its report, then compare the source identity, cited steps,
 artifacts, claims and limits with the requested change. Report each conclusion
 that the evidence does not support. Start a new run only when the task needs
-new evidence.
+new evidence. For PR or CI evidence, read the
+[CI review recipe](https://github.com/Schramm2/spyglass/blob/dev/docs/ci.md).
+Compare the tested checkout commit with the PR head and merge result. Keep
+local proof separate from CI proof.
 
 ## 1. Plan the claims
 
@@ -232,4 +235,9 @@ complete before you state the outcome: `data.report.complete`, `.status` and
 `.reportPath` from `finish`, or `data.complete`, `data.status` and
 `data.reportPath` from `report`. Report a pass only for a complete report;
 otherwise give the remaining gaps. Give the report path in both cases. A report never turns a missing or failed
-claim into a pass.
+claim into a pass. `report` also returns `data.reviewPath` for the retained
+Markdown summary and `data.report.review` for its artifact and checksum.
+The summary lists claims, controls, gates, cleanup, limits and findings; use
+the detailed offline report to inspect attempts and artifacts. In CI, attempt
+cleanup and `report` even after verification fails; `finish` alone stops before
+that diagnostic report.

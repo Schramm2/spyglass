@@ -728,7 +728,27 @@ test("text output keeps the whole next command and the result rules of a plan", 
 });
 
 test("an incomplete claim matrix produces a readable report and stays incomplete", async () => {
-  const dir = await makeRepo({ profile: baseProfile(), plan });
+  const dir = await makeRepo({
+    profile: baseProfile({
+      checks: {
+        fail: {
+          command: [process.execPath, "fixtures/demo-app/check.mjs", "fail"],
+          result: "json",
+        },
+      },
+    }),
+    plan: {
+      ...plan,
+      controls: [
+        {
+          id: "interrupted-control",
+          claim: "demo-ready",
+          expectation: "The demo assertion detects a fault.",
+          assertion: "demo-check",
+        },
+      ],
+    },
+  });
   let run;
   try {
     const up = assertEnvelope(
@@ -749,11 +769,45 @@ test("an incomplete claim matrix produces a readable report and stays incomplete
     );
     assert.equal(existsSync(join(dir, up.data.result)), true);
 
+    const failed = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "--run",
+        run,
+        "check",
+        "fail",
+        "--control",
+        "interrupted-control:failed",
+      ]),
+      { ok: false, code: 1 },
+    );
     const report = assertEnvelope(
       await runCli(dir, ["--json", "--run", run, "report"]),
       { ok: false, code: 1 },
     );
     assert.match(JSON.stringify(report.data), /demo-ready/);
+    assert.ok(
+      report.data.reviewPath,
+      "an incomplete report retains a review summary",
+    );
+    const review = await readFile(report.data.reviewPath, "utf8");
+    assert.match(review, /Status: incomplete/);
+    assert.match(review, /demo-ready: not run/);
+    assert.match(
+      review.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))),
+      /RESULT_MISSING/,
+    );
+    assert.match(review, /Spyglass resources cleaned: false/);
+    assert.equal(
+      report.data.controls[0].outcome,
+      "not run",
+      "a linked attempt is not a validated control",
+    );
+    assert.ok(
+      review.includes(failed.step),
+      "interrupted review identifies the retained failed attempt",
+    );
+    assert.match(review, /Recorded attempt/);
     const evidence = join(dir, ".spyglass/runs", run);
     const files = await readdir(evidence, { recursive: true });
     assert.ok(
@@ -1090,6 +1144,23 @@ test("a report validates completed proof after cleanup and detects artifact tamp
       isAbsolute(complete.data.reportPath) &&
         existsSync(complete.data.reportPath),
       `report must print a path that opens from any directory: ${complete.data.reportPath}`,
+    );
+    const review = await readFile(complete.data.reviewPath, "utf8");
+    assert.match(review, /Status: passed/);
+    assert.match(review, /demo-ready: passed/);
+    assert.match(review, /Spyglass resources cleaned: true/);
+    assert.ok(review.includes(complete.data.source.commit));
+    assert.ok(review.includes(complete.data.source.hash));
+    const reviewArtifact = complete.artifacts.find(
+      (item) => item.kind === "report-review",
+    );
+    assert.ok(
+      reviewArtifact,
+      "review summary is a checksummed report artifact",
+    );
+    assert.equal(
+      reviewArtifact.sha256,
+      createHash("sha256").update(review).digest("hex"),
     );
     const status = assertEnvelope(
       await runCli(dir, ["--json", "status", "--run", run]),
@@ -2131,7 +2202,9 @@ test("a declared command control matches the intended failure and the same resto
           id: "demo-ready",
           outcome: "passed",
           steps: [good.step],
-          observed: "The expected button is present.",
+          observed:
+            "The expected button is present. <script>alert(1)</script>\n# forged heading https://example.invalid www.example.invalid user@example.invalid",
+
           artifacts: good.artifacts.map((a) => a.path),
         },
       ],
@@ -2145,7 +2218,7 @@ test("a declared command control matches the intended failure and the same resto
         },
       ],
       gates: [],
-      limits: [],
+      limits: ["No browser appearance proof."],
     };
     await writeJson(join(dir, "result.json"), result);
     assertEnvelope(
@@ -2158,6 +2231,36 @@ test("a declared command control matches the intended failure and the same resto
         "result.json",
       ]),
       { ok: true, code: 0 },
+    );
+    assertEnvelope(await runCli(dir, ["--json", "down", "--run", run]), {
+      ok: true,
+      code: 0,
+    });
+    const report = assertEnvelope(
+      await runCli(dir, ["--json", "report", "--run", run]),
+      { ok: true, code: 0 },
+    );
+    const html = await readFile(report.data.reportPath, "utf8");
+    assert.match(html, /<strong>Command:<\/strong>/);
+    assert.match(html, /COMMAND_FAILED/);
+    const review = await readFile(report.data.reviewPath, "utf8");
+    assert.match(review, /command-control: passed/);
+    assert.ok(
+      review.includes(bad.step),
+      "review identifies the intended failure",
+    );
+    assert.ok(
+      review.includes(good.step),
+      "review identifies the restored pass",
+    );
+    assert.match(
+      review.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))),
+      /COMMAND_FAILED/,
+    );
+    assert.match(review, /No browser appearance proof/);
+    assert.doesNotMatch(
+      review,
+      /<script>|\n# forged heading|https:\/\/example.invalid|www\.example.invalid|user@example.invalid/,
     );
   } finally {
     if (run) await runCli(dir, ["--json", "down", "--run", run]);

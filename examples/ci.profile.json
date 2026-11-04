@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "app": "spyglass-ci-example",
+  "evidence": ".spyglass/runs/${run}",
+  "launch": { "mode": "none" },
+  "checks": {
+    "verify": {
+      "command": [
+        "node",
+        "-e",
+        "const fs=require('node:fs');const ok=!fs.existsSync('.spyglass/ci-fault');console.log(JSON.stringify({ok,claims:[{id:'fixture-ready',ok,detail:ok?'Fixture restored':'Intended fixture failure'}]}))"
+      ],
+      "result": "json"
+    }
+  }
+}
