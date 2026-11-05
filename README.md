@@ -21,7 +21,7 @@ original chat or shell.
 </p>
 
 > [!NOTE]
-> Spyglass 1.3.1 uses version 1 profile, plan and result schemas.
+> Spyglass 1.4.0 uses version 1 profile, plan and result schemas.
 
 ## Why Spyglass
 
@@ -70,7 +70,7 @@ configurations and unverified platforms.
 Spyglass is not on npm yet. Install it from source:
 
 ```sh
-git clone --branch v1.3.1 https://github.com/Schramm2/spyglass.git
+git clone --branch v1.4.0 https://github.com/Schramm2/spyglass.git
 cd spyglass
 npm ci
 npm run build
