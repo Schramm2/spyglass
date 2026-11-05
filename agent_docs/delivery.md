@@ -104,8 +104,12 @@ gh release download vX.Y.Z && shasum -a 256 -c spyglass-X.Y.Z-SHA256SUMS
 Then build the extracted archive with `npm ci && npm run build` and check that
 `node dist/cli.js --version` prints the new version.
 
-`package.json` has `"private": true`. Spyglass is not on npm. Do not publish
-it, remove `private` or create a GitHub release unless the user asks for it.
+`package.json` permits public publication of `@mattschramm/spyglass`. This is
+configuration, not permission to write to npm. Follow
+[`docs/npm-publication.md`](../docs/npm-publication.md) for the protected
+staging workflow, first-package setup, maintainer approval and registry checks.
+Staging creates public registry state for a new package and needs explicit
+approval too. Create release tags or a GitHub release only when requested.
 
 ## Agent skills
 

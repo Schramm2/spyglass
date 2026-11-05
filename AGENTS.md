@@ -38,7 +38,8 @@ change only after its failure case and E2E check fail for the intended reason.
 
 Use Git Flow: ordinary work branches from `dev` and returns through a pull
 request. Read the workflow before branch, merge or release work. Publication
-and release tags need explicit user approval; npm publication remains disabled.
+and release tags need explicit user approval. Follow `docs/npm-publication.md`
+for npm staging, approval and registry installation checks.
 
 ## Agent docs
 
