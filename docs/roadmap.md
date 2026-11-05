@@ -24,7 +24,7 @@ verification.
 
 ## Starting point
 
-The documented release is 1.3.1. The core run, claim, source identity,
+The documented release is 1.4.0. The core run, claim, source identity,
 evidence, cleanup and offline report contracts are built. Browser, HTTP,
 PostgreSQL, Compose and repository checks are supported. The workflow now
 includes live claim linking, bounded expectations and polling, `ui verify`,

@@ -320,8 +320,8 @@ try {
     args.includes("--") ? args.indexOf("--") : args.length,
   );
   if (ownArgs.includes("--version")) {
-    if (json) emit({ version: "1.3.1" });
-    else console.log("1.3.1");
+    if (json) emit({ version: "1.4.0" });
+    else console.log("1.4.0");
   } else if (args[0] === "ui" && ownArgs.includes("--help")) {
     const b = await import("./browser.js");
     emit(b.browserHelp());

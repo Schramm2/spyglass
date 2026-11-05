@@ -6,6 +6,15 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Public npm package configuration for `@mattschramm/spyglass`, an isolated
+  archive-install E2E gate and a protected, tokenless staged-publication
+  workflow. Registry approval stays with the maintainer; this change does
+  not itself publish a version.
+
+## [1.4.0] - 2026-11-05
+
 ### Removed
 
 - The unlaunched marketing site and HTML manual in `landing/`. `README.md`
@@ -18,10 +27,6 @@ This file records the notable changes to Spyglass. The format follows
 
 ### Added
 
-- Public npm package configuration for `@mattschramm/spyglass`, an isolated
-  archive-install E2E gate and a protected, tokenless staged-publication
-  workflow. Registry approval stays with the maintainer; this change does
-  not itself publish a version.
 - Every report retains a checksummed Markdown review summary with source
   identity, claims, controls, gates, cleanup, limits and findings, including
   incomplete reports. `data.reviewPath` selects it; `data.report.review`
@@ -318,7 +323,8 @@ This file records the notable changes to Spyglass. The format follows
 - The agent skills `spyglass`, `create-verification-skill` and
   `maintain-verification-skill`.
 
-[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Schramm2/spyglass/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/Schramm2/spyglass/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Schramm2/spyglass/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Schramm2/spyglass/compare/v1.1.0...v1.2.0
