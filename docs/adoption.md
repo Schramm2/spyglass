@@ -73,6 +73,28 @@ Add `.spyglass/` to `.gitignore` before a run. Keep generated runner output
 ignored too; otherwise a check that writes it can change the source identity.
 Do not ignore product source to make a check pass.
 
+## Keep the proof scope explicit
+
+A complete report proves the claims in its plan, not the whole repository's
+completion rules. Name required gates in the plan or link their validated
+owner evidence in the repository's completion record. A limit explains
+missing coverage; it does not waive a required check.
+
+Use `behavior` for a read-only state observation. A write or persistence claim
+needs `side-effect`, its recorded action and a later independent read. A GET
+of previously saved state alone proves no write. Keep real action/read
+assertions from supported owner journeys; do not replace them with exit
+status or invent a second read.
+
+A synthetic false runner assertion can prove that Spyglass rejects that
+assertion. It is not a control of the product's fault detection. For a product
+control, introduce the declared fault and keep the unchanged check's failing
+and restored passing attempts. Declare either an assertion ID or the exact
+command plus expected failure; prose in `expectation` is not an assertion ID.
+
+The [sustained-use review](usage-review.md) records why these distinctions
+matter and which workflow repairs remain planned.
+
 ## Recipe 1: existing suite, CLI or library
 
 Use `none` when the check needs no persistent target. This complete profile
@@ -355,7 +377,10 @@ spyglass result set --claim existing-check --outcome passed \
   --observed "Describe the check output that supports this claim." --run adoption-pass
 ```
 
-Keep the fault worktree until the final report has been generated and retained.
+After the fault run's cleanup and `down`, run `report` for it too. Its report
+can remain incomplete by design; keep that diagnostic report and failed step
+rather than claiming the fault run passed. Keep the fault worktree until the
+candidate's final report has been generated and retained.
 Unrelated clones do not share a run store. Do not edit and restore source
 inside an active run or remove the source check to make the control easier.
 
@@ -392,6 +417,18 @@ available when `report` exits 1 with incomplete proof. Read its findings and
 limits, then inspect the detailed HTML and cited artifacts; the summary does
 not replace them. For an upload recipe, source context and offline review,
 see [review proof in GitHub Actions](ci.md).
+
+If `finish` fails, it stops before later stages. Repair and retry when possible;
+otherwise run the owner cleanup, `down` and `report` separately. A failed or
+abandoned run still needs a retained diagnostic report. Cleanup errors remain
+part of the outcome; do not change the verification failure to a pass.
+
+Before moving proof out of a worktree, retain the producing scripts and a
+checksum manifest with the report and artifacts. Test that the copied report
+opens offline. Original machine paths are provenance, not portable commands.
+Current CLI state can still point to the removed worktree; see
+[known workflow limits](support.md#known-workflow-limits). Planned retained-folder
+inspection is not available merely because an offline report was copied.
 
 ## Setup repairs
 
