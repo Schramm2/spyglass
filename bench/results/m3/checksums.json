@@ -1,0 +1,19 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "a1d06690dc4cace13a706b35cb63eb9326014d747b2182a9980dde1de3436efc",
+    "format.txt": "092dc9e918f7293fa071cbcad41368fef51a4badce535a17d3ac5f29eaedd1f3",
+    "gfm-after.html": "b336c69cfeecb69d38c1969a3c5cf935ca86531490164b14b7e5751646cfb222",
+    "gfm-before.html": "d468866836df6e1a7f42273db853b783d914d1348418a0ed7fc40cff1205ca71",
+    "gfm-check.json": "4ac39c71b82a8e0824e7248d72c511ce272e61a6b11691803ccdfad74fa6f598",
+    "gfm-input.md": "3a5ddba3448f3dfbe295af348a5b29a4651baf2e41c32d11eb4f4db0c827aafd",
+    "local-runs.json": "25f96d226c336cd801ed0d1a0af44c5cbd945880aaf3ac934fe98198a0904643",
+    "manual-narrow.png": "745f73f24f3251f2fdf4b33772b88efa9269c320930e8d54cf19d0744519c95b",
+    "manual-wide.png": "eae58b01df616ecf31f8ca258a08fd9ac8b68f7036b78aee4cb3d591478a3976",
+    "recipe-gates.jsonl": "b3f609f17bbbbb8829ff083c0df1d3283d403819432174ea17bd52447a7853fb",
+    "report-control-narrow.png": "1bf20f1a35e944dbbe346c8d099b4947810e52f9b9827ee618c0c68374871522",
+    "report-incomplete-narrow.png": "c06fd3a0e101407e94bc09b2e380c3ce84d381a4e180355253e9f217998102d3",
+    "runtime-inputs.json": "989ae898b1ea2e2664f8eb172135d2645b774824d9b72a33230d8bc0dcb02466",
+    "suite.txt": "a255936023b062ed45f64311bc47ba361a3876879c6d029e1445aafbc5e85539"
+  }
+}

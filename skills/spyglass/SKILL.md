@@ -21,7 +21,10 @@ CLI is missing, follow the terminal setup in the
 --json` and its report, then compare the source identity, cited steps,
 artifacts, claims and limits with the requested change. Report each conclusion
 that the evidence does not support. Start a new run only when the task needs
-new evidence.
+new evidence. For PR or CI evidence, read the
+[CI review recipe](https://github.com/Schramm2/spyglass/blob/dev/docs/ci.md).
+Compare the tested checkout commit with the PR head and merge result. Keep
+local proof separate from CI proof.
 
 ## 1. Plan the claims
 
@@ -56,15 +59,24 @@ control or a limit.
 
 Review the profile against the repository's own instructions. If there is no
 profile, run `spyglass init` and review every guessed field and its
-provenance. Check the launch mode, readiness, commands, bindings, seats,
-evidence path, browser origins and source inputs. Add the evidence folder to
-`.gitignore`.
+provenance. `setup.reviewFields` lists guesses; `setup.prerequisites`,
+`setup.commands` and `setup.notes` give the first planned run and report path.
+Replace `CLAIM_ID` with a claim from the plan. Check the launch mode,
+readiness, commands, bindings, seats, evidence path, browser origins and source
+inputs. Add the evidence folder to `.gitignore`. Install dependencies and build
+the target before `up`; its checks can use a different runtime from Spyglass.
+For first adoption, package installation, upgrades or setup repairs, read the
+[adoption recipes](https://github.com/Schramm2/spyglass/blob/dev/docs/adoption.md)
+and [tested support](https://github.com/Schramm2/spyglass/blob/dev/docs/support.md).
 
 Follow the profile's lifecycle mode. `none` runs checks without a persistent
 target. `owned` starts the app for the run. `external` uses resources that the
 repository **owner** starts and cleans up: create isolated installations,
 databases and services with the owner's tool, bind them as external
 resources, and confirm that the owner's build matches the source under test.
+Use a separate binding such as `ownerPort` for an external port. `repo`, `run`,
+`port`, `web`, `api` and `evidence` are reserved run values; `up` rejects
+conflicting profile or CLI bindings before it allocates a run.
 
 Give secrets only as secret references (`env:`, `file:`, `dotenv:`, `op://`).
 Keep passwords, tokens, cookies and private keys out of arguments, profiles,
@@ -223,4 +235,9 @@ complete before you state the outcome: `data.report.complete`, `.status` and
 `.reportPath` from `finish`, or `data.complete`, `data.status` and
 `data.reportPath` from `report`. Report a pass only for a complete report;
 otherwise give the remaining gaps. Give the report path in both cases. A report never turns a missing or failed
-claim into a pass.
+claim into a pass. `report` also returns `data.reviewPath` for the retained
+Markdown summary and `data.report.review` for its artifact and checksum.
+The summary lists claims, controls, gates, cleanup, limits and findings; use
+the detailed offline report to inspect attempts and artifacts. In CI, attempt
+cleanup and `report` even after verification fails; `finish` alone stops before
+that diagnostic report.

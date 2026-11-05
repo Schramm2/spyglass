@@ -1,0 +1,10 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "f7b83da8053ec9c977699157226d2be881dd1ce4be0d2e47e59f03a6e4e86941",
+    "failure-first.json": "6966671c556d52ac0d1c9cc7192a868c6d274db50591eb853927e9d74e28aa45",
+    "format.txt": "092dc9e918f7293fa071cbcad41368fef51a4badce535a17d3ac5f29eaedd1f3",
+    "runtime-inputs.json": "dc2112d585632dae2fe9acf3de4d04dd9d3aaf30be3c90f67dc89f06de725e75",
+    "suite.txt": "c592efc166dbc46826c297964f6aeb5b31cd9bf3b91c962b76997a5bdc36f03b"
+  }
+}

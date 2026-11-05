@@ -1,0 +1,24 @@
+[
+  {
+    "scenario": "passed",
+    "run": "ci-passed-41858307522-1",
+    "sourceCommit": "3fb71f3d920c07ab453698663be4d85f36d205ec",
+    "sourceHash": "7348cdb49bd41baf4f2baf2b9c312facc8b04085b8c6f4aafd7b86f77753aed4",
+    "uniqueRecordedArtifacts": 7,
+    "allChecksumsMatched": true,
+    "reportReferenceChecksumsMatched": true,
+    "deliveryReviewMatchesRecordedArtifact": true,
+    "sourceUnchanged": true
+  },
+  {
+    "scenario": "incomplete",
+    "run": "ci-incomplete-41858307522-1",
+    "sourceCommit": "3fb71f3d920c07ab453698663be4d85f36d205ec",
+    "sourceHash": "7348cdb49bd41baf4f2baf2b9c312facc8b04085b8c6f4aafd7b86f77753aed4",
+    "uniqueRecordedArtifacts": 6,
+    "allChecksumsMatched": true,
+    "reportReferenceChecksumsMatched": true,
+    "deliveryReviewMatchesRecordedArtifact": true,
+    "sourceUnchanged": true
+  }
+]

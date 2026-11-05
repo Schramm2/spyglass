@@ -1,0 +1,169 @@
+{
+  "firstMeasuredClock": "2026-11-04T13:49:00Z",
+  "firstUsefulCompleteReport": "2026-11-04T13:53:32.483Z",
+  "secondsToFirstUsefulCompleteReport": 272.483,
+  "scope": "From first recorded clock after initial required instruction reads. Full request-to-report time is unavailable, not estimated. Includes harness packaging coordination and duplicate pack.",
+  "reopenStart": "2026-11-04T13:53:51Z",
+  "reopenEnd": "2026-11-04T13:53:51Z",
+  "phases": [
+    {
+      "phase": "clone",
+      "start": "2026-11-04T13:49:14.362865+00:00",
+      "end": "2026-11-04T13:49:14.368621+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "target-install",
+      "start": "2026-11-04T13:49:49.295048+00:00",
+      "end": "2026-11-04T13:49:51.673024+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "fault-install",
+      "start": "2026-11-04T13:50:28.727831+00:00",
+      "end": "2026-11-04T13:50:29.543711+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "copy-dependency-install",
+      "start": "2026-11-04T13:50:28.707570+00:00",
+      "end": "2026-11-04T13:50:29.524114+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "copy-pack",
+      "start": "2026-11-04T13:50:29.529235+00:00",
+      "end": "2026-11-04T13:50:30.791828+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "copy-prefix-install",
+      "start": "2026-11-04T13:50:30.795197+00:00",
+      "end": "2026-11-04T13:50:31.132293+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "checkout-pack",
+      "start": "2026-11-04T13:51:17.873931+00:00",
+      "end": "2026-11-04T13:51:19.100769+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "checkout-prefix-install",
+      "start": "2026-11-04T13:51:19.103899+00:00",
+      "end": "2026-11-04T13:51:19.408258+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "init",
+      "start": "2026-11-04T13:51:39.081990+00:00",
+      "end": "2026-11-04T13:51:39.245642+00:00",
+      "clockSource": "redirected output file creation and last write; command completion may be slightly later"
+    },
+    {
+      "phase": "fault up ",
+      "start": "2026-11-04T13:52:38.159Z",
+      "end": "2026-11-04T13:52:38.221000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "fault check verify",
+      "start": "2026-11-04T13:52:57.405Z",
+      "end": "2026-11-04T13:52:58+00:00",
+      "exitCode": 1,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "fault down ",
+      "start": "2026-11-04T13:53:13.600Z",
+      "end": "2026-11-04T13:53:13.653000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "fault report ",
+      "start": "2026-11-04T13:53:13.691Z",
+      "end": "2026-11-04T13:53:13.731000+00:00",
+      "exitCode": 1,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass up ",
+      "start": "2026-11-04T13:53:13.815Z",
+      "end": "2026-11-04T13:53:13.869000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass check verify",
+      "start": "2026-11-04T13:53:13.904Z",
+      "end": "2026-11-04T13:53:14.168000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass result set --control",
+      "start": "2026-11-04T13:53:32.094Z",
+      "end": "2026-11-04T13:53:32.116000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass result set --claim",
+      "start": "2026-11-04T13:53:32.155Z",
+      "end": "2026-11-04T13:53:32.174000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass result set --operator",
+      "start": "2026-11-04T13:53:32.210Z",
+      "end": "2026-11-04T13:53:32.228000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass result --check",
+      "start": "2026-11-04T13:53:32.332Z",
+      "end": "2026-11-04T13:53:32.354000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass result ",
+      "start": "2026-11-04T13:53:32.408Z",
+      "end": "2026-11-04T13:53:32.412000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass doctor ",
+      "start": "2026-11-04T13:53:32.412Z",
+      "end": "2026-11-04T13:53:32.455000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass down ",
+      "start": "2026-11-04T13:53:32.456Z",
+      "end": "2026-11-04T13:53:32.467000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass report ",
+      "start": "2026-11-04T13:53:32.468Z",
+      "end": "2026-11-04T13:53:32.485000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    },
+    {
+      "phase": "pass report ",
+      "start": "2026-11-04T13:53:51.759Z",
+      "end": "2026-11-04T13:53:51.814000+00:00",
+      "exitCode": 0,
+      "clockSource": "Spyglass step log"
+    }
+  ]
+}

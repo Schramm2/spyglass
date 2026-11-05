@@ -1,0 +1,61 @@
+{
+  "operator": "agent",
+  "controls": [
+    {
+      "id": "wrong-owner",
+      "failedRun": "m2-web-safe",
+      "failedStep": "f21d224f-938",
+      "restoredStep": "7d75a9e5-546",
+      "observedFailure": "Morgan at the same origin returned 404 Not Found and body-contains OK failed.",
+      "observedPass": "Owner restored Sirv with npm start; identical GET /health expectation returned 200 OK and body-contains OK passed."
+    }
+  ],
+  "claims": [
+    {
+      "id": "health-ready",
+      "outcome": "passed",
+      "steps": [
+        "c91ced6e-e67",
+        "7d75a9e5-546"
+      ],
+      "observed": "Sirv returned HTTP 200 and OK. The same GET /health request rejected the existing Morgan example with 404 Not Found, then passed after owner restored Sirv.",
+      "artifacts": [
+        "c91ced6e-e67-1-api-response.json",
+        "7d75a9e5-546-1-api-response.json"
+      ]
+    },
+    {
+      "id": "local-page",
+      "outcome": "passed",
+      "steps": [
+        "cd93a21d-3fb",
+        "b9aaa297-bc6"
+      ],
+      "observed": "At 1280x800, title Example: Sirv and exactly one #app held. GET /style.css returned 200 and #app. One console error and one failed request remain; gallery appearance and external image loading are outside this claim.",
+      "artifacts": [
+        "cd93a21d-3fb-1-proof-local-page-1280x800.png",
+        "cd93a21d-3fb-2-proof-local-page-1280x800-snapshot.json",
+        "cd93a21d-3fb-3-proof-local-page-1280x800-details.json",
+        "b9aaa297-bc6-1-api-response.json"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "name": "test",
+      "outcome": "passed",
+      "steps": [
+        "a4ec293e-cd6"
+      ]
+    }
+  ],
+  "limits": [
+    "Agent-only adoption. No human usability conclusion.",
+    "No database, login, persistent writes, visual acceptance or external image completion is claimed.",
+    "External scripts and Unsplash images are outside the allowed origin; their errors are expected and not hidden.",
+    "Repository npm start owns launch. No repository stop or readiness command exists; operator supplies curl readiness and a listener-PID cleanup check without transferring process ownership to Spyglass.",
+    "The control swaps between two existing examples at the same port without editing source; this proves wrong-target detection, not a code-mutation defect.",
+    "Legacy dependency audit findings are retained; dependencies are not repaired in this adoption.",
+    "The existing no-input URL assertion now requires TypeError instead of old Node message wording. Its original Node 24 failure is retained; no separate source-mutation control was added for this compatibility repair."
+  ]
+}

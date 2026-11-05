@@ -81,7 +81,15 @@ spyglass report --run terminal-trial
 
 Open the page at `reportPath` in the `report` output. Check that it includes
 both attempts, the observation, the source identity, the limit and cleanup. A
-report run before cleanup must remain incomplete. Running `report` after cleanup needs no live app.
+report run before cleanup must remain incomplete. Running `report` after
+cleanup needs no live app.
+
+The output also returns `reviewPath`, the compact Markdown review summary.
+Its artifact path and SHA-256 are in `data.report.review` in JSON output.
+Use it to find claims, controls, gates, findings, cleanup and limits, then
+open the HTML for the attempts and artifacts. A recorded control attempt is
+not validated control proof until a submitted result passes validation.
+For pull-request artifacts and failure retention, use the [CI recipe](ci.md).
 
 ## Continue an agent's run
 

@@ -1,0 +1,20 @@
+[
+  {
+    "scenario": "passed",
+    "artifactId": 13341970315,
+    "name": "review-proof-passed-41863511029-1",
+    "sha256": "4e95377f945ced5d99307127f4cc2d4bc10bfe637e758f13024145a0db804f36",
+    "metadataDigestMatched": true,
+    "safePaths": true,
+    "files": 14
+  },
+  {
+    "scenario": "incomplete",
+    "artifactId": 13340283405,
+    "name": "review-proof-incomplete-41863511029-1",
+    "sha256": "54d9ad34faad7f2f7acc2a46b3ca87875ceeb80d91439ba76f980ef6d8b96f91",
+    "metadataDigestMatched": true,
+    "safePaths": true,
+    "files": 13
+  }
+]

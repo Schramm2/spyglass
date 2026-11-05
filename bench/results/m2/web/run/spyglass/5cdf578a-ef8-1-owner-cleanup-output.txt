@@ -1,0 +1,4 @@
+stdout:
+Owner listener stopped on port 43187
+
+stderr:

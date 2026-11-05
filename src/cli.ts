@@ -41,7 +41,7 @@ Commands:
   finish [--cleanup CHECK]     Run result, doctor, down and report in order
   replay --from RUN [--failed-only] [--execute]
                                List or run the steps that RUN's claims cite
-  report                       Write an offline evidence report
+  report                       Write offline HTML, JSON and a Markdown review summary
 
 Step flags on ui, api, db, check, exec, evidence: --claim ID --independent-read
   --control ID:failed|restored --gate NAME link the step into the pending result.
@@ -320,8 +320,8 @@ try {
     args.includes("--") ? args.indexOf("--") : args.length,
   );
   if (ownArgs.includes("--version")) {
-    if (json) emit({ version: "1.3.1" });
-    else console.log("1.3.1");
+    if (json) emit({ version: "1.4.0" });
+    else console.log("1.4.0");
   } else if (args[0] === "ui" && ownArgs.includes("--help")) {
     const b = await import("./browser.js");
     emit(b.browserHelp());

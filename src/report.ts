@@ -86,7 +86,9 @@ function artifactInventory(
           item.mime = "image/jpeg";
           item.imageData = content.toString("base64");
         } else if (
-          !["report", "report-summary"].includes(artifact.kind) &&
+          !["report", "report-summary", "report-review"].includes(
+            artifact.kind,
+          ) &&
           (ext === "json" ||
             ext === "jsonl" ||
             ext === "txt" ||
@@ -959,6 +961,90 @@ function readableArtifact(item: VerifiedArtifact, ctx: Context): string {
   return `<li><strong>${path}</strong> · ${kind} · SHA-256 ${digest} · step ${producer}${body}</li>`;
 }
 
+/** A text field must not become a heading, link, image or HTML in a CI summary. */
+function reviewText(value: unknown, ctx: Context): string {
+  return (
+    ctx.vault
+      .text(String(value ?? "not recorded"))
+      .replace(/[\r\n\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ")
+      .replace(/[&<>\\`*_{}\[\]()#+!|~.:@]/g, (c) => `&#${c.charCodeAt(0)};`)
+      // GitHub links email addresses after entity decoding. This fixed inline
+      // boundary keeps the same visible text without a contiguous email node.
+      .replaceAll("&#64;", "&#64;<!-- -->")
+  );
+}
+
+function renderReview(summary: Record<string, unknown>, ctx: Context): string {
+  const text = (value: unknown) => reviewText(value, ctx);
+  const rows = (key: string) => summary[key] as Array<Record<string, unknown>>;
+  const source = summary.source as Record<string, unknown>;
+  const cleanup = summary.cleanup as Record<string, unknown>;
+  const lines = [
+    "# Spyglass review",
+    "",
+    `Status: ${text(summary.status)}`,
+    `Run: ${text(summary.run)}`,
+    `Source commit: ${text(source.commit)}`,
+    `Source fingerprint: ${text(source.hash)}`,
+    `Current fingerprint: ${text(source.currentHash)}`,
+    "",
+    "This summary records this run only. Workflow provenance identifies CI proof; local proof is separate.",
+    "Open the offline HTML report for attempts and artifacts. A passed claim does not prove behavior outside its plan.",
+    "",
+    "## Claims",
+    ...rows("claims").flatMap((row) => [
+      `- ${text(row.id)}: ${text(row.outcome)} — ${text(row.behavior)}`,
+      `  Expected: ${text(row.expected)}`,
+      `  Observed: ${text(row.observed)}`,
+      `  Steps: ${text((row.steps as string[]).join(", ") || "none")}`,
+      `  Artifacts: ${text((row.artifacts as string[]).join(", ") || "none")}`,
+    ]),
+    "",
+    "## Controls",
+    ...(rows("controls").length
+      ? rows("controls").flatMap((row) => [
+          `- ${text(row.id)}: ${text(row.outcome)} — ${text(row.expectation)}`,
+          row.command
+            ? `  Command: ${text(JSON.stringify(row.command))}; expected failure: ${text(JSON.stringify(row.failure))}`
+            : `  Assertion: ${text(row.assertion)}`,
+          `  Validated intended failure: run ${text((row.baseline as Record<string, unknown> | undefined)?.run ?? summary.run)}, step ${text(row.failedStep)} — ${text(row.observedFailure)}`,
+          `  Validated restored pass: step ${text(row.restoredStep)} — ${text(row.observedPass)}`,
+          ...(row.recordedAttempts as Array<Record<string, unknown>>).map(
+            (attempt) =>
+              `  Recorded attempt (not validated control proof): ${text(attempt.state)}, step ${text(attempt.step)}, status ${text(attempt.status)}`,
+          ),
+        ])
+      : ["- No controls selected."]),
+    "",
+    "## Gates",
+    ...(rows("gates").length
+      ? rows("gates").map(
+          (row) =>
+            `- ${text(row.name)}: ${text(row.outcome)} — run ${text(row.run ?? summary.run)}, steps ${text((row.steps as string[]).join(", ") || "none")}`,
+        )
+      : ["- No gates selected."]),
+    "",
+    "## Cleanup",
+    `- Run state: ${text(cleanup.runState)}`,
+    `- Spyglass resources cleaned: ${text(cleanup.spyglassResourcesCleaned)}`,
+    `- External owner cleaned: ${text(cleanup.externalOwnerCleaned)}`,
+    "",
+    "## Limits",
+    ...((summary.limits as string[]).length
+      ? (summary.limits as string[]).map((limit) => `- ${text(limit)}`)
+      : ["- No limits recorded; this does not establish full coverage."]),
+    "",
+    "## Findings",
+    ...(rows("findings").length
+      ? rows("findings").map(
+          (row) => `- ${text(row.code)}: ${text(row.message)}`,
+        )
+      : ["- None."]),
+    "",
+  ];
+  return lines.join("\n");
+}
+
 function renderHtml(
   summary: Record<string, unknown>,
   inventory: VerifiedArtifact[],
@@ -989,7 +1075,7 @@ function renderHtml(
     controls
       .map(
         (item) =>
-          `<article><h3>${htmlEscape(item.id, ctx)} · ${htmlEscape(item.outcome, ctx)}</h3><p><strong>Claim:</strong> ${htmlEscape(item.claim, ctx)}<br><strong>Expectation:</strong> ${htmlEscape(item.expectation, ctx)}<br><strong>Assertion:</strong> ${htmlEscape(item.assertion, ctx)}</p><p><strong>Failed attempt:</strong> ${htmlEscape(item.failedStep ?? "none", ctx)} — ${htmlEscape(item.observedFailure ?? "not recorded", ctx)}<br><strong>Restored pass:</strong> ${htmlEscape(item.restoredStep ?? "none", ctx)} — ${htmlEscape(item.observedPass ?? "not recorded", ctx)}</p></article>`,
+          `<article><h3>${htmlEscape(item.id, ctx)} · ${htmlEscape(item.outcome, ctx)}</h3><p><strong>Claim:</strong> ${htmlEscape(item.claim, ctx)}<br><strong>Expectation:</strong> ${htmlEscape(item.expectation, ctx)}<br>${item.command ? `<strong>Command:</strong> ${htmlEscape(JSON.stringify(item.command), ctx)}<br><strong>Expected failure:</strong> ${htmlEscape(JSON.stringify(item.failure), ctx)}` : `<strong>Assertion:</strong> ${htmlEscape(item.assertion, ctx)}`}</p><p><strong>Validated failed attempt:</strong> ${htmlEscape(item.failedStep ?? "none", ctx)} — ${htmlEscape(item.observedFailure ?? "not recorded", ctx)}<br><strong>Validated restored pass:</strong> ${htmlEscape(item.restoredStep ?? "none", ctx)} — ${htmlEscape(item.observedPass ?? "not recorded", ctx)}</p>${(item.recordedAttempts as Array<Record<string, unknown>>).map((attempt) => `<p><strong>Recorded attempt (not validated control proof):</strong> ${htmlEscape(attempt.state, ctx)}, step ${htmlEscape(attempt.step, ctx)}, status ${htmlEscape(attempt.status, ctx)}</p>`).join("")}</article>`,
       )
       .join("\n") || "<p>No negative controls are selected.</p>";
   const envHtml = env
@@ -1018,6 +1104,13 @@ function renderHtml(
   const limitHtml =
     limits.map((value) => `<li>${htmlEscape(value, ctx)}</li>`).join("\n") ||
     "<li>No coverage limits recorded.</li>";
+  const findingsHtml =
+    (summary.findings as Finding[])
+      .map(
+        (finding) =>
+          `<li><strong>${htmlEscape(finding.code, ctx)}:</strong> ${htmlEscape(finding.message, ctx)}</li>`,
+      )
+      .join("\n") || "<li>No findings.</li>";
   const cleanupHtml = Object.entries(cleanup)
     .map(
       ([key, value]) =>
@@ -1026,9 +1119,10 @@ function renderHtml(
     .join("\n");
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Spyglass report ${htmlEscape(summary.run, ctx)}</title><style>
-:root{color-scheme:light dark;font:16px/1.5 system-ui,sans-serif}body{max-width:1100px;margin:2rem auto;padding:0 1rem}h1,h2{line-height:1.2}article,details,section{border:1px solid #8886;border-radius:.5rem;padding:1rem;margin:1rem 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:32rem;overflow:auto;background:#8881;padding:.75rem}img{max-width:100%;height:auto;border:1px solid #8886}code{overflow-wrap:anywhere}.status{font-size:1.2rem;font-weight:700}li{margin:.5rem 0}
+:root{color-scheme:light dark;font:16px/1.5 system-ui,sans-serif}body{max-width:1100px;margin:2rem auto;padding:0 1rem;overflow-wrap:anywhere}h1,h2{line-height:1.2}article,details,section{border:1px solid #8886;border-radius:.5rem;padding:1rem;margin:1rem 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:32rem;overflow:auto;background:#8881;padding:.75rem}img{max-width:100%;height:auto;border:1px solid #8886}code{overflow-wrap:anywhere}.status{font-size:1.2rem;font-weight:700}li{margin:.5rem 0}
 </style></head><body>
 <header><h1>Spyglass verification report</h1><p class="status">${htmlEscape(summary.status, ctx)}</p><p>Run ${htmlEscape(summary.run, ctx)} · ${htmlEscape(summary.app, ctx)} · operator ${htmlEscape(summary.operator ?? "not recorded", ctx)}</p><p>Source commit ${htmlEscape((summary.source as Record<string, unknown>)?.commit, ctx)} · fingerprint ${htmlEscape((summary.source as Record<string, unknown>)?.hash, ctx)}</p></header>
+<section><h2>Findings</h2><ul>${findingsHtml}</ul></section>
 <section><h2>Behavioral claims</h2>${claimHtml || "<p>No claims are in the plan.</p>"}</section>
 <section><h2>Repository gates</h2><ul>${gateHtml}</ul></section>
 <section><h2>Negative controls</h2>${controlHtml}</section>
@@ -1217,7 +1311,7 @@ function reportSummary(
         (ctx.run.profile.launch.mode !== "external" || ctx.run.ownerCleaned)
           ? "passed"
           : "pending",
-      detail: `Spyglass cleanup: ${ctx.run.cleanup}; external owner cleanup: ${ctx.run.ownerCleaned}.`,
+      detail: `Spyglass cleanup: ${ctx.run.cleanup}; external owner cleanup: ${cleanup.externalOwnerCleaned}.`,
     },
   ];
   return ctx.vault.clean({
@@ -1237,7 +1331,20 @@ function reportSummary(
     },
     claims,
     gates,
-    controls,
+    controls: controls.map((control) => ({
+      ...control,
+      recordedAttempts: entries.flatMap((entry) => {
+        const linked = entry.data.linked as { controls?: unknown } | undefined;
+        const links = Array.isArray(linked?.controls) ? linked.controls : [];
+        return ["failed", "restored"]
+          .filter((state) => links.includes(`${control.id}:${state}`))
+          .map((state) => ({
+            state,
+            step: entry.id,
+            status: stepPassed(entry) ? "passed" : "failed",
+          }));
+      }),
+    })),
     environment,
     visualObservations,
     cleanup,
@@ -2092,10 +2199,16 @@ export async function report(
   );
   const html = renderHtml(beforeHtml, inventory, ctx);
   const page = ctx.artifact("index.html", Buffer.from(html), "report");
+  const review = ctx.artifact(
+    "review.md",
+    Buffer.from(renderReview(beforeHtml, ctx)),
+    "report-review",
+  );
   const summary = {
     ...beforeHtml,
     report: {
       page: { path: page.path, sha256: page.sha256 },
+      review: { path: review.path, sha256: review.sha256 },
       summary: {
         path: `${ctx.step.id}-${ctx.step.artifacts.length + 1}-summary.json`,
       },
@@ -2115,8 +2228,9 @@ export async function report(
     ...brief,
     attemptCount: entries.length,
     artifactCount: inventory.length,
-    report: { page, summary: summaryArtifact },
+    report: { page, review, summary: summaryArtifact },
     reportPath: join(ctx.run.evidence, "spyglass", page.path),
+    reviewPath: join(ctx.run.evidence, "spyglass", review.path),
   };
   if (findings.length) {
     const first = findings[0]!;

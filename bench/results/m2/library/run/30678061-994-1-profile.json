@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "app": "kleur",
+  "evidence": ".spyglass/runs/kleur-adoption",
+  "launch": {
+    "mode": "none"
+  },
+  "bindings": {},
+  "checks": {
+    "test": {
+      "command": [
+        "../runtime/node_modules/.bin/node",
+        "node_modules/uvu/bin.js",
+        "-r",
+        "esm",
+        "-i",
+        "utils",
+        "-i",
+        "xyz"
+      ],
+      "env": {
+        "FORCE_COLOR": "1"
+      },
+      "timeoutMs": 300000,
+      "result": "exit",
+      "artifacts": [],
+      "cleanup": false
+    }
+  },
+  "seats": {},
+  "imports": [],
+  "provenance": {
+    "app": {
+      "status": "guessed",
+      "source": "repository directory name"
+    },
+    "version": {
+      "status": "observed",
+      "source": "Spyglass schema version 1"
+    },
+    "evidence": {
+      "status": "guessed",
+      "source": "default ignored run evidence location"
+    },
+    "launch": {
+      "status": "guessed",
+      "source": "no persistent process discovered"
+    },
+    "checks": {
+      "status": "observed",
+      "source": "repository task runners"
+    },
+    "checks.test": {
+      "status": "observed",
+      "source": "package.json scripts.test; direct same uvu arguments on isolated Node 16 because esm 3.2.25 fails on Node 24; FORCE_COLOR=1 supplies expected colors in non-TTY capture"
+    }
+  }
+}

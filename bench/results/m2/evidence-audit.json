@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-11-04T14:03:27.467Z",
+  "method": "Read each retained run log and independently SHA-256 every produced artifact reference. Original run artifacts are unchanged. Regenerate only retention indexes after adding complete logs and result files; indexes exclude themselves.",
+  "runs": [
+    {
+      "folder": "library/run",
+      "steps": 12,
+      "verifiedArtifactReferences": 8,
+      "sourceCommit": "fa3454483899ddab550d08c18c028e6db1aab0e5",
+      "sourceHash": "c8450a9274c4dbe9e309778e68479fbb3179643e7f795109cf9244bc8d0c4acf"
+    },
+    {
+      "folder": "web/run/spyglass",
+      "steps": 19,
+      "verifiedArtifactReferences": 18,
+      "sourceCommit": "c36cf8b5d1a57164e64fdd7d4e0d0f80ab262dc0",
+      "sourceHash": "a2456d92700a4d8f3f906f4e05e194219dd7e9900fce4fc7c3d76193423850b3"
+    },
+    {
+      "folder": "final-adoption/pass",
+      "steps": 11,
+      "verifiedArtifactReferences": 7,
+      "sourceCommit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+      "sourceHash": "ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131"
+    },
+    {
+      "folder": "final-adoption/fault",
+      "steps": 4,
+      "verifiedArtifactReferences": 5,
+      "sourceCommit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+      "sourceHash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685"
+    },
+    {
+      "folder": "guided-packaging/pass",
+      "steps": 11,
+      "verifiedArtifactReferences": 7,
+      "sourceCommit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+      "sourceHash": "ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131"
+    },
+    {
+      "folder": "guided-packaging/fault",
+      "steps": 4,
+      "verifiedArtifactReferences": 5,
+      "sourceCommit": "8c8dd70d48ad5d0897733ca6726302a54ca9e177",
+      "sourceHash": "df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685"
+    }
+  ]
+}

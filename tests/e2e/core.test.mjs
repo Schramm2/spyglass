@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 import {
   assertEnvelope,
+  REPO_ROOT,
   baseProfile,
   git,
   makeRepo,
@@ -89,6 +90,20 @@ test("init proposes a profile with discovery provenance without starting the app
     assert.match(profileText, /"version"\s*:\s*1/);
     assert.match(profileText, /package\.json/);
     assert.match(profileText, /verify/);
+    assert.deepEqual(
+      result.data.setup.reviewFields,
+      ["app", "evidence", "launch"],
+      "setup must identify guesses that need review before a run",
+    );
+    assert.equal(
+      result.data.setup.commands.check,
+      "spyglass check verify --run adoption --claim CLAIM_ID --json",
+    );
+    assert.match(
+      result.data.setup.commands.up,
+      /--plan verification-plan\.json/,
+    );
+    assert.match(result.data.setup.commands.reopen, /report --run adoption/);
     assert.equal(
       result.run,
       null,
@@ -97,6 +112,50 @@ test("init proposes a profile with discovery provenance without starting the app
   } finally {
     await removeRepo(dir);
   }
+});
+
+test("local installation packages contain only distributable runtime and guidance", async () => {
+  const packed = await spawnCapture(
+    "npm",
+    ["pack", "--dry-run", "--ignore-scripts", "--json"],
+    { cwd: REPO_ROOT },
+  );
+  assert.equal(packed.code, 0, packed.stderr);
+  const [archive] = JSON.parse(packed.stdout);
+  const allowedRoots = new Set([
+    "dist",
+    "schemas",
+    "skills",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "package.json",
+  ]);
+  const unexpected = archive.files
+    .map((file) => file.path)
+    .filter(
+      (path) =>
+        !allowedRoots.has(path.split("/")[0]) &&
+        !["docs/adoption.md", "docs/support.md"].includes(path),
+    );
+  assert.deepEqual(
+    unexpected,
+    [],
+    "local installation must not distribute private plans, evidence or unrelated checkout files",
+  );
+  for (const path of [
+    "dist/cli.js",
+    "dist/supervisor.js",
+    "dist/browser-proxy.js",
+    "schemas/profile.schema.json",
+    "skills/spyglass/SKILL.md",
+    "docs/adoption.md",
+    "docs/support.md",
+  ])
+    assert.ok(
+      archive.files.some((file) => file.path === path),
+      `package needs ${path}`,
+    );
 });
 
 test("up, status and down retain one run record and stop only its app", async () => {
@@ -669,7 +728,27 @@ test("text output keeps the whole next command and the result rules of a plan", 
 });
 
 test("an incomplete claim matrix produces a readable report and stays incomplete", async () => {
-  const dir = await makeRepo({ profile: baseProfile(), plan });
+  const dir = await makeRepo({
+    profile: baseProfile({
+      checks: {
+        fail: {
+          command: [process.execPath, "fixtures/demo-app/check.mjs", "fail"],
+          result: "json",
+        },
+      },
+    }),
+    plan: {
+      ...plan,
+      controls: [
+        {
+          id: "interrupted-control",
+          claim: "demo-ready",
+          expectation: "The demo assertion detects a fault.",
+          assertion: "demo-check",
+        },
+      ],
+    },
+  });
   let run;
   try {
     const up = assertEnvelope(
@@ -690,11 +769,65 @@ test("an incomplete claim matrix produces a readable report and stays incomplete
     );
     assert.equal(existsSync(join(dir, up.data.result)), true);
 
+    const failed = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "--run",
+        run,
+        "check",
+        "fail",
+        "--control",
+        "interrupted-control:failed",
+      ]),
+      { ok: false, code: 1 },
+    );
     const report = assertEnvelope(
       await runCli(dir, ["--json", "--run", run, "report"]),
       { ok: false, code: 1 },
     );
     assert.match(JSON.stringify(report.data), /demo-ready/);
+    assert.ok(
+      report.data.reviewPath,
+      "an incomplete report retains a review summary",
+    );
+    const review = await readFile(report.data.reviewPath, "utf8");
+    assert.match(review, /Status: incomplete/);
+    assert.match(review, /demo-ready: not run/);
+    assert.match(
+      review.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))),
+      /RESULT_MISSING/,
+    );
+    assert.match(review, /Spyglass resources cleaned: false/);
+    assert.equal(
+      report.data.controls[0].outcome,
+      "not run",
+      "a linked attempt is not a validated control",
+    );
+    assert.ok(
+      review.includes(failed.step),
+      "interrupted review identifies the retained failed attempt",
+    );
+    assert.match(review, /Recorded attempt/);
+    assert.match(review, /Validated intended failure: run/);
+    assert.match(review, /Validated restored pass: step not recorded/);
+    const html = await readFile(report.data.reportPath, "utf8");
+    assert.deepEqual(
+      {
+        visibleFindings: html.includes("<h2>Findings</h2>"),
+        validatedAttemptLabel: html.includes(
+          "<strong>Validated failed attempt:</strong>",
+        ),
+        externalCleanupNotRequired: html.includes(
+          "external owner cleanup: not required",
+        ),
+      },
+      {
+        visibleFindings: true,
+        validatedAttemptLabel: true,
+        externalCleanupNotRequired: true,
+      },
+      "the offline report must explain missing proof without denying a recorded attempt or claiming external cleanup",
+    );
     const evidence = join(dir, ".spyglass/runs", run);
     const files = await readdir(evidence, { recursive: true });
     assert.ok(
@@ -1031,6 +1164,23 @@ test("a report validates completed proof after cleanup and detects artifact tamp
       isAbsolute(complete.data.reportPath) &&
         existsSync(complete.data.reportPath),
       `report must print a path that opens from any directory: ${complete.data.reportPath}`,
+    );
+    const review = await readFile(complete.data.reviewPath, "utf8");
+    assert.match(review, /Status: passed/);
+    assert.match(review, /demo-ready: passed/);
+    assert.match(review, /Spyglass resources cleaned: true/);
+    assert.ok(review.includes(complete.data.source.commit));
+    assert.ok(review.includes(complete.data.source.hash));
+    const reviewArtifact = complete.artifacts.find(
+      (item) => item.kind === "report-review",
+    );
+    assert.ok(
+      reviewArtifact,
+      "review summary is a checksummed report artifact",
+    );
+    assert.equal(
+      reviewArtifact.sha256,
+      createHash("sha256").update(review).digest("hex"),
     );
     const status = assertEnvelope(
       await runCli(dir, ["--json", "status", "--run", run]),
@@ -1953,7 +2103,7 @@ test("run evidence retains its profile, plan and tool identity for a handoff", a
       .split("\n")
       .map(JSON.parse);
     assert.equal(records[0].run, run);
-    assert.equal(records[0].tool.version, "1.3.1");
+    assert.equal(records[0].tool.version, "1.4.0");
     assert.match(records[0].profileHash, /^[a-f0-9]{64}$/);
     const doctor = assertEnvelope(
       await runCli(dir, ["--json", "doctor", "--run", run]),
@@ -2072,7 +2222,9 @@ test("a declared command control matches the intended failure and the same resto
           id: "demo-ready",
           outcome: "passed",
           steps: [good.step],
-          observed: "The expected button is present.",
+          observed:
+            "The expected button is present. <ScRiPt>alert(1)</ScRiPt>\n# forged heading https://example.invalid www.example.invalid user@example.invalid",
+
           artifacts: good.artifacts.map((a) => a.path),
         },
       ],
@@ -2086,7 +2238,7 @@ test("a declared command control matches the intended failure and the same resto
         },
       ],
       gates: [],
-      limits: [],
+      limits: ["No browser appearance proof."],
     };
     await writeJson(join(dir, "result.json"), result);
     assertEnvelope(
@@ -2099,6 +2251,36 @@ test("a declared command control matches the intended failure and the same resto
         "result.json",
       ]),
       { ok: true, code: 0 },
+    );
+    assertEnvelope(await runCli(dir, ["--json", "down", "--run", run]), {
+      ok: true,
+      code: 0,
+    });
+    const report = assertEnvelope(
+      await runCli(dir, ["--json", "report", "--run", run]),
+      { ok: true, code: 0 },
+    );
+    const html = await readFile(report.data.reportPath, "utf8");
+    assert.match(html, /<strong>Command:<\/strong>/);
+    assert.match(html, /COMMAND_FAILED/);
+    const review = await readFile(report.data.reviewPath, "utf8");
+    assert.match(review, /command-control: passed/);
+    assert.ok(
+      review.includes(bad.step),
+      "review identifies the intended failure",
+    );
+    assert.ok(
+      review.includes(good.step),
+      "review identifies the restored pass",
+    );
+    assert.match(
+      review.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))),
+      /COMMAND_FAILED/,
+    );
+    assert.match(review, /No browser appearance proof/);
+    assert.doesNotMatch(
+      review,
+      /<script\b|\n# forged heading|https:\/\/example.invalid|www\.example.invalid|user@example.invalid/i,
     );
   } finally {
     if (run) await runCli(dir, ["--json", "down", "--run", run]);
@@ -2715,6 +2897,53 @@ test("a state permission failure is distinct from an active run lock", async () 
     if (stateDir) await chmod(stateDir, 0o700);
     if (run) await runCli(dir, ["down", "--run", run, "--json"]);
     await removeRepo(dir);
+  }
+});
+
+test("reserved run bindings are rejected before external readiness starts", async () => {
+  for (const fromCli of [false, true]) {
+    const dir = await makeRepo({
+      profile: baseProfile({
+        launch: {
+          mode: "external",
+          doctor: [
+            process.execPath,
+            "-e",
+            "require('node:fs').writeFileSync('owner-started', 'unexpected')",
+          ],
+        },
+        web: undefined,
+        api: undefined,
+        bindings: fromCli ? {} : { port: "43187" },
+      }),
+    });
+    try {
+      const result = assertEnvelope(
+        await runCli(dir, [
+          "up",
+          "--run",
+          "reserved",
+          "--json",
+          ...(fromCli ? ["--binding", "port=43187"] : []),
+        ]),
+        { ok: false, code: 2 },
+      );
+      assert.equal(result.error.code, "RESERVED_BINDING");
+      assert.match(result.error.next, /ownerPort/);
+      assert.equal(
+        result.run,
+        null,
+        "invalid bindings must not allocate a run",
+      );
+      assert.equal(
+        existsSync(join(dir, "owner-started")),
+        false,
+        "owner readiness must not execute",
+      );
+    } finally {
+      await runCli(dir, ["down", "--run", "reserved", "--json"]);
+      await removeRepo(dir);
+    }
   }
 });
 

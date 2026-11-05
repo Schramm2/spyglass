@@ -17,37 +17,53 @@ operator does (see `GLOSSARY.md`).
 ## Codemap
 
 All runtime code is in `src/`. Each command loads only the module it needs.
+The root contracts are `GLOSSARY.md` (terms), `FRONTEND.md` (browser-facing
+engineering) and `DESIGN.md` (visual intent).
 
-| Path | Owns | Search for |
-| --- | --- | --- |
-| `src/cli.ts` | Option parsing, command dispatch, the run lock, the JSON envelope and exit codes | `emit`, `known`, `allowed` |
-| `src/help.ts` | Help text for each command | `commandHelp` |
-| `src/schema.ts` | The version 1 profile, plan and result schemas (zod) | `profileSchema`, `planSchema`, `resultSchema`, `validate` |
-| `src/export-schemas.ts` | Build step that writes `schemas/*.schema.json` | |
-| `src/profile.ts` | Profile discovery (`init`), location, loading and `${...}` templates | `init`, `locateProfile`, `loadProfile`, `template` |
-| `src/state.ts` | Run and step records, source identity and its stat table, the lock, the per-command `Context` and the links from a step into the pending result | `Run`, `Step`, `Artifact`, `Context`, `source`, `sourceChanges`, `assertSource`, `linkPendingResult`, `lock`, `stateRoot` |
-| `src/replay.ts` | `replay`: plans the steps that an earlier run cited, then runs each as its own command of the new run | `replay` |
-| `src/lifecycle.ts` | `up` (with gate citation and `--warm`), `status`, `doctor`, `down` and `finish`, and the owned-process stop | `allocate`, `launch`, `doctor`, `down`, `finishRun`, `status`, `capabilities`, `stopOwned` |
-| `src/supervisor.ts` | Separate process that holds the owned app's process group and writes its masked log | |
-| `src/process.ts` | Child commands with bounds, and process identity checks | `runCommand`, `processIdentity`, `processGroupMembers` |
-| `src/checks.ts` | `check` (also several at once), `exec`, `evidence add` and assertion parsing | `checks`, `parallelChecks` |
-| `src/browser.ts` | `ui`: calls `agent-browser`, seats and sign-in, expectations, `verify` and `proof`, screenshots | `browser`, `pollConditions`, `runVerify`, `browserDoctor`, `closeBrowsers` |
-| `src/browser-proxy.ts` | Separate process: an exact-origin HTTP proxy for the run browser | `ensureBrowserProxy`, `stopBrowserProxy` |
-| `src/surfaces.ts` | `api` (with expectations, polling and one immediate follow-up GET), `db`, `ps`, `logs` and `mark` | `surfaces`, `readDatabaseRole` |
-| `src/report.ts` | `result` validation with a repair for each finding, `result set`, `status --work`, gate citation, and `report` (JSON summary and HTML page) | `report`, `workFor`, `citeGates` |
-| `src/secrets.ts` | Secret reference resolution and masking | `Secrets` |
-| `src/files.ts` | Safe paths, hashing and JSON I/O | `safePath`, `beneath`, `hash` |
-| `src/errors.ts` | The `Fault` error with code, next action and exit code | `Fault`, `fault` |
-| `skills/` | The agent skills that teach operators to use the CLI | |
-| `bench/` | The overhead gate and the scripted journey, which write to `bench/results/` | |
-| `tests/e2e/`, `fixtures/demo-app/` | E2E tests and the app they drive | |
+| Root                               | Ownership                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------- |
+| `src/`                             | CLI commands, adapters, state, process ownership and report rendering            |
+| `schemas/`                         | Generated public profile, plan and result schemas; `src/schema.ts` is the source |
+| `tests/e2e/`, `fixtures/demo-app/` | Public CLI checks and their disposable target                                    |
+| `skills/`, `examples/`             | Operator workflows and public profile/plan examples                              |
+| `bench/`                           | Performance studies and sanitized retained public evidence                       |
+| `docs/`, `agent_docs/`             | Public contracts and focused contributor/agent procedures                        |
+| `.github/`                         | CI, dependency updates and contribution entry points                             |
+
+The command ownership below is a search map, not a separate layering system.
+
+| Path                               | Owns                                                                                                                                                                         | Search for                                                                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `src/cli.ts`                       | Option parsing, command dispatch, the run lock, the JSON envelope and exit codes                                                                                             | `emit`, `known`, `allowed`                                                                                                |
+| `src/help.ts`                      | Help text for each command                                                                                                                                                   | `commandHelp`                                                                                                             |
+| `src/schema.ts`                    | The version 1 profile, plan and result schemas (zod)                                                                                                                         | `profileSchema`, `planSchema`, `resultSchema`, `validate`                                                                 |
+| `src/export-schemas.ts`            | Build step that writes `schemas/*.schema.json`                                                                                                                               |                                                                                                                           |
+| `src/profile.ts`                   | Profile discovery (`init`), location, loading and `${...}` templates                                                                                                         | `init`, `locateProfile`, `loadProfile`, `template`                                                                        |
+| `src/state.ts`                     | Run and step records, source identity and its stat table, the lock, the per-command `Context` and the links from a step into the pending result                              | `Run`, `Step`, `Artifact`, `Context`, `source`, `sourceChanges`, `assertSource`, `linkPendingResult`, `lock`, `stateRoot` |
+| `src/replay.ts`                    | `replay`: plans the steps that an earlier run cited, then runs each as its own command of the new run                                                                        | `replay`                                                                                                                  |
+| `src/lifecycle.ts`                 | `up` (with gate citation and `--warm`), `status`, `doctor`, `down` and `finish`, and the owned-process stop                                                                  | `allocate`, `launch`, `doctor`, `down`, `finishRun`, `status`, `capabilities`, `stopOwned`                                |
+| `src/supervisor.ts`                | Separate process that holds the owned app's process group and writes its masked log                                                                                          |                                                                                                                           |
+| `src/process.ts`                   | Child commands with bounds, and process identity checks                                                                                                                      | `runCommand`, `processIdentity`, `processGroupMembers`                                                                    |
+| `src/checks.ts`                    | `check` (also several at once), `exec`, `evidence add` and assertion parsing                                                                                                 | `checks`, `parallelChecks`                                                                                                |
+| `src/browser.ts`                   | `ui`: calls `agent-browser`, seats and sign-in, expectations, `verify` and `proof`, screenshots                                                                              | `browser`, `pollConditions`, `runVerify`, `browserDoctor`, `closeBrowsers`                                                |
+| `src/browser-proxy.ts`             | Separate process: an exact-origin HTTP proxy for the run browser                                                                                                             | `ensureBrowserProxy`, `stopBrowserProxy`                                                                                  |
+| `src/surfaces.ts`                  | `api` (with expectations, polling and one immediate follow-up GET), `db`, `ps`, `logs` and `mark`                                                                            | `surfaces`, `readDatabaseRole`                                                                                            |
+| `src/report.ts`                    | `result` validation with a repair for each finding, `result set`, `status --work`, gate citation, and `report` (JSON summary, Markdown review summary and offline HTML page) | `report`, `workFor`, `citeGates`                                                                                          |
+| `src/secrets.ts`                   | Secret reference resolution and masking                                                                                                                                      | `Secrets`                                                                                                                 |
+| `src/files.ts`                     | Safe paths, hashing and JSON I/O                                                                                                                                             | `safePath`, `beneath`, `hash`                                                                                             |
+| `src/errors.ts`                    | The `Fault` error with code, next action and exit code                                                                                                                       | `Fault`, `fault`                                                                                                          |
+| `skills/`                          | The agent skills that teach operators to use the CLI                                                                                                                         |                                                                                                                           |
+| `bench/`                           | The overhead gate and the scripted journey, which write to `bench/results/`                                                                                                  |                                                                                                                           |
+| `tests/e2e/`, `fixtures/demo-app/` | E2E tests and the app they drive                                                                                                                                             |                                                                                                                           |
 
 ## Main flow
 
 1. **Init.** `init` reads the target repository and writes a proposed
    `spyglass.json` with the provenance of each guessed field. It starts
    nothing.
-2. **Up.** `allocate` validates the profile and plan, reserves a port,
+2. **Up.** `allocate` validates the profile and plan, rejects bindings that
+   conflict with reserved run values (`repo`, `run`, `port`, `web`, `api`,
+   `evidence`), reserves a port,
    creates the run directory and the evidence folder, and records the source
    identity. `launch` then starts the app through the supervisor (`owned`),
    or runs the owner's readiness check (`external`), and waits for readiness.
@@ -66,7 +82,8 @@ All runtime code is in `src/`. Each command loads only the module it needs.
    group and sets the run to `stopped`. In `external` mode, a check with
    `cleanup: true` records the owner's cleanup.
 6. **Report.** `report` rechecks every cited step and artifact checksum,
-   writes `index.html` and a summary into the evidence folder, and exits with
+   writes an offline HTML page, JSON summary and checksummed Markdown review
+   summary into the evidence folder, and exits with
    a failed status while required proof or cleanup is missing.
 
 Authoritative state changes in step 2 (run record and source identity), at
@@ -75,12 +92,12 @@ state).
 
 ## Processes
 
-| Process | Started by | Lifetime | Talks to |
-| --- | --- | --- | --- |
-| `spyglass` CLI | The operator | One command | Run state, evidence folder, the processes below |
-| Supervisor (`dist/supervisor.js`) | `up` in `owned` mode, detached | Until `down` | The app child; writes `launch.log` and `app-state.json` |
-| Browser proxy (`dist/browser-proxy.js --serve`) | The first `ui` command, detached | Until `down` or browser idle timeout | HTTP to the allowed origins only |
-| `agent-browser` daemon and Chromium | `agent-browser`, one session per seat | Until `down` or `browser.idleTimeoutMs` | Pages through the proxy |
+| Process                                         | Started by                            | Lifetime                                | Talks to                                                |
+| ----------------------------------------------- | ------------------------------------- | --------------------------------------- | ------------------------------------------------------- |
+| `spyglass` CLI                                  | The operator                          | One command                             | Run state, evidence folder, the processes below         |
+| Supervisor (`dist/supervisor.js`)               | `up` in `owned` mode, detached        | Until `down`                            | The app child; writes `launch.log` and `app-state.json` |
+| Browser proxy (`dist/browser-proxy.js --serve`) | The first `ui` command, detached      | Until `down` or browser idle timeout    | HTTP to the allowed origins only                        |
+| `agent-browser` daemon and Chromium             | `agent-browser`, one session per seat | Until `down` or `browser.idleTimeoutMs` | Pages through the proxy                                 |
 
 The build keeps `browser-proxy` and `supervisor` as separate entry points
 because they run as their own processes. The `ui` hot path is a separate
@@ -88,37 +105,44 @@ bundle to meet the browser overhead budget in `docs/browser-benchmark.md`.
 
 ## State and data ownership
 
-| Fact | Owner and location |
-| --- | --- |
-| Source stat table (`source-stat.json`), written at `up` and at each full source check | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/`, beside the run record. It lists the stat of the files that matched the baseline |
-| Run record, lock, browser proxy config | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/` (default `~/.local/state`), outside the repository. The hash is of the main worktree path, so all worktrees of a repository share one run store; only a run's own worktree changes it. The run record keeps the profile twice: after templates (`profile`) and as hashed, before templates (`rawProfile`, from 1.2.0) |
-| Step log, artifacts, result, report, app log | The evidence folder in the target repository, default `.spyglass/runs/${run}`, which must be Git-ignored |
-| Profile, checks, containers, databases | The target repository |
-| Secret values | Their references (`env:`, `file:`, `dotenv:`, `op://`); never stored |
+| Fact                                                                                  | Owner and location                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source stat table (`source-stat.json`), written at `up` and at each full source check | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/`, beside the run record. It lists the stat of the files that matched the baseline                                                                                                                                                                                                                                      |
+| Run record, lock, browser proxy config                                                | `$XDG_STATE_HOME/spyglass/<repo hash>/<run>/` (default `~/.local/state`), outside the repository. The hash is of the main worktree path, so all worktrees of a repository share one run store; only a run's own worktree changes it. The run record keeps the profile twice: after templates (`profile`) and as hashed, before templates (`rawProfile`, from 1.2.0) |
+| Step log, artifacts, result, report, app log                                          | The evidence folder in the target repository, default `.spyglass/runs/${run}`, which must be Git-ignored                                                                                                                                                                                                                                                            |
+| Profile, checks, containers, databases                                                | The target repository                                                                                                                                                                                                                                                                                                                                               |
+| Secret values                                                                         | Their references (`env:`, `file:`, `dotenv:`, `op://`); never stored                                                                                                                                                                                                                                                                                                |
 
 ## Invariants and boundaries
 
-| Rule | Enforced by |
-| --- | --- |
-| A command that changes a run runs from the run's own worktree; `down` of a run whose worktree was removed runs from any worktree | `assertWorktree` in `src/state.ts`, E2E tests |
-| Every mutating command holds the run lock; a second one fails with `RUN_BUSY` and `status` stays available | `lock` in `src/state.ts`, E2E tests |
-| Evidence from changed source cannot pass for the recorded source | `assertSource`, `report` checks, E2E tests |
-| The fast source check trusts the stat table only for files that matched the baseline at the last full check; `doctor` and `report` hash every file | `sourceChanges` in `src/state.ts`, E2E tests |
-| A step links itself into the pending result without writing an observation, an inspection text or a claim outcome | `linkPendingResult` in `src/state.ts`, E2E tests |
-| A batch step (`ui verify`) lists its sub-steps; a claim cannot cite one that failed or did not run | `validateClaimProof` in `src/report.ts`, surface tests |
-| A socket error in the browser proxy never ends the proxy process | `serve` in `src/browser-proxy.ts`, surface tests |
-| A gate cited from another run needs the same source and profile, and fails when one of its steps used a binding override with another value | `validateGates` and `readBindings` in `src/report.ts`, E2E tests |
-| A failed step stays in the log; nothing removes log entries | `Context.finish` appends only; not otherwise enforced |
-| Text and JSON written through `Context` are masked; images are not | `Secrets`, `Context.artifact`, E2E tests |
-| The browser reaches only the configured origins | `src/browser-proxy.ts` and `--allowed-domains` in `src/browser.ts`; surface tests |
-| `db` runs one statement in a read-only transaction | `src/surfaces.ts`; surface tests |
-| HTTP redirects are not followed | `src/surfaces.ts` |
-| An API write with `--then GET` retains both requests in one step, keeps read assertions distinct from write assertions and cannot count as an independent read | `src/surfaces.ts`, `independentReadComplete` in `src/report.ts`, E2E tests |
-| Profiles hold secret references, never literal credentials | `secretReference` in `src/schema.ts`, E2E tests |
-| The evidence folder stays Git-ignored | `allocate` and `doctor` in `src/lifecycle.ts` |
-| JSON output is one versioned envelope; the CLI never prompts | `emit` in `src/cli.ts`, E2E tests |
-| Generic modules contain no paths or names from a target repository | Not enforced; review |
-| `src/cli.ts` imports command modules lazily | Not enforced; `docs/browser-benchmark.md` measures the effect |
+| Rule                                                                                                                                                           | Enforced by                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| A command that changes a run runs from the run's own worktree; `down` of a run whose worktree was removed runs from any worktree                               | `assertWorktree` in `src/state.ts`, E2E tests                                     |
+| Every mutating command holds the run lock; a second one fails with `RUN_BUSY` and `status` stays available                                                     | `lock` in `src/state.ts`, E2E tests                                               |
+| Evidence from changed source cannot pass for the recorded source                                                                                               | `assertSource`, `report` checks, E2E tests                                        |
+| The fast source check trusts the stat table only for files that matched the baseline at the last full check; `doctor` and `report` hash every file             | `sourceChanges` in `src/state.ts`, E2E tests                                      |
+| A step links itself into the pending result without writing an observation, an inspection text or a claim outcome                                              | `linkPendingResult` in `src/state.ts`, E2E tests                                  |
+| A batch step (`ui verify`) lists its sub-steps; a claim cannot cite one that failed or did not run                                                             | `validateClaimProof` in `src/report.ts`, surface tests                            |
+| A socket error in the browser proxy never ends the proxy process                                                                                               | `serve` in `src/browser-proxy.ts`, surface tests                                  |
+| A gate cited from another run needs the same source and profile, and fails when one of its steps used a binding override with another value                    | `validateGates` and `readBindings` in `src/report.ts`, E2E tests                  |
+| A failed step stays in the log; nothing removes log entries                                                                                                    | `Context.finish` appends only; not otherwise enforced                             |
+| Text and JSON written through `Context` are masked; images are not                                                                                             | `Secrets`, `Context.artifact`, E2E tests                                          |
+| The browser reaches only the configured origins                                                                                                                | `src/browser-proxy.ts` and `--allowed-domains` in `src/browser.ts`; surface tests |
+| `db` runs one statement in a read-only transaction                                                                                                             | `src/surfaces.ts`; surface tests                                                  |
+| HTTP redirects are not followed                                                                                                                                | `src/surfaces.ts`                                                                 |
+| An API write with `--then GET` retains both requests in one step, keeps read assertions distinct from write assertions and cannot count as an independent read | `src/surfaces.ts`, `independentReadComplete` in `src/report.ts`, E2E tests        |
+| Profiles hold secret references, never literal credentials                                                                                                     | `secretReference` in `src/schema.ts`, E2E tests                                   |
+| The evidence folder stays Git-ignored                                                                                                                          | `allocate` and `doctor` in `src/lifecycle.ts`                                     |
+| JSON output is one versioned envelope; the CLI never prompts                                                                                                   | `emit` in `src/cli.ts`, E2E tests                                                 |
+| Generic modules contain no paths or names from a target repository                                                                                             | Not enforced; review                                                              |
+| `src/cli.ts` imports command modules lazily                                                                                                                    | Not enforced; `docs/browser-benchmark.md` measures the effect                     |
+| The offline report has no site or network dependency                                                                                                           | `renderHtml` in `src/report.ts`, report E2E checks                                |
+| `schemas/` matches the schema source                                                                                                                           | Build generation and CI's generated-schema drift check                            |
+
+The intended dependency direction is CLI dispatch to command modules to shared
+state, files, process and secret helpers. The static site does not import
+runtime code. TypeScript checks imports and types, but there is no dedicated
+module-boundary linter; review enforces the direction.
 
 Runtime dependencies are `pg` and `zod` only. `agent-browser`, Docker Compose
 and the 1Password CLI (`op`) are external tools that Spyglass calls; it does

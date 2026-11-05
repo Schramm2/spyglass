@@ -3,9 +3,18 @@ import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { connect } from "node:net";
 import { existsSync } from "node:fs";
-import { readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { Client } from "pg";
 import {
@@ -603,6 +612,55 @@ surfaceTest(
       assert.match(observations, /1280x800/);
       assert.match(observations, /390x844/);
 
+      const reportSession = `offline-report-${randomUUID()}`;
+      const inspectReport = async (...args) => {
+        const result = await spawnCapture("agent-browser", [
+          "--session",
+          reportSession,
+          "--allow-file-access",
+          "--json",
+          ...args,
+        ]);
+        assert.equal(result.code, 0, result.stderr || result.stdout);
+        const envelope = JSON.parse(result.stdout);
+        assert.equal(envelope.success, true, result.stdout);
+        return envelope.data;
+      };
+      try {
+        await inspectReport("open", pathToFileURL(report.data.reportPath).href);
+        await inspectReport("set", "offline", "on");
+        await inspectReport("reload");
+        for (const [width, height] of [
+          [1280, 800],
+          [390, 844],
+        ]) {
+          await inspectReport("set", "viewport", String(width), String(height));
+          const page = (
+            await inspectReport(
+              "eval",
+              "({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,status:document.querySelector('.status').textContent,resources:performance.getEntriesByType('resource').length})",
+            )
+          ).result;
+          assert.equal(
+            page.scrollWidth <= page.width,
+            true,
+            `offline report must not overflow at ${width}px`,
+          );
+          assert.equal(page.status, "passed");
+          assert.equal(
+            page.resources,
+            0,
+            "offline report must need no network resources",
+          );
+        }
+      } finally {
+        await spawnCapture("agent-browser", [
+          "--session",
+          reportSession,
+          "close",
+        ]);
+      }
+
       const files = await readdir(evidenceRoot, { recursive: true });
       for (const relative of files) {
         const path = join(evidenceRoot, relative);
@@ -619,6 +677,31 @@ surfaceTest(
       }
       assert.ok(existsSync(join(dir, "result.json")));
       assert.ok(errorPage.run === run);
+
+      // Retain only this checked report and signed-in dashboard images, never
+      // browser state, temporary repositories, credentials or arbitrary logs.
+      if (process.env.SPYGLASS_TEST_ARTIFACTS) {
+        const destination = process.env.SPYGLASS_TEST_ARTIFACTS;
+        await mkdir(destination, { recursive: true });
+        await cp(report.data.reportPath, join(destination, "report.html"));
+        await cp(
+          join(evidenceRoot, image.path),
+          join(destination, "dashboard-wide.png"),
+        );
+        await cp(
+          join(evidenceRoot, narrowImage.path),
+          join(destination, "dashboard-narrow.png"),
+        );
+        await writeJson(join(destination, "provenance.json"), {
+          test: "agent-browser uses a fresh allowed session, retains visual proof, and protects login secrets",
+          commit: process.env.GITHUB_SHA ?? null,
+          run,
+          browserVersion: version.stdout.trim(),
+          screenshots: [image, narrowImage],
+          repeat:
+            "SPYGLASS_TEST_SURFACES=1 SPYGLASS_TEST_ARTIFACTS=/tmp/spyglass-e2e-proof node --test --test-concurrency=1 tests/e2e/surfaces.test.mjs",
+        });
+      }
     } finally {
       if (run)
         await runCli(dir, ["--json", "--run", run, "down"], {
@@ -677,9 +760,8 @@ surfaceTest(
         "ui",
         "click",
         "#other-port",
+        "--settle",
       ]);
-      if (attempted.json?.ok)
-        await runCli(dir, ["--json", "--run", run, "ui", "get", "url"]);
       assert.equal(
         otherPortHits,
         0,
@@ -734,15 +816,26 @@ async function browserRunning(session) {
 }
 
 async function browserActive(session) {
-  const info = await spawnCapture("agent-browser", [
-    "--namespace",
-    session.namespace,
-    "--session",
-    session.name,
-    "--json",
-    "session",
-    "info",
-  ]);
+  const info = await spawnCapture(
+    "agent-browser",
+    [
+      "--namespace",
+      session.namespace,
+      "--session",
+      session.name,
+      "--json",
+      "session",
+      "info",
+    ],
+    {
+      // Spyglass excludes host socket overrides from its browser environment.
+      // Probe the run daemon's HOME-based socket root, not the host's root.
+      env: {
+        XDG_RUNTIME_DIR: undefined,
+        AGENT_BROWSER_SOCKET_DIR: undefined,
+      },
+    },
+  );
   return JSON.parse(info.stdout).data.active;
 }
 

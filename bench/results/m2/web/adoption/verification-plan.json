@@ -1,0 +1,17 @@
+{
+  "claims": [
+    {"id":"health-ready","behavior":"The Sirv example answers its health endpoint.","entryPoint":"GET /health","precondition":"Owner starts the checked-out Sirv example with npm start on port 43187.","expected":"HTTP 200 and body contains OK.","case":"Healthy installation; wrong-example installation as a negative control.","checks":["api GET /health --expect 200 --expect-body-contains OK"],"evidence":["Masked HTTP response and assertions"],"kind":"behavior","required":true},
+    {"id":"local-page","behavior":"A guest can open the Sirv example page and read its local stylesheet.","entryPoint":"Browser / and HTTP GET /style.css","precondition":"Sirv owner server restored; exact local origin only.","expected":"Page title Example: Sirv, one #app element, and HTTP 200 stylesheet containing #app.","case":"Local static content only; external scripts and images are outside this claim.","checks":["ui verify --open / --expect title=Example: Sirv --expect count=#app=1","api GET /style.css --expect 200 --expect-body-contains #app"],"evidence":["Browser expectations, screenshot and HTTP stylesheet response"],"kind":"behavior","required":true}
+  ],
+  "controls":[{"id":"wrong-owner","claim":"health-ready","expectation":"The unchanged health expectation rejects a different existing example installed at the same origin, then passes after owner restores Sirv.","assertion":"body-contains OK"}],
+  "gates":["test"],
+  "limits":[
+    "Agent-only adoption. No human usability conclusion.",
+    "No database, login, persistent writes, visual acceptance or external image completion is claimed.",
+    "External scripts and Unsplash images are outside the allowed origin; their errors are expected and not hidden.",
+    "Repository npm start owns launch. No repository stop or readiness command exists; operator supplies curl readiness and a listener-PID cleanup check without transferring process ownership to Spyglass.",
+    "The control swaps between two existing examples at the same port without editing source; this proves wrong-target detection, not a code-mutation defect.",
+    "Legacy dependency audit findings are retained; dependencies are not repaired in this adoption.",
+    "The existing no-input URL assertion now requires TypeError instead of old Node message wording. Its original Node 24 failure is retained; no separate source-mutation control was added for this compatibility repair."
+  ]
+}

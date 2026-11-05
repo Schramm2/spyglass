@@ -1,0 +1,158 @@
+
+> @schramm2/spyglass@1.3.1 test
+> npm run build && node --test --test-concurrency=1 tests/e2e/*.test.mjs
+
+
+> @schramm2/spyglass@1.3.1 build
+> tsc --noEmit && node -e "require('node:fs').rmSync('dist',{recursive:true,force:true})" && esbuild src/*.ts --bundle --splitting --format=esm --platform=node --packages=external --external:./browser-proxy.js --outdir=dist --entry-names='[name]' --chunk-names='chunks/[name]-[hash]' && esbuild src/browser.ts --bundle --format=esm --platform=node --external:./browser-proxy.js --external:./state.js --external:./errors.js --outfile=dist/browser.js && node dist/export-schemas.js
+
+
+  dist/browser.js                83.3kb
+  dist/report.js                 70.1kb
+  dist/surfaces.js               50.0kb
+  dist/lifecycle.js              28.6kb
+  dist/browser-proxy.js          27.0kb
+  dist/cli.js                    20.7kb
+  dist/chunks/chunk-W5PJWTQC.js  18.2kb
+  dist/chunks/chunk-GYA6O6UY.js  17.6kb
+  dist/checks.js                 15.6kb
+  dist/chunks/chunk-KEC264VX.js  10.8kb
+  dist/chunks/chunk-5JXO3JIA.js   6.1kb
+  dist/replay.js                  5.6kb
+  dist/chunks/chunk-7IZSZ7GR.js   3.7kb
+  dist/chunks/chunk-LLBKP6HR.js   3.2kb
+  dist/supervisor.js              2.0kb
+  dist/chunks/chunk-ZTRXX4BX.js   1.9kb
+  dist/export-schemas.js          878b 
+  dist/chunks/chunk-G54ZP5H6.js   768b 
+  dist/state.js                   762b 
+  dist/schema.js                  419b 
+  ...and 6 more output files...
+
+⚡ Done in 19ms
+
+  dist/browser.js  84.5kb
+
+⚡ Done in 3ms
+✔ help works without a profile and explains the main commands and exit codes (159.861166ms)
+✔ init proposes a profile with discovery provenance without starting the app (109.508084ms)
+✔ local installation packages contain only distributable runtime and guidance (195.931916ms)
+✔ up, status and down retain one run record and stop only its app (1518.305ms)
+✔ down stops the owned app when the operator's locale and time zone differ from the ones that started it (1381.356083ms)
+✔ a startup failure returns a run ID and leaves status and cleanup available (1309.84425ms)
+✔ exec preserves the child exit and output in the run log (1471.461958ms)
+✔ named checks retain failed assertions and automatically import declared artifacts (1483.954916ms)
+✔ evidence import copies a declared artifact with a checksum and rejects an outside path (1720.231333ms)
+✔ status can inspect a busy run while a second mutation is rejected (2673.103084ms)
+✔ a source change blocks later evidence from claiming the original run is current (1284.667084ms)
+✔ up shows the result rules that this plan's claims, controls and gates need (1300.800792ms)
+✔ text output keeps the whole next command and the result rules of a plan (2502.816709ms)
+✔ an incomplete claim matrix produces a readable report and stays incomplete (1329.961708ms)
+✔ a result cannot pass a required claim with no completed step or evidence (1339.169917ms)
+✔ an invalid profile returns a structured error before launch (91.5035ms)
+✔ unknown options fail before allocating a run and JSON remains parseable (144.483167ms)
+✔ doctor never advances a changed source baseline (374.11875ms)
+✔ a timed out named check retains its failure and allows cleanup (444.393208ms)
+✔ stopped runs reject drive commands and keep diagnostic commands (340.784625ms)
+✔ external readiness is checked without starting or stopping the owner (329.884667ms)
+✔ ambiguous profiles and missing runs have actionable errors without a prompt (124.439ms)
+✔ a report validates completed proof after cleanup and detects artifact tampering (1030.180459ms)
+✔ status exposes capabilities and supports a handoff without chat context (417.026375ms)
+✔ profiles reject literal credentials before creating a run (123.236417ms)
+✔ a reflected credential is masked even when its text starts like a secret reference (358.687125ms)
+✔ negative controls require the declared failed assertion followed by its restored pass (641.290709ms)
+✔ long status text is cut with a pointer to the full JSON result (317.356625ms)
+✔ text and JSON modes keep the same exit status and text gives a short next action (768.798541ms)
+✔ concurrent allocation of one run name creates exactly one run (273.31825ms)
+✔ different runs cannot overwrite a shared evidence folder (417.48425ms)
+✔ JSON checks reject empty and malformed assertion rows (473.560458ms)
+✔ a failed required named check cannot be replaced by an unrelated successful command (530.179042ms)
+✔ a cleanup-only named check cannot prove a behavior claim (416.464292ms)
+✔ an imported screenshot alone cannot prove a behavior claim (466.701375ms)
+✔ a claim cannot cite an artifact produced by a step it does not cite (538.964917ms)
+✔ down stops owned descendants that ignore the first termination signal (1385.666208ms)
+✔ source identity includes submodule worktree changes (558.781375ms)
+✔ unreadable source fails verification instead of becoming a stable missing input (141.822792ms)
+✔ readiness rejects a structured owner failure even when its command exits zero (373.983291ms)
+✔ init exposes owner guidance before proposing a framework launch (94.084333ms)
+✔ each command help includes its own usage without a run or profile (411.617166ms)
+✔ run evidence retains its profile, plan and tool identity for a handoff (345.39075ms)
+✔ engine assertions remain distinct from domain counts and nested response flags (362.445ms)
+✔ a declared command control matches the intended failure and the same restored command (551.458792ms)
+✔ a defect control links a retained failing source run to a restored candidate (965.03725ms)
+✔ repeated reports retain history without recursively embedding previous reports (595.045333ms)
+✔ report detects a changed commit even when source file bytes are unchanged (420.262542ms)
+✔ init records discovery sources and exposes capabilities without launching tools (102.167875ms)
+✔ a failed owner doctor with child exit zero cannot pass a repository gate (282.578833ms)
+✔ exec forwards child version flags instead of treating them as Spyglass flags (443.252166ms)
+✔ a named check retains distinct artifacts that have the same basename (372.364833ms)
+✔ a configured database with a missing secret cannot report ready (219.415667ms)
+✔ a refused concurrent command never rewrites the run state file (3405.724333ms)
+✔ a failed launch child cannot borrow readiness from another server (1187.998083ms)
+✔ handoff output distinguishes command failure, keeps source compact and prepares controls (477.665542ms)
+✔ owned launch refuses unavailable process inspection before starting its child (316.680334ms)
+✔ a state permission failure is distinct from an active run lock (272.589209ms)
+✔ reserved run bindings are rejected before external readiness starts (248.492ms)
+✔ CLI binding overrides are retained and used by named checks (421.684208ms)
+✔ exec applies its explicit deadline and preserves child timeout arguments (942.26025ms)
+✔ a control links a failed run from a fault worktree to the candidate in the main worktree (943.631167ms)
+✔ a gate from another run counts only on the same source, profile and used bindings (3161.206417ms)
+✔ a binding of a launch that Spyglass owns blocks every cited gate step (4096.906542ms)
+✔ a run whose worktree was removed stays listed and can still be stopped (1529.190458ms)
+✔ result and result --check report every finding with a repair, and --check records nothing (747.919584ms)
+✔ result without --file reads the pending result of the run (620.90975ms)
+✔ steps run with --claim, --control and --gate link themselves into the pending result without judgement (1863.999042ms)
+✔ a failed claim step cannot support a passed claim (615.184083ms)
+✔ step-linking flags are checked before the step runs (441.937708ms)
+✔ result set rejects unknown IDs and leaves the pending result unchanged (579.7015ms)
+✔ api --then retains an immediate failing GET control and still needs a later independent read (2372.241958ms)
+✔ api --then stops on a failed write and refuses unsafe follow-up requests (2872.613084ms)
+✔ api --wait-until polls one job to completion and satisfies the independent read (1701.401042ms)
+✔ api --wait-until that times out or reaches a --fail-on state cannot satisfy an independent read (2120.450583ms)
+✔ api --expect-json and --expect-body-contains fail on a wrong or missing value despite HTTP 200 and keep the masked response (1704.795333ms)
+✔ logs --since-step, --since-last, --grep, --expect-text and --forbid-text read the app log without a mark (1612.516958ms)
+✔ finish records the result, checks, stops and reports in one call (698.554ms)
+✔ finish stops at a result that is refused and writes no report (471.067375ms)
+✔ finish stops at doctor when the source changed, and at down when cleanup fails (1189.538458ms)
+✔ finish --cleanup runs the owner cleanup check before down (1018.925167ms)
+✔ up cites a gate that an earlier run passed on the same source, and refuses other source (1608.670375ms)
+✔ up --cite-gates-from and result set --gate-run cite the gates of a named run (1646.682ms)
+✔ status --work lists what each claim, control and gate still needs (1577.6975ms)
+✔ a changed file is found by the fast source check, and doctor and report hash every file (785.450208ms)
+✔ check a,b runs checks in parallel and keeps both steps when one fails (2062.152916ms)
+✔ up --warm needs a web address and a known seat, and creates no run without them (221.639708ms)
+✔ every failing command names its run in the next action (1422.595ms)
+✔ replay lists, then runs again, the steps that an earlier run cited (1731.035208ms)
+﹣ API waits for async work, reads the result independently, and records the side effect (0.339ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ agent-browser uses a fresh allowed session, retains visual proof, and protects login secrets (0.046167ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ browser blocks page navigation to another port on an allowed host before it reaches that port (0.031584ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui wait refuses page JavaScript, downloads and saved state but still waits for page text (0.028875ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ a screenshot inside a browser batch cannot write outside run evidence (0.030875ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ down stops the run browser and proxy when the operator's locale and time zone differ from the ones that started them (0.025917ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ an idle run browser and its proxy shut down, and the next ui command reports the expiry (0.025209ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ Docker and PostgreSQL inspection use a unique project, reject writes, and keep owner services (0.029917ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui focused names the focused field without its value and fails on another expected label (0.032166ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ down from the main worktree closes the browser of a run whose worktree was removed (0.065ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui expect polls inside one call and retains the last observation when a condition never holds (0.033334ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ a selector that matches nothing returns the nearest interactive roles and labels (0.026708ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui --settle waits for the navigation that a click starts (0.026542ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui verify runs actions, expectations and a two-viewport proof as one step and links the claim (0.017042ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui verify keeps passed sub-steps, fails at the first bad expectation and cannot back a claim (0.026125ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui verify refuses an action outside the origin allowlist and keeps the actions that ran (0.016875ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui verify --expect-focus-moved keeps both focus records and fails when focus did not move (0.014959ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ a viewport that fails its expectation keeps the earlier screenshots and no visual claim passes (0.022833ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ a proof right after ui open does not wait for the first browser frame (0.019833ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ the browser proxy stays up when clients reset their connections (0.031417ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ db --expect-col and --expect-empty record assertions, and the role inspection is read once per run (0.017208ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ps --wait polls a required container to healthy and fails at its deadline while it is starting (0.01575ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ up --warm starts the browser and signs the seat in while the app starts, and cleans up when the app never becomes ready (0.015375ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui --relogin signs a seat in again after its browser expired, and keeps the expiry in the step (0.013667ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+﹣ ui snapshot, ui proof and ui verify return a bounded observation and keep a long snapshot in an artifact (0.013917ms) # set SPYGLASS_TEST_SURFACES=1 to run real browser and Docker checks
+ℹ tests 114
+ℹ suites 0
+ℹ pass 89
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 25
+ℹ todo 0
+ℹ duration_ms 84818.562709

@@ -1,0 +1,11 @@
+{
+  "workflow": 41863511029,
+  "candidateHead": "9330f4eeb618c64616157e1b1aa45e05be6005b8",
+  "evidence": "../hosted/41863511029/real-surface-e2e.zip::surfaces.tap",
+  "test": "browser blocks page navigation to another port on an allowed host before it reaches that port",
+  "actual": "Click returned success while the original allowed page URL was still current; zero denied-service requests observed at that assertion.",
+  "expected": "BROWSER_ORIGIN_BLOCKED, exit 1, zero denied-service requests after navigation completion.",
+  "repair": "Await the existing public --settle completion path on the same click; keep error and zero-request assertions. No production change.",
+  "focusedRepeats": "8 passed; fail-fast independent E2E invocations, no retry-on-failure.",
+  "fullSuite": "114 passed, no failures or skips."
+}

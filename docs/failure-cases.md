@@ -7,7 +7,10 @@ results and retained evidence.
 | Area | Failure case | Required result |
 | --- | --- | --- |
 | Input | The profile has an unsupported version or an unknown field. | The command exits with usage/profile status and names the invalid field. It does not launch the app. |
+| Installation | A local package is made from a checkout with private plans, retained run evidence or unrelated files. | The package contains only the distributable runtime, schemas and public guidance. `npm pack` builds the runtime before packaging. |
+| Setup | A fresh operator receives a proposed profile but has no plan or report procedure. | `init` identifies guessed fields and gives plan, check, cleanup and report commands. It names a discovered check and starts nothing. |
 | Setup | Two profiles match the repository. | The command asks for an explicit profile through an error and next action. It does not prompt. |
+| Setup | A profile or CLI binding uses a reserved run value (`repo`, `run`, `port`, `web`, `api` or `evidence`). | `up` rejects it before run allocation or owner readiness, with `RESERVED_BINDING` and a repair that uses a separate owner binding. |
 | Setup | A CLI binding overrides a profile default. | Execution and retained binding records use the same resolved override. |
 | Command | A command exceeds its selected deadline. | The attempt retains timeout status and output; an invalid deadline is rejected before execution. |
 | Run | The app exits before its readiness check succeeds. | The run remains recorded as failed, its ID is returned, and status and cleanup remain available. |
@@ -22,7 +25,7 @@ results and retained evidence.
 | Claim | A side-effect claim has no independent read after the action completes. | The claim cannot pass. |
 | Evidence | An imported artifact is missing, outside an approved root, changes during import, or `evidence add` is given missing or extra arguments. | The import fails and does not claim the artifact as evidence. |
 | Secret | A request, page or command output reflects a test credential. | Reports and artifacts do not expose credential values, cookies, or authorization headers. |
-| Browser | A browser action targets an origin outside the profile allowlist. | The action fails with the required capability or policy named. It does not use another browser session. |
+| Browser | A browser action targets an origin outside the profile allowlist. | The action fails with the required capability or policy named. It does not use another browser session. A navigation control awaits the public `--settle` completion path before judging its result. |
 | Browser | A screenshot succeeds but a visual claim has no inspection record. | The visual claim remains incomplete. |
 | Browser | An inspection for a viewport names a missing or unrelated screenshot. | The result fails and names the inspection's missing proof. |
 | Operator | A child exits zero but its assertions fail. | Status names the child and Spyglass exit codes separately. Default output is readable text. |
@@ -59,6 +62,11 @@ results and retained evidence.
 | Containers | A run stops. | Spyglass stops its own processes and browser. The repository owner cleans its containers; shared services and evidence remain. |
 | Report | The operator edits the result file but does not record it with `result`. | The report ignores the unrecorded file, stays incomplete with `RESULT_MISSING`, and `status` names `result` as the next command until a result is recorded. |
 | Report | Required work or owner cleanup is missing. | The report files are still produced, but the run is incomplete and exits with failed-check status. |
+| Review | An interrupted run has a linked failed control step but no submitted result. | The review lists mechanically recorded attempt references separately from validated control proof. It does not invent observations or mark the control passed. |
+| Review | An incomplete offline report has no validated control result, but does retain an attempted control. | Visible findings explain the incomplete status. HTML and Markdown validated attempt labels stay distinct from recorded attempts. External cleanup says not required when no external owner exists. |
+| Report | A source fingerprint, command or artifact path is wider than a narrow viewport. | The offline report wraps long text without document-width overflow at 390x844 and works without network resources. |
+| Review | A reviewer has no original conversation or shell, including for an incomplete run. | Every report retains a Markdown review summary with source identity, claim/control/gate outcomes, intended failure and restored pass references, cleanup, limits and findings. Untrusted text cannot inject Markdown or HTML. Command controls show their command and expected error, not an empty assertion. |
+| CI | Verification fails before result submission. | The CI recipe still attempts cleanup and report generation, retains diagnostic evidence, and preserves a failed verification outcome. No allocated run means an explicit setup failure, not a fabricated report. |
 | Finish | `spyglass finish` encounters a failed `result`, `doctor` or `down` step. | It stops at the failing stage, retains the step in `log.jsonl`, does not write the report, and exits non-zero with the repair command. |
 | Claim | A step run with `--claim ID` fails, and no later step for `ID` passes. | The pending result does not cite the failed step and leaves the claim `not run`. The failed step stays in `log.jsonl`. `result` rejects a `passed` outcome for `ID` that cites it, with `FAILED_STEP`. |
 | Claim | A step run with `--claim ID`, `--control ID:failed\|restored` or `--gate NAME` passes. | Spyglass adds the step and the artifacts it made to the pending result. It never writes `observed`, an inspection's `observed` or a claim `outcome`. |

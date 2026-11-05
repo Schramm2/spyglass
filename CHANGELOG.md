@@ -4,9 +4,33 @@ This file records the notable changes to Spyglass. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.4.0] - 2026-11-05
+
+### Removed
+
+- The unlaunched marketing site and HTML manual in `landing/`. `README.md`
+  and `docs/quickstart.md` are the manual until a new site is built.
+
+### Changed
+
+- New brand: sea-black, chart-white and bronze colours, Gambarino and
+  General Sans type, and engraved README, logo and social images.
 
 ### Added
+
+- Every report retains a checksummed Markdown review summary with source
+  identity, claims, controls, gates, cleanup, limits and findings, including
+  incomplete reports. `data.reviewPath` selects it; `data.report.review`
+  names its artifact and checksum.
+- A public GitHub Actions recipe retains passing and interrupted-run evidence,
+  records checkout/PR source context and publishes a job summary. Both paths
+  are required by CI; the review guide explains downloading offline reports.
+- `init` returns `setup.reviewFields`, `setup.prerequisites`, `setup.commands`
+  and `setup.notes` for the first planned run, a discovered check, result
+  observations, cleanup and report reopening.
+- Adoption recipes cover existing checks, isolated web apps and
+  repository-owned installations or library hosts. Support guidance separates
+  tested configurations from unverified platforms and tools.
 
 - `api POST|PUT|PATCH|DELETE --then GET PATH` makes an immediate read after
   a successful write in one recorded step. `--then-expect` and repeatable
@@ -14,6 +38,21 @@ This file records the notable changes to Spyglass. The format follows
   non-secret scalar from the write response. Both requests retain masked
   evidence. A failed write skips the read. The combined step cannot count
   as a side-effect claim's independent read.
+
+### Fixed
+
+- Command-form controls in the offline report show the declared command and
+  expected failure instead of an empty Assertion label. Validated attempt
+  labels stay distinct from recorded attempts; findings are visible beside
+  the report status, and external cleanup says not required consistently.
+- `up` rejects bindings named `repo`, `run`, `port`, `web`, `api` or `evidence`
+  with `RESERVED_BINDING` before allocation. An external port must use a
+  separate binding, such as `ownerPort`, instead of silently using a different
+  run-allocated port.
+- Local `npm pack` builds the CLI before packaging. An explicit file allowlist
+  excludes private local plans, run evidence and unrelated checkout files.
+  The two public adoption/support guides are included for installed use.
+  npm publication remains disabled.
 
 ## [1.3.1] - 2026-11-02
 
@@ -275,7 +314,8 @@ This file records the notable changes to Spyglass. The format follows
 - The agent skills `spyglass`, `create-verification-skill` and
   `maintain-verification-skill`.
 
-[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Schramm2/spyglass/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/Schramm2/spyglass/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/Schramm2/spyglass/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Schramm2/spyglass/compare/v1.1.0...v1.2.0

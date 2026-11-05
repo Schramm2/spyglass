@@ -2,8 +2,11 @@
 
 ## Supported versions
 
-Spyglass is pre-release software. Only the latest commit on `main` receives
-security fixes.
+Spyglass has versioned 1.x releases. Only the latest release is supported;
+older releases do not receive separate security backports. Fixes enter
+`main` through a release or urgent hotfix and return to `dev` through the
+Git Flow back-merge. Upgrade to the latest release when a fix is available.
+Unreleased `dev` builds are not a supported release.
 
 ## Report a vulnerability
 

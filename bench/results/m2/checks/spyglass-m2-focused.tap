@@ -1,0 +1,12 @@
+✔ init proposes a profile with discovery provenance without starting the app (101.960375ms)
+✔ local installation packages contain only distributable runtime and guidance (189.133375ms)
+✔ reserved run bindings are rejected before external readiness starts (253.251667ms)
+✔ CLI binding overrides are retained and used by named checks (420.367208ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1039.72425

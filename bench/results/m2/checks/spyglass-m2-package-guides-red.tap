@@ -1,0 +1,26 @@
+✖ local installation packages contain only distributable runtime and guidance (209.175291ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 255.985042
+
+✖ failing tests:
+
+test at tests/e2e/core.test.mjs:117:1
+✖ local installation packages contain only distributable runtime and guidance (209.175291ms)
+  AssertionError [ERR_ASSERTION]: package needs docs/adoption.md
+      at TestContext.<anonymous> (file://[SPYGLASS_SOURCE]/tests/e2e/core.test.mjs:151:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

@@ -1,0 +1,1872 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Spyglass report guided-m2-pass</title><style>
+:root{color-scheme:light dark;font:16px/1.5 system-ui,sans-serif}body{max-width:1100px;margin:2rem auto;padding:0 1rem}h1,h2{line-height:1.2}article,details,section{border:1px solid #8886;border-radius:.5rem;padding:1rem;margin:1rem 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:32rem;overflow:auto;background:#8881;padding:.75rem}img{max-width:100%;height:auto;border:1px solid #8886}code{overflow-wrap:anywhere}.status{font-size:1.2rem;font-weight:700}li{margin:.5rem 0}
+</style></head><body>
+<header><h1>Spyglass verification report</h1><p class="status">passed</p><p>Run guided-m2-pass · isarray-checks · operator agent</p><p>Source commit 8c8dd70d48ad5d0897733ca6726302a54ca9e177 · fingerprint ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131</p></header>
+<section><h2>Behavioral claims</h2><article><h3>existing-check · passed</h3><p><strong>Behavior:</strong> The existing isarray checks accept the candidate.</p><p><strong>Entry point:</strong> npm run tests-only<br><strong>Precondition:</strong> The existing npm lockfile dependencies are installed.<br><strong>Expected:</strong> All 28 existing Tape assertions pass in both named cases, with no skips.</p><p><strong>Observed:</strong> The existing tests-only script ran both named Tape cases with unchanged assertions: all 28 passed, no skips, child exit 0. Its isolated fault worktree failed the same four array assertions. This is a guided packaging retest, not a fresh adoption.</p><p><strong>Steps:</strong> e9789e51-0df<br><strong>Evidence:</strong> e9789e51-0df-1-verify-output.txt</p></article></section>
+<section><h2>Repository gates</h2><ul><li>No repository gates are selected.</li></ul></section>
+<section><h2>Negative controls</h2><article><h3>detects-fault · passed</h3><p><strong>Claim:</strong> existing-check<br><strong>Expectation:</strong> The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.<br><strong>Assertion:</strong> </p><p><strong>Failed attempt:</strong> 1e5de173-be5 — The unchanged Tape assertions 1, 14, 15 and 28 fail with the always-false export: 24 passed, 4 failed, child exit 1, CHECK_FAILED containing not ok 1 should be truthy.<br><strong>Restored pass:</strong> e9789e51-0df — The same npm run tests-only command accepts the original export: 28 passed, no skips, child exit 0.</p></article></section>
+<section><h2>Environment checks</h2><ul><li><strong>source identity:</strong> passed — Current source matches the baseline recorded at up.</li>
+<li><strong>artifact integrity:</strong> passed — 5 of 5 recorded artifacts match their checksums.</li>
+<li><strong>cleanup:</strong> passed — Spyglass cleanup: true; external owner cleanup: true.</li></ul></section>
+<section><h2>Visual observations</h2><p>No visual observations are recorded.</p></section>
+<section><h2>Cleanup</h2><ul><li><strong>runState:</strong> stopped</li>
+<li><strong>spyglassResourcesCleaned:</strong> true</li>
+<li><strong>externalOwnerCleaned:</strong> not required</li></ul></section>
+<section><h2>Coverage limits</h2><ul><li>Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.</li>
+<li>Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.</li>
+<li>The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.</li>
+<li>Legacy browser compatibility, package publication, browser behavior and human use are untested.</li></ul></section>
+<section><h2>Attempts</h2><details><summary>2026-11-04T14:00:02.830Z · up · passed · child exit 0 · step 201dbd83-70e</summary><p>Arguments: []<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: 201dbd83-70e-1-profile.json, 201dbd83-70e-2-plan.json</p><pre>{
+  &quot;id&quot;: &quot;guided-m2-pass&quot;,
+  &quot;state&quot;: &quot;ready&quot;,
+  &quot;repo&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray&quot;,
+  &quot;evidence&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass&quot;,
+  &quot;port&quot;: 64716,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+    &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+    &quot;fileCount&quot;: 23
+  },
+  &quot;sourceChanges&quot;: [],
+  &quot;profile&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/spyglass.json&quot;,
+  &quot;plan&quot;: {
+    &quot;controls&quot;: [
+      {
+        &quot;id&quot;: &quot;detects-fault&quot;,
+        &quot;claim&quot;: &quot;existing-check&quot;,
+        &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+        &quot;command&quot;: [
+          &quot;check&quot;,
+          &quot;verify&quot;
+        ],
+        &quot;failure&quot;: {
+          &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+          &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+        }
+      }
+    ],
+    &quot;claims&quot;: [
+      {
+        &quot;id&quot;: &quot;existing-check&quot;,
+        &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+        &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+        &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+        &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+        &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+        &quot;checks&quot;: [
+          &quot;verify&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Tape output and command exit status&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      }
+    ],
+    &quot;gates&quot;: [],
+    &quot;limits&quot;: [
+      &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+      &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+      &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+      &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+    ]
+  },
+  &quot;result&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+  &quot;export&quot;: &quot;export SPYGLASS_RUN=guided-m2-pass&quot;,
+  &quot;active&quot;: {
+    &quot;pid&quot;: 92391,
+    &quot;processStartedAt&quot;: &quot;2026-11-04T14:00:02.760Z&quot;,
+    &quot;command&quot;: &quot;up&quot;,
+    &quot;startedAt&quot;: &quot;2026-11-04T14:00:02.829Z&quot;
+  },
+  &quot;activeSeat&quot;: &quot;default&quot;,
+  &quot;cleanup&quot;: false,
+  &quot;capabilities&quot;: {
+    &quot;ui&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;agent-browser&quot;,
+      &quot;testedVersion&quot;: &quot;0.38.2&quot;
+    },
+    &quot;api&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;Node fetch&quot;
+    },
+    &quot;db&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;node-postgres&quot;
+    },
+    &quot;compose&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;docker compose&quot;
+    },
+    &quot;check&quot;: {
+      &quot;available&quot;: true,
+      &quot;names&quot;: [
+        &quot;verify&quot;
+      ]
+    },
+    &quot;exec&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;process&quot;
+    },
+    &quot;skill&quot;: null,
+    &quot;features&quot;: null
+  },
+  &quot;completedChecks&quot;: [],
+  &quot;pendingClaims&quot;: [
+    &quot;existing-check&quot;
+  ],
+  &quot;owner&quot;: {
+    &quot;mode&quot;: &quot;none&quot;,
+    &quot;bindings&quot;: {},
+    &quot;cleanupRequired&quot;: false
+  },
+  &quot;next&quot;: &quot;spyglass result --file .spyglass/runs/guided-m2-pass/spyglass/result.json --run guided-m2-pass&quot;,
+  &quot;resultRules&quot;: [
+    &quot;A passed claim lists its successful steps from this run in steps and states what you saw in observed.&quot;,
+    &quot;Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.&quot;,
+    &quot;Claims existing-check: cite a successful step of check verify.&quot;,
+    &quot;Behavior claims existing-check: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.&quot;,
+    &quot;Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control&#39;s claim passes and cites restoredStep.&quot;,
+    &quot;Control detects-fault: claim existing-check, command check verify fails with CHECK_FAILED containing \&quot;not ok 1 should be truthy\&quot;.&quot;
+  ],
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 23,
+    &quot;rehashed&quot;: 0
+  }
+}</pre></details>
+<details><summary>2026-11-04T14:00:02.933Z · check · passed · child exit 0 · step e9789e51-0df</summary><p>Arguments: [&quot;verify&quot;]<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: e9789e51-0df-1-verify-output.txt</p><pre>{
+  &quot;check&quot;: &quot;verify&quot;,
+  &quot;attempt&quot;: &quot;e9789e51-0df&quot;,
+  &quot;command&quot;: [
+    &quot;npm&quot;,
+    &quot;run&quot;,
+    &quot;tests-only&quot;
+  ],
+  &quot;exitCode&quot;: 0,
+  &quot;timedOut&quot;: false,
+  &quot;stdout&quot;: &quot;\n&gt; isarray@2.0.5 tests-only\n&gt; tape test.js\n\nTAP version 13\n# is array (only polyfill)\nok 1 should be truthy\nok 2 should be falsy\nok 3 should be falsy\nok 4 should be falsy\nok 5 should be falsy\nok 6 should be falsy\nok 7 should be falsy\nok 8 should be falsy\nok 9 should be falsy\nok 10 should be falsy\nok 11 should be falsy\nok 12 should be falsy\nok 13 should be falsy\nok 14 should be truthy\n# is array (native)\nok 15 should be truthy\nok 16 should be falsy\nok 17 should be falsy\nok 18 should be falsy\nok 19 should be falsy\nok 20 should be falsy\nok 21 should be falsy\nok 22 should be falsy\nok 23 should be falsy\nok 24 should be falsy\nok 25 should be falsy\nok 26 should be falsy\nok 27 should be falsy\nok 28 should be truthy\n\n1..28\n# tests 28\n# pass  28\n\n# ok\n\n&quot;,
+  &quot;stderr&quot;: &quot;&quot;,
+  &quot;claims&quot;: [],
+  &quot;skips&quot;: [],
+  &quot;overall&quot;: null,
+  &quot;malformedAssertions&quot;: 0,
+  &quot;artifacts&quot;: [
+    {
+      &quot;path&quot;: &quot;e9789e51-0df-1-verify-output.txt&quot;,
+      &quot;sha256&quot;: &quot;e6dad4584b02be7d4064790940c940c774dd8dfd8650f1e10e3b1c5307a07f16&quot;,
+      &quot;kind&quot;: &quot;command-output&quot;,
+      &quot;step&quot;: &quot;e9789e51-0df&quot;
+    }
+  ],
+  &quot;importErrors&quot;: [],
+  &quot;passed&quot;: true,
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 23,
+    &quot;rehashed&quot;: 0
+  },
+  &quot;linked&quot;: {
+    &quot;claims&quot;: [
+      &quot;existing-check&quot;
+    ],
+    &quot;controls&quot;: [
+      &quot;detects-fault:restored&quot;
+    ],
+    &quot;gates&quot;: [],
+    &quot;skipped&quot;: []
+  }
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.333Z · result · passed · child exit 0 · step 4cfa6544-f58</summary><p>Arguments: [&quot;set&quot;,&quot;--control&quot;,&quot;detects-fault&quot;,&quot;--failed-run&quot;,&quot;guided-m2-fault&quot;,&quot;--failed-step&quot;,&quot;1e5de173-be5&quot;,&quot;--observed-failure&quot;,&quot;The unchanged Tape assertions 1, 14, 15 and 28 fail with the always-false export: 24 passed, 4 failed, child exit 1, CHECK_FAILED containing not ok 1 should be truthy.&quot;,&quot;--observed-pass&quot;,&quot;The same npm run tests-only command accepts the original export: 28 passed, no skips, child exit 0.&quot;]<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: none</p><pre>{
+  &quot;updated&quot;: &quot;control detects-fault&quot;,
+  &quot;recorded&quot;: false,
+  &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+  &quot;next&quot;: &quot;spyglass result --check --run guided-m2-pass&quot;
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.386Z · result · passed · child exit 0 · step 4cee46cb-80d</summary><p>Arguments: [&quot;set&quot;,&quot;--claim&quot;,&quot;existing-check&quot;,&quot;--outcome&quot;,&quot;passed&quot;,&quot;--observed&quot;,&quot;The existing tests-only script ran both named Tape cases with unchanged assertions: all 28 passed, no skips, child exit 0. Its isolated fault worktree failed the same four array assertions. This is a guided packaging retest, not a fresh adoption.&quot;]<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: none</p><pre>{
+  &quot;updated&quot;: &quot;claim existing-check&quot;,
+  &quot;recorded&quot;: false,
+  &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+  &quot;next&quot;: &quot;spyglass result --check --run guided-m2-pass&quot;
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.436Z · result · passed · child exit 0 · step fe251940-75f</summary><p>Arguments: [&quot;set&quot;,&quot;--operator&quot;,&quot;agent&quot;]<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: none</p><pre>{
+  &quot;updated&quot;: &quot;result&quot;,
+  &quot;recorded&quot;: false,
+  &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+  &quot;next&quot;: &quot;spyglass result --check --run guided-m2-pass&quot;
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.552Z · result · passed · child exit 0 · step db47461b-77c</summary><p>Arguments: [&quot;--check&quot;]<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: none</p><pre>{
+  &quot;checked&quot;: true,
+  &quot;valid&quot;: true,
+  &quot;recorded&quot;: false,
+  &quot;operator&quot;: &quot;agent&quot;,
+  &quot;claims&quot;: 1,
+  &quot;gates&quot;: 0,
+  &quot;controls&quot;: 1,
+  &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+  &quot;next&quot;: &quot;spyglass result --run guided-m2-pass&quot;
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.620Z · result · passed · child exit 0 · step ae2c5905-3e5</summary><p>Arguments: []<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: none</p><pre>{
+  &quot;checked&quot;: false,
+  &quot;valid&quot;: true,
+  &quot;recorded&quot;: true,
+  &quot;operator&quot;: &quot;agent&quot;,
+  &quot;claims&quot;: 1,
+  &quot;gates&quot;: 0,
+  &quot;controls&quot;: 1,
+  &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.624Z · doctor · passed · child exit 0 · step 586318af-7b0</summary><p>Arguments: []<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: none</p><pre>{
+  &quot;ready&quot;: true,
+  &quot;environment&quot;: {
+    &quot;evidenceIgnored&quot;: true,
+    &quot;tools&quot;: {
+      &quot;node&quot;: &quot;v24.11.1&quot;,
+      &quot;spyglass&quot;: &quot;1.3.1&quot;
+    }
+  },
+  &quot;id&quot;: &quot;guided-m2-pass&quot;,
+  &quot;state&quot;: &quot;ready&quot;,
+  &quot;repo&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray&quot;,
+  &quot;evidence&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass&quot;,
+  &quot;port&quot;: 64716,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+    &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+    &quot;fileCount&quot;: 23
+  },
+  &quot;sourceChanges&quot;: [],
+  &quot;profile&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/spyglass.json&quot;,
+  &quot;plan&quot;: {
+    &quot;controls&quot;: [
+      {
+        &quot;id&quot;: &quot;detects-fault&quot;,
+        &quot;claim&quot;: &quot;existing-check&quot;,
+        &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+        &quot;command&quot;: [
+          &quot;check&quot;,
+          &quot;verify&quot;
+        ],
+        &quot;failure&quot;: {
+          &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+          &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+        }
+      }
+    ],
+    &quot;claims&quot;: [
+      {
+        &quot;id&quot;: &quot;existing-check&quot;,
+        &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+        &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+        &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+        &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+        &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+        &quot;checks&quot;: [
+          &quot;verify&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Tape output and command exit status&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      }
+    ],
+    &quot;gates&quot;: [],
+    &quot;limits&quot;: [
+      &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+      &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+      &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+      &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+    ]
+  },
+  &quot;result&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+  &quot;export&quot;: &quot;export SPYGLASS_RUN=guided-m2-pass&quot;,
+  &quot;active&quot;: {
+    &quot;pid&quot;: 92963,
+    &quot;processStartedAt&quot;: &quot;2026-11-04T14:00:27.584Z&quot;,
+    &quot;command&quot;: &quot;finish&quot;,
+    &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.603Z&quot;
+  },
+  &quot;activeSeat&quot;: &quot;default&quot;,
+  &quot;cleanup&quot;: false,
+  &quot;capabilities&quot;: {
+    &quot;ui&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;agent-browser&quot;,
+      &quot;testedVersion&quot;: &quot;0.38.2&quot;
+    },
+    &quot;api&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;Node fetch&quot;
+    },
+    &quot;db&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;node-postgres&quot;
+    },
+    &quot;compose&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;docker compose&quot;
+    },
+    &quot;check&quot;: {
+      &quot;available&quot;: true,
+      &quot;names&quot;: [
+        &quot;verify&quot;
+      ]
+    },
+    &quot;exec&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;process&quot;
+    },
+    &quot;skill&quot;: null,
+    &quot;features&quot;: null
+  },
+  &quot;completedChecks&quot;: [
+    {
+      &quot;name&quot;: &quot;verify&quot;,
+      &quot;step&quot;: &quot;e9789e51-0df&quot;,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;childExitCode&quot;: 0,
+      &quot;spyglassExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;
+    }
+  ],
+  &quot;pendingClaims&quot;: [],
+  &quot;owner&quot;: {
+    &quot;mode&quot;: &quot;none&quot;,
+    &quot;bindings&quot;: {},
+    &quot;cleanupRequired&quot;: false
+  },
+  &quot;next&quot;: &quot;spyglass down --run guided-m2-pass&quot;,
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 23,
+    &quot;rehashed&quot;: 0
+  }
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.667Z · down · passed · child exit 0 · step 0e35b89a-50c</summary><p>Arguments: []<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: none</p><pre>{
+  &quot;id&quot;: &quot;guided-m2-pass&quot;,
+  &quot;state&quot;: &quot;stopped&quot;,
+  &quot;repo&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray&quot;,
+  &quot;evidence&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass&quot;,
+  &quot;port&quot;: 64716,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+    &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+    &quot;fileCount&quot;: 23
+  },
+  &quot;sourceChanges&quot;: [],
+  &quot;profile&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/spyglass.json&quot;,
+  &quot;plan&quot;: {
+    &quot;controls&quot;: [
+      {
+        &quot;id&quot;: &quot;detects-fault&quot;,
+        &quot;claim&quot;: &quot;existing-check&quot;,
+        &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+        &quot;command&quot;: [
+          &quot;check&quot;,
+          &quot;verify&quot;
+        ],
+        &quot;failure&quot;: {
+          &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+          &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+        }
+      }
+    ],
+    &quot;claims&quot;: [
+      {
+        &quot;id&quot;: &quot;existing-check&quot;,
+        &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+        &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+        &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+        &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+        &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+        &quot;checks&quot;: [
+          &quot;verify&quot;
+        ],
+        &quot;evidence&quot;: [
+          &quot;Tape output and command exit status&quot;
+        ],
+        &quot;kind&quot;: &quot;behavior&quot;,
+        &quot;required&quot;: true
+      }
+    ],
+    &quot;gates&quot;: [],
+    &quot;limits&quot;: [
+      &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+      &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+      &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+      &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+    ]
+  },
+  &quot;result&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+  &quot;export&quot;: &quot;export SPYGLASS_RUN=guided-m2-pass&quot;,
+  &quot;active&quot;: {
+    &quot;pid&quot;: 92963,
+    &quot;processStartedAt&quot;: &quot;2026-11-04T14:00:27.584Z&quot;,
+    &quot;command&quot;: &quot;finish&quot;,
+    &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.603Z&quot;
+  },
+  &quot;activeSeat&quot;: &quot;default&quot;,
+  &quot;cleanup&quot;: true,
+  &quot;capabilities&quot;: {
+    &quot;ui&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;agent-browser&quot;,
+      &quot;testedVersion&quot;: &quot;0.38.2&quot;
+    },
+    &quot;api&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;Node fetch&quot;
+    },
+    &quot;db&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;node-postgres&quot;
+    },
+    &quot;compose&quot;: {
+      &quot;available&quot;: false,
+      &quot;tool&quot;: &quot;docker compose&quot;
+    },
+    &quot;check&quot;: {
+      &quot;available&quot;: true,
+      &quot;names&quot;: [
+        &quot;verify&quot;
+      ]
+    },
+    &quot;exec&quot;: {
+      &quot;available&quot;: true,
+      &quot;tool&quot;: &quot;process&quot;
+    },
+    &quot;skill&quot;: null,
+    &quot;features&quot;: null
+  },
+  &quot;completedChecks&quot;: [
+    {
+      &quot;name&quot;: &quot;verify&quot;,
+      &quot;step&quot;: &quot;e9789e51-0df&quot;,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;childExitCode&quot;: 0,
+      &quot;spyglassExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;
+    }
+  ],
+  &quot;pendingClaims&quot;: [],
+  &quot;owner&quot;: {
+    &quot;mode&quot;: &quot;none&quot;,
+    &quot;bindings&quot;: {},
+    &quot;cleanupRequired&quot;: false
+  },
+  &quot;next&quot;: &quot;spyglass report --run guided-m2-pass&quot;,
+  &quot;ownerCleanupRequired&quot;: false,
+  &quot;sourceCheck&quot;: {
+    &quot;mode&quot;: &quot;fast&quot;,
+    &quot;files&quot;: 23,
+    &quot;rehashed&quot;: 0
+  }
+}</pre></details>
+<details><summary>2026-11-04T14:00:27.680Z · report · passed · child exit 0 · step eaa422f0-879</summary><p>Arguments: []<br>Source: ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131<br>Artifacts: eaa422f0-879-1-index.html, eaa422f0-879-2-summary.json</p><pre>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;status&quot;: &quot;passed&quot;,
+  &quot;complete&quot;: true,
+  &quot;run&quot;: &quot;guided-m2-pass&quot;,
+  &quot;app&quot;: &quot;isarray-checks&quot;,
+  &quot;operator&quot;: &quot;agent&quot;,
+  &quot;generatedAt&quot;: &quot;2026-11-04T14:00:27.693Z&quot;,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+    &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+    &quot;currentHash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+    &quot;changed&quot;: []
+  },
+  &quot;claims&quot;: [
+    {
+      &quot;id&quot;: &quot;existing-check&quot;,
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;passed&quot;,
+      &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+      &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+      &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+      &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+      &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+      &quot;checks&quot;: [
+        &quot;verify&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Tape output and command exit status&quot;
+      ],
+      &quot;steps&quot;: [
+        &quot;e9789e51-0df&quot;
+      ],
+      &quot;observed&quot;: &quot;The existing tests-only script ran both named Tape cases with unchanged assertions: all 28 passed, no skips, child exit 0. Its isolated fault worktree failed the same four array assertions. This is a guided packaging retest, not a fresh adoption.&quot;,
+      &quot;artifacts&quot;: [
+        &quot;e9789e51-0df-1-verify-output.txt&quot;
+      ],
+      &quot;inspections&quot;: []
+    }
+  ],
+  &quot;gates&quot;: [],
+  &quot;controls&quot;: [
+    {
+      &quot;id&quot;: &quot;detects-fault&quot;,
+      &quot;failedRun&quot;: &quot;guided-m2-fault&quot;,
+      &quot;failedStep&quot;: &quot;1e5de173-be5&quot;,
+      &quot;restoredStep&quot;: &quot;e9789e51-0df&quot;,
+      &quot;observedFailure&quot;: &quot;The unchanged Tape assertions 1, 14, 15 and 28 fail with the always-false export: 24 passed, 4 failed, child exit 1, CHECK_FAILED containing not ok 1 should be truthy.&quot;,
+      &quot;observedPass&quot;: &quot;The same npm run tests-only command accepts the original export: 28 passed, no skips, child exit 0.&quot;,
+      &quot;claim&quot;: &quot;existing-check&quot;,
+      &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+      &quot;command&quot;: [
+        &quot;check&quot;,
+        &quot;verify&quot;
+      ],
+      &quot;failure&quot;: {
+        &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+        &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+      },
+      &quot;baseline&quot;: {
+        &quot;run&quot;: &quot;guided-m2-fault&quot;,
+        &quot;source&quot;: &quot;df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685&quot;,
+        &quot;evidence&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/.spyglass/runs/guided-m2-fault&quot;
+      },
+      &quot;outcome&quot;: &quot;passed&quot;
+    }
+  ],
+  &quot;environment&quot;: [
+    {
+      &quot;name&quot;: &quot;source identity&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;Current source matches the baseline recorded at up.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;artifact integrity&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;3 of 3 recorded artifacts match their checksums.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;cleanup&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;Spyglass cleanup: true; external owner cleanup: true.&quot;
+    }
+  ],
+  &quot;visualObservations&quot;: [],
+  &quot;cleanup&quot;: {
+    &quot;runState&quot;: &quot;stopped&quot;,
+    &quot;spyglassResourcesCleaned&quot;: true,
+    &quot;externalOwnerCleaned&quot;: &quot;not required&quot;
+  },
+  &quot;limits&quot;: [
+    &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+    &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+    &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+    &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+  ],
+  &quot;findings&quot;: [],
+  &quot;report&quot;: {
+    &quot;page&quot;: {
+      &quot;path&quot;: &quot;eaa422f0-879-1-index.html&quot;,
+      &quot;sha256&quot;: &quot;10789356dcfbe9ee43080231468f78f924000fd9e228151f883e77b89bccf4c9&quot;,
+      &quot;kind&quot;: &quot;report&quot;,
+      &quot;step&quot;: &quot;eaa422f0-879&quot;
+    },
+    &quot;summary&quot;: {
+      &quot;path&quot;: &quot;eaa422f0-879-2-summary.json&quot;,
+      &quot;sha256&quot;: &quot;5a34788eeaa43d4d360a243824b3531de65b0330d3a657f96c7e411b1f5f46e1&quot;,
+      &quot;kind&quot;: &quot;report-summary&quot;,
+      &quot;step&quot;: &quot;eaa422f0-879&quot;
+    }
+  },
+  &quot;attemptCount&quot;: 9,
+  &quot;artifactCount&quot;: 3,
+  &quot;reportPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/eaa422f0-879-1-index.html&quot;
+}</pre></details></section>
+<section><h2>Artifacts</h2><ul><li><strong>201dbd83-70e-1-profile.json</strong> · configuration · SHA-256 137bd641b189a05a88cff63116fabab9cf6e7419cfe3e0d44df6133fdf14f141 · step 201dbd83-70e<details><summary>Inspect text evidence</summary><pre>{
+  &quot;version&quot;: 1,
+  &quot;app&quot;: &quot;isarray-checks&quot;,
+  &quot;evidence&quot;: &quot;.spyglass/runs/guided-m2-pass&quot;,
+  &quot;launch&quot;: {
+    &quot;mode&quot;: &quot;none&quot;
+  },
+  &quot;bindings&quot;: {},
+  &quot;checks&quot;: {
+    &quot;verify&quot;: {
+      &quot;command&quot;: [
+        &quot;npm&quot;,
+        &quot;run&quot;,
+        &quot;tests-only&quot;
+      ],
+      &quot;timeoutMs&quot;: 300000,
+      &quot;result&quot;: &quot;exit&quot;,
+      &quot;artifacts&quot;: [],
+      &quot;cleanup&quot;: false
+    }
+  },
+  &quot;seats&quot;: {},
+  &quot;imports&quot;: []
+}
+</pre></details></li>
+<li><strong>201dbd83-70e-2-plan.json</strong> · configuration · SHA-256 e95e3d05b32c09247b550b98da87ed43e79d756ea100e8baada406297260a90e · step 201dbd83-70e<details><summary>Inspect text evidence</summary><pre>{
+  &quot;controls&quot;: [
+    {
+      &quot;id&quot;: &quot;detects-fault&quot;,
+      &quot;claim&quot;: &quot;existing-check&quot;,
+      &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+      &quot;command&quot;: [
+        &quot;check&quot;,
+        &quot;verify&quot;
+      ],
+      &quot;failure&quot;: {
+        &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+        &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+      }
+    }
+  ],
+  &quot;claims&quot;: [
+    {
+      &quot;id&quot;: &quot;existing-check&quot;,
+      &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+      &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+      &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+      &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+      &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+      &quot;checks&quot;: [
+        &quot;verify&quot;
+      ],
+      &quot;evidence&quot;: [
+        &quot;Tape output and command exit status&quot;
+      ],
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true
+    }
+  ],
+  &quot;gates&quot;: [],
+  &quot;limits&quot;: [
+    &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+    &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+    &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+    &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+  ]
+}
+</pre></details></li>
+<li><strong>e9789e51-0df-1-verify-output.txt</strong> · command-output · SHA-256 e6dad4584b02be7d4064790940c940c774dd8dfd8650f1e10e3b1c5307a07f16 · step e9789e51-0df<details><summary>Inspect text evidence</summary><pre>stdout:
+
+&gt; isarray@2.0.5 tests-only
+&gt; tape test.js
+
+TAP version 13
+# is array (only polyfill)
+ok 1 should be truthy
+ok 2 should be falsy
+ok 3 should be falsy
+ok 4 should be falsy
+ok 5 should be falsy
+ok 6 should be falsy
+ok 7 should be falsy
+ok 8 should be falsy
+ok 9 should be falsy
+ok 10 should be falsy
+ok 11 should be falsy
+ok 12 should be falsy
+ok 13 should be falsy
+ok 14 should be truthy
+# is array (native)
+ok 15 should be truthy
+ok 16 should be falsy
+ok 17 should be falsy
+ok 18 should be falsy
+ok 19 should be falsy
+ok 20 should be falsy
+ok 21 should be falsy
+ok 22 should be falsy
+ok 23 should be falsy
+ok 24 should be falsy
+ok 25 should be falsy
+ok 26 should be falsy
+ok 27 should be falsy
+ok 28 should be truthy
+
+1..28
+# tests 28
+# pass  28
+
+# ok
+
+
+stderr:
+</pre></details></li>
+<li><strong>eaa422f0-879-1-index.html</strong> · report · SHA-256 10789356dcfbe9ee43080231468f78f924000fd9e228151f883e77b89bccf4c9 · step eaa422f0-879</li>
+<li><strong>eaa422f0-879-2-summary.json</strong> · report-summary · SHA-256 5a34788eeaa43d4d360a243824b3531de65b0330d3a657f96c7e411b1f5f46e1 · step eaa422f0-879</li></ul></section>
+<section><h2>Report data</h2><details><summary>Machine-readable summary</summary><pre>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;status&quot;: &quot;passed&quot;,
+  &quot;complete&quot;: true,
+  &quot;run&quot;: &quot;guided-m2-pass&quot;,
+  &quot;app&quot;: &quot;isarray-checks&quot;,
+  &quot;operator&quot;: &quot;agent&quot;,
+  &quot;generatedAt&quot;: &quot;2026-11-04T14:00:27.860Z&quot;,
+  &quot;source&quot;: {
+    &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+    &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+    &quot;currentHash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+    &quot;changed&quot;: []
+  },
+  &quot;claims&quot;: [
+    {
+      &quot;id&quot;: &quot;existing-check&quot;,
+      &quot;kind&quot;: &quot;behavior&quot;,
+      &quot;required&quot;: true,
+      &quot;outcome&quot;: &quot;passed&quot;,
+      &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+      &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+      &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+      &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+      &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+      &quot;checks&quot;: [
+        &quot;verify&quot;
+      ],
+      &quot;requiredEvidence&quot;: [
+        &quot;Tape output and command exit status&quot;
+      ],
+      &quot;steps&quot;: [
+        &quot;e9789e51-0df&quot;
+      ],
+      &quot;observed&quot;: &quot;The existing tests-only script ran both named Tape cases with unchanged assertions: all 28 passed, no skips, child exit 0. Its isolated fault worktree failed the same four array assertions. This is a guided packaging retest, not a fresh adoption.&quot;,
+      &quot;artifacts&quot;: [
+        &quot;e9789e51-0df-1-verify-output.txt&quot;
+      ],
+      &quot;inspections&quot;: []
+    }
+  ],
+  &quot;gates&quot;: [],
+  &quot;controls&quot;: [
+    {
+      &quot;id&quot;: &quot;detects-fault&quot;,
+      &quot;failedRun&quot;: &quot;guided-m2-fault&quot;,
+      &quot;failedStep&quot;: &quot;1e5de173-be5&quot;,
+      &quot;restoredStep&quot;: &quot;e9789e51-0df&quot;,
+      &quot;observedFailure&quot;: &quot;The unchanged Tape assertions 1, 14, 15 and 28 fail with the always-false export: 24 passed, 4 failed, child exit 1, CHECK_FAILED containing not ok 1 should be truthy.&quot;,
+      &quot;observedPass&quot;: &quot;The same npm run tests-only command accepts the original export: 28 passed, no skips, child exit 0.&quot;,
+      &quot;claim&quot;: &quot;existing-check&quot;,
+      &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+      &quot;command&quot;: [
+        &quot;check&quot;,
+        &quot;verify&quot;
+      ],
+      &quot;failure&quot;: {
+        &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+        &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+      },
+      &quot;baseline&quot;: {
+        &quot;run&quot;: &quot;guided-m2-fault&quot;,
+        &quot;source&quot;: &quot;df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685&quot;,
+        &quot;evidence&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/.spyglass/runs/guided-m2-fault&quot;
+      },
+      &quot;outcome&quot;: &quot;passed&quot;
+    }
+  ],
+  &quot;environment&quot;: [
+    {
+      &quot;name&quot;: &quot;source identity&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;Current source matches the baseline recorded at up.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;artifact integrity&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;5 of 5 recorded artifacts match their checksums.&quot;
+    },
+    {
+      &quot;name&quot;: &quot;cleanup&quot;,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;detail&quot;: &quot;Spyglass cleanup: true; external owner cleanup: true.&quot;
+    }
+  ],
+  &quot;visualObservations&quot;: [],
+  &quot;cleanup&quot;: {
+    &quot;runState&quot;: &quot;stopped&quot;,
+    &quot;spyglassResourcesCleaned&quot;: true,
+    &quot;externalOwnerCleaned&quot;: &quot;not required&quot;
+  },
+  &quot;limits&quot;: [
+    &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+    &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+    &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+    &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+  ],
+  &quot;attempts&quot;: [
+    {
+      &quot;id&quot;: &quot;201dbd83-70e&quot;,
+      &quot;command&quot;: &quot;up&quot;,
+      &quot;args&quot;: [],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:02.830Z&quot;,
+      &quot;durationMs&quot;: 64,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [
+        {
+          &quot;path&quot;: &quot;201dbd83-70e-1-profile.json&quot;,
+          &quot;sha256&quot;: &quot;137bd641b189a05a88cff63116fabab9cf6e7419cfe3e0d44df6133fdf14f141&quot;,
+          &quot;kind&quot;: &quot;configuration&quot;,
+          &quot;step&quot;: &quot;201dbd83-70e&quot;
+        },
+        {
+          &quot;path&quot;: &quot;201dbd83-70e-2-plan.json&quot;,
+          &quot;sha256&quot;: &quot;e95e3d05b32c09247b550b98da87ed43e79d756ea100e8baada406297260a90e&quot;,
+          &quot;kind&quot;: &quot;configuration&quot;,
+          &quot;step&quot;: &quot;201dbd83-70e&quot;
+        }
+      ],
+      &quot;data&quot;: {
+        &quot;id&quot;: &quot;guided-m2-pass&quot;,
+        &quot;state&quot;: &quot;ready&quot;,
+        &quot;repo&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray&quot;,
+        &quot;evidence&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass&quot;,
+        &quot;port&quot;: 64716,
+        &quot;source&quot;: {
+          &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+          &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+          &quot;fileCount&quot;: 23
+        },
+        &quot;sourceChanges&quot;: [],
+        &quot;profile&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/spyglass.json&quot;,
+        &quot;plan&quot;: {
+          &quot;controls&quot;: [
+            {
+              &quot;id&quot;: &quot;detects-fault&quot;,
+              &quot;claim&quot;: &quot;existing-check&quot;,
+              &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+              &quot;command&quot;: [
+                &quot;check&quot;,
+                &quot;verify&quot;
+              ],
+              &quot;failure&quot;: {
+                &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+                &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+              }
+            }
+          ],
+          &quot;claims&quot;: [
+            {
+              &quot;id&quot;: &quot;existing-check&quot;,
+              &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+              &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+              &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+              &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+              &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+              &quot;checks&quot;: [
+                &quot;verify&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Tape output and command exit status&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            }
+          ],
+          &quot;gates&quot;: [],
+          &quot;limits&quot;: [
+            &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+            &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+            &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+            &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+          ]
+        },
+        &quot;result&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+        &quot;export&quot;: &quot;export SPYGLASS_RUN=guided-m2-pass&quot;,
+        &quot;active&quot;: {
+          &quot;pid&quot;: 92391,
+          &quot;processStartedAt&quot;: &quot;2026-11-04T14:00:02.760Z&quot;,
+          &quot;command&quot;: &quot;up&quot;,
+          &quot;startedAt&quot;: &quot;2026-11-04T14:00:02.829Z&quot;
+        },
+        &quot;activeSeat&quot;: &quot;default&quot;,
+        &quot;cleanup&quot;: false,
+        &quot;capabilities&quot;: {
+          &quot;ui&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;agent-browser&quot;,
+            &quot;testedVersion&quot;: &quot;0.38.2&quot;
+          },
+          &quot;api&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;Node fetch&quot;
+          },
+          &quot;db&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;node-postgres&quot;
+          },
+          &quot;compose&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;docker compose&quot;
+          },
+          &quot;check&quot;: {
+            &quot;available&quot;: true,
+            &quot;names&quot;: [
+              &quot;verify&quot;
+            ]
+          },
+          &quot;exec&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;process&quot;
+          },
+          &quot;skill&quot;: null,
+          &quot;features&quot;: null
+        },
+        &quot;completedChecks&quot;: [],
+        &quot;pendingClaims&quot;: [
+          &quot;existing-check&quot;
+        ],
+        &quot;owner&quot;: {
+          &quot;mode&quot;: &quot;none&quot;,
+          &quot;bindings&quot;: {},
+          &quot;cleanupRequired&quot;: false
+        },
+        &quot;next&quot;: &quot;spyglass result --file .spyglass/runs/guided-m2-pass/spyglass/result.json --run guided-m2-pass&quot;,
+        &quot;resultRules&quot;: [
+          &quot;A passed claim lists its successful steps from this run in steps and states what you saw in observed.&quot;,
+          &quot;Copy each artifact path as a step returned it, relative to the evidence folder, and cite the step that made it.&quot;,
+          &quot;Claims existing-check: cite a successful step of check verify.&quot;,
+          &quot;Behavior claims existing-check: cite a successful behavior check and its non-image evidence; a screenshot alone proves no behavior.&quot;,
+          &quot;Controls: set failedStep to the step that shows the declared failure, restoredStep to a later step of this run that passes the same assertion or command, and observedFailure and observedPass to what you saw. failedRun is this run, or an earlier run that is stopped with down, has its owner cleanup done, declares the same control and keeps its evidence. The control&#39;s claim passes and cites restoredStep.&quot;,
+          &quot;Control detects-fault: claim existing-check, command check verify fails with CHECK_FAILED containing \&quot;not ok 1 should be truthy\&quot;.&quot;
+        ],
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 23,
+          &quot;rehashed&quot;: 0
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;e9789e51-0df&quot;,
+      &quot;command&quot;: &quot;check&quot;,
+      &quot;args&quot;: [
+        &quot;verify&quot;
+      ],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:02.933Z&quot;,
+      &quot;durationMs&quot;: 208,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [
+        {
+          &quot;path&quot;: &quot;e9789e51-0df-1-verify-output.txt&quot;,
+          &quot;sha256&quot;: &quot;e6dad4584b02be7d4064790940c940c774dd8dfd8650f1e10e3b1c5307a07f16&quot;,
+          &quot;kind&quot;: &quot;command-output&quot;,
+          &quot;step&quot;: &quot;e9789e51-0df&quot;
+        }
+      ],
+      &quot;data&quot;: {
+        &quot;check&quot;: &quot;verify&quot;,
+        &quot;attempt&quot;: &quot;e9789e51-0df&quot;,
+        &quot;command&quot;: [
+          &quot;npm&quot;,
+          &quot;run&quot;,
+          &quot;tests-only&quot;
+        ],
+        &quot;exitCode&quot;: 0,
+        &quot;timedOut&quot;: false,
+        &quot;stdout&quot;: &quot;\n&gt; isarray@2.0.5 tests-only\n&gt; tape test.js\n\nTAP version 13\n# is array (only polyfill)\nok 1 should be truthy\nok 2 should be falsy\nok 3 should be falsy\nok 4 should be falsy\nok 5 should be falsy\nok 6 should be falsy\nok 7 should be falsy\nok 8 should be falsy\nok 9 should be falsy\nok 10 should be falsy\nok 11 should be falsy\nok 12 should be falsy\nok 13 should be falsy\nok 14 should be truthy\n# is array (native)\nok 15 should be truthy\nok 16 should be falsy\nok 17 should be falsy\nok 18 should be falsy\nok 19 should be falsy\nok 20 should be falsy\nok 21 should be falsy\nok 22 should be falsy\nok 23 should be falsy\nok 24 should be falsy\nok 25 should be falsy\nok 26 should be falsy\nok 27 should be falsy\nok 28 should be truthy\n\n1..28\n# tests 28\n# pass  28\n\n# ok\n\n&quot;,
+        &quot;stderr&quot;: &quot;&quot;,
+        &quot;claims&quot;: [],
+        &quot;skips&quot;: [],
+        &quot;overall&quot;: null,
+        &quot;malformedAssertions&quot;: 0,
+        &quot;artifacts&quot;: [
+          {
+            &quot;path&quot;: &quot;e9789e51-0df-1-verify-output.txt&quot;,
+            &quot;sha256&quot;: &quot;e6dad4584b02be7d4064790940c940c774dd8dfd8650f1e10e3b1c5307a07f16&quot;,
+            &quot;kind&quot;: &quot;command-output&quot;,
+            &quot;step&quot;: &quot;e9789e51-0df&quot;
+          }
+        ],
+        &quot;importErrors&quot;: [],
+        &quot;passed&quot;: true,
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 23,
+          &quot;rehashed&quot;: 0
+        },
+        &quot;linked&quot;: {
+          &quot;claims&quot;: [
+            &quot;existing-check&quot;
+          ],
+          &quot;controls&quot;: [
+            &quot;detects-fault:restored&quot;
+          ],
+          &quot;gates&quot;: [],
+          &quot;skipped&quot;: []
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;4cfa6544-f58&quot;,
+      &quot;command&quot;: &quot;result&quot;,
+      &quot;args&quot;: [
+        &quot;set&quot;,
+        &quot;--control&quot;,
+        &quot;detects-fault&quot;,
+        &quot;--failed-run&quot;,
+        &quot;guided-m2-fault&quot;,
+        &quot;--failed-step&quot;,
+        &quot;1e5de173-be5&quot;,
+        &quot;--observed-failure&quot;,
+        &quot;The unchanged Tape assertions 1, 14, 15 and 28 fail with the always-false export: 24 passed, 4 failed, child exit 1, CHECK_FAILED containing not ok 1 should be truthy.&quot;,
+        &quot;--observed-pass&quot;,
+        &quot;The same npm run tests-only command accepts the original export: 28 passed, no skips, child exit 0.&quot;
+      ],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.333Z&quot;,
+      &quot;durationMs&quot;: 19,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [],
+      &quot;data&quot;: {
+        &quot;updated&quot;: &quot;control detects-fault&quot;,
+        &quot;recorded&quot;: false,
+        &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+        &quot;next&quot;: &quot;spyglass result --check --run guided-m2-pass&quot;
+      }
+    },
+    {
+      &quot;id&quot;: &quot;4cee46cb-80d&quot;,
+      &quot;command&quot;: &quot;result&quot;,
+      &quot;args&quot;: [
+        &quot;set&quot;,
+        &quot;--claim&quot;,
+        &quot;existing-check&quot;,
+        &quot;--outcome&quot;,
+        &quot;passed&quot;,
+        &quot;--observed&quot;,
+        &quot;The existing tests-only script ran both named Tape cases with unchanged assertions: all 28 passed, no skips, child exit 0. Its isolated fault worktree failed the same four array assertions. This is a guided packaging retest, not a fresh adoption.&quot;
+      ],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.386Z&quot;,
+      &quot;durationMs&quot;: 17,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [],
+      &quot;data&quot;: {
+        &quot;updated&quot;: &quot;claim existing-check&quot;,
+        &quot;recorded&quot;: false,
+        &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+        &quot;next&quot;: &quot;spyglass result --check --run guided-m2-pass&quot;
+      }
+    },
+    {
+      &quot;id&quot;: &quot;fe251940-75f&quot;,
+      &quot;command&quot;: &quot;result&quot;,
+      &quot;args&quot;: [
+        &quot;set&quot;,
+        &quot;--operator&quot;,
+        &quot;agent&quot;
+      ],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.436Z&quot;,
+      &quot;durationMs&quot;: 18,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [],
+      &quot;data&quot;: {
+        &quot;updated&quot;: &quot;result&quot;,
+        &quot;recorded&quot;: false,
+        &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+        &quot;next&quot;: &quot;spyglass result --check --run guided-m2-pass&quot;
+      }
+    },
+    {
+      &quot;id&quot;: &quot;db47461b-77c&quot;,
+      &quot;command&quot;: &quot;result&quot;,
+      &quot;args&quot;: [
+        &quot;--check&quot;
+      ],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.552Z&quot;,
+      &quot;durationMs&quot;: 18,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [],
+      &quot;data&quot;: {
+        &quot;checked&quot;: true,
+        &quot;valid&quot;: true,
+        &quot;recorded&quot;: false,
+        &quot;operator&quot;: &quot;agent&quot;,
+        &quot;claims&quot;: 1,
+        &quot;gates&quot;: 0,
+        &quot;controls&quot;: 1,
+        &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+        &quot;next&quot;: &quot;spyglass result --run guided-m2-pass&quot;
+      }
+    },
+    {
+      &quot;id&quot;: &quot;ae2c5905-3e5&quot;,
+      &quot;command&quot;: &quot;result&quot;,
+      &quot;args&quot;: [],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.620Z&quot;,
+      &quot;durationMs&quot;: 4,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [],
+      &quot;data&quot;: {
+        &quot;checked&quot;: false,
+        &quot;valid&quot;: true,
+        &quot;recorded&quot;: true,
+        &quot;operator&quot;: &quot;agent&quot;,
+        &quot;claims&quot;: 1,
+        &quot;gates&quot;: 0,
+        &quot;controls&quot;: 1,
+        &quot;resultPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;
+      }
+    },
+    {
+      &quot;id&quot;: &quot;586318af-7b0&quot;,
+      &quot;command&quot;: &quot;doctor&quot;,
+      &quot;args&quot;: [],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.624Z&quot;,
+      &quot;durationMs&quot;: 43,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [],
+      &quot;data&quot;: {
+        &quot;ready&quot;: true,
+        &quot;environment&quot;: {
+          &quot;evidenceIgnored&quot;: true,
+          &quot;tools&quot;: {
+            &quot;node&quot;: &quot;v24.11.1&quot;,
+            &quot;spyglass&quot;: &quot;1.3.1&quot;
+          }
+        },
+        &quot;id&quot;: &quot;guided-m2-pass&quot;,
+        &quot;state&quot;: &quot;ready&quot;,
+        &quot;repo&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray&quot;,
+        &quot;evidence&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass&quot;,
+        &quot;port&quot;: 64716,
+        &quot;source&quot;: {
+          &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+          &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+          &quot;fileCount&quot;: 23
+        },
+        &quot;sourceChanges&quot;: [],
+        &quot;profile&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/spyglass.json&quot;,
+        &quot;plan&quot;: {
+          &quot;controls&quot;: [
+            {
+              &quot;id&quot;: &quot;detects-fault&quot;,
+              &quot;claim&quot;: &quot;existing-check&quot;,
+              &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+              &quot;command&quot;: [
+                &quot;check&quot;,
+                &quot;verify&quot;
+              ],
+              &quot;failure&quot;: {
+                &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+                &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+              }
+            }
+          ],
+          &quot;claims&quot;: [
+            {
+              &quot;id&quot;: &quot;existing-check&quot;,
+              &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+              &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+              &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+              &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+              &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+              &quot;checks&quot;: [
+                &quot;verify&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Tape output and command exit status&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            }
+          ],
+          &quot;gates&quot;: [],
+          &quot;limits&quot;: [
+            &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+            &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+            &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+            &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+          ]
+        },
+        &quot;result&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+        &quot;export&quot;: &quot;export SPYGLASS_RUN=guided-m2-pass&quot;,
+        &quot;active&quot;: {
+          &quot;pid&quot;: 92963,
+          &quot;processStartedAt&quot;: &quot;2026-11-04T14:00:27.584Z&quot;,
+          &quot;command&quot;: &quot;finish&quot;,
+          &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.603Z&quot;
+        },
+        &quot;activeSeat&quot;: &quot;default&quot;,
+        &quot;cleanup&quot;: false,
+        &quot;capabilities&quot;: {
+          &quot;ui&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;agent-browser&quot;,
+            &quot;testedVersion&quot;: &quot;0.38.2&quot;
+          },
+          &quot;api&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;Node fetch&quot;
+          },
+          &quot;db&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;node-postgres&quot;
+          },
+          &quot;compose&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;docker compose&quot;
+          },
+          &quot;check&quot;: {
+            &quot;available&quot;: true,
+            &quot;names&quot;: [
+              &quot;verify&quot;
+            ]
+          },
+          &quot;exec&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;process&quot;
+          },
+          &quot;skill&quot;: null,
+          &quot;features&quot;: null
+        },
+        &quot;completedChecks&quot;: [
+          {
+            &quot;name&quot;: &quot;verify&quot;,
+            &quot;step&quot;: &quot;e9789e51-0df&quot;,
+            &quot;exitCode&quot;: 0,
+            &quot;commandExitCode&quot;: 0,
+            &quot;childExitCode&quot;: 0,
+            &quot;spyglassExitCode&quot;: 0,
+            &quot;status&quot;: &quot;passed&quot;
+          }
+        ],
+        &quot;pendingClaims&quot;: [],
+        &quot;owner&quot;: {
+          &quot;mode&quot;: &quot;none&quot;,
+          &quot;bindings&quot;: {},
+          &quot;cleanupRequired&quot;: false
+        },
+        &quot;next&quot;: &quot;spyglass down --run guided-m2-pass&quot;,
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 23,
+          &quot;rehashed&quot;: 0
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;0e35b89a-50c&quot;,
+      &quot;command&quot;: &quot;down&quot;,
+      &quot;args&quot;: [],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.667Z&quot;,
+      &quot;durationMs&quot;: 12,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [],
+      &quot;data&quot;: {
+        &quot;id&quot;: &quot;guided-m2-pass&quot;,
+        &quot;state&quot;: &quot;stopped&quot;,
+        &quot;repo&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray&quot;,
+        &quot;evidence&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass&quot;,
+        &quot;port&quot;: 64716,
+        &quot;source&quot;: {
+          &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+          &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+          &quot;fileCount&quot;: 23
+        },
+        &quot;sourceChanges&quot;: [],
+        &quot;profile&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/spyglass.json&quot;,
+        &quot;plan&quot;: {
+          &quot;controls&quot;: [
+            {
+              &quot;id&quot;: &quot;detects-fault&quot;,
+              &quot;claim&quot;: &quot;existing-check&quot;,
+              &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+              &quot;command&quot;: [
+                &quot;check&quot;,
+                &quot;verify&quot;
+              ],
+              &quot;failure&quot;: {
+                &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+                &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+              }
+            }
+          ],
+          &quot;claims&quot;: [
+            {
+              &quot;id&quot;: &quot;existing-check&quot;,
+              &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+              &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+              &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+              &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+              &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+              &quot;checks&quot;: [
+                &quot;verify&quot;
+              ],
+              &quot;evidence&quot;: [
+                &quot;Tape output and command exit status&quot;
+              ],
+              &quot;kind&quot;: &quot;behavior&quot;,
+              &quot;required&quot;: true
+            }
+          ],
+          &quot;gates&quot;: [],
+          &quot;limits&quot;: [
+            &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+            &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+            &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+            &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+          ]
+        },
+        &quot;result&quot;: &quot;.spyglass/runs/guided-m2-pass/spyglass/result.json&quot;,
+        &quot;export&quot;: &quot;export SPYGLASS_RUN=guided-m2-pass&quot;,
+        &quot;active&quot;: {
+          &quot;pid&quot;: 92963,
+          &quot;processStartedAt&quot;: &quot;2026-11-04T14:00:27.584Z&quot;,
+          &quot;command&quot;: &quot;finish&quot;,
+          &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.603Z&quot;
+        },
+        &quot;activeSeat&quot;: &quot;default&quot;,
+        &quot;cleanup&quot;: true,
+        &quot;capabilities&quot;: {
+          &quot;ui&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;agent-browser&quot;,
+            &quot;testedVersion&quot;: &quot;0.38.2&quot;
+          },
+          &quot;api&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;Node fetch&quot;
+          },
+          &quot;db&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;node-postgres&quot;
+          },
+          &quot;compose&quot;: {
+            &quot;available&quot;: false,
+            &quot;tool&quot;: &quot;docker compose&quot;
+          },
+          &quot;check&quot;: {
+            &quot;available&quot;: true,
+            &quot;names&quot;: [
+              &quot;verify&quot;
+            ]
+          },
+          &quot;exec&quot;: {
+            &quot;available&quot;: true,
+            &quot;tool&quot;: &quot;process&quot;
+          },
+          &quot;skill&quot;: null,
+          &quot;features&quot;: null
+        },
+        &quot;completedChecks&quot;: [
+          {
+            &quot;name&quot;: &quot;verify&quot;,
+            &quot;step&quot;: &quot;e9789e51-0df&quot;,
+            &quot;exitCode&quot;: 0,
+            &quot;commandExitCode&quot;: 0,
+            &quot;childExitCode&quot;: 0,
+            &quot;spyglassExitCode&quot;: 0,
+            &quot;status&quot;: &quot;passed&quot;
+          }
+        ],
+        &quot;pendingClaims&quot;: [],
+        &quot;owner&quot;: {
+          &quot;mode&quot;: &quot;none&quot;,
+          &quot;bindings&quot;: {},
+          &quot;cleanupRequired&quot;: false
+        },
+        &quot;next&quot;: &quot;spyglass report --run guided-m2-pass&quot;,
+        &quot;ownerCleanupRequired&quot;: false,
+        &quot;sourceCheck&quot;: {
+          &quot;mode&quot;: &quot;fast&quot;,
+          &quot;files&quot;: 23,
+          &quot;rehashed&quot;: 0
+        }
+      }
+    },
+    {
+      &quot;id&quot;: &quot;eaa422f0-879&quot;,
+      &quot;command&quot;: &quot;report&quot;,
+      &quot;args&quot;: [],
+      &quot;startedAt&quot;: &quot;2026-11-04T14:00:27.680Z&quot;,
+      &quot;durationMs&quot;: 15,
+      &quot;exitCode&quot;: 0,
+      &quot;commandExitCode&quot;: 0,
+      &quot;status&quot;: &quot;passed&quot;,
+      &quot;source&quot;: {
+        &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+        &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+        &quot;files&quot;: {
+          &quot;.eslintrc&quot;: &quot;2834381e3421975a287808df951ad5bb4842a5af4f22c40c3fb7fe3d59d0dc81&quot;,
+          &quot;.github/FUNDING.yml&quot;: &quot;0ea49d65b955e1c977b21fdd89594ce98364ad1dfb9df5d265f7061eabbe814d&quot;,
+          &quot;.github/workflows/node-aught.yml&quot;: &quot;ba860acbd466e2d3b92961d9bbe7dca6d211c78712a87acd079be4a8ef2e2c5f&quot;,
+          &quot;.github/workflows/node-pretest.yml&quot;: &quot;257c68b9fd80b6513618a60b13dcc552e4c997c8a0c2a0aa1f951069a630ebca&quot;,
+          &quot;.github/workflows/node-tens.yml&quot;: &quot;614027e949fcb9ff2f2b8625c7da551d7f3c077265c997db98a928d27f6e40d1&quot;,
+          &quot;.github/workflows/rebase.yml&quot;: &quot;7a696cec918754f124ddaaa8f4c6ad503a5bd42c154fee2e66eb9f5f2ca17871&quot;,
+          &quot;.github/workflows/require-allow-edits.yml&quot;: &quot;256ff57d733e0a51c7feccd0af2ed762c087933214b66dbb87213f7f76b3b425&quot;,
+          &quot;.gitignore&quot;: &quot;43706b1c40d70c735ab8f87de5cbb069d537f24321447a170578db8bf40d30f7&quot;,
+          &quot;.travis.yml&quot;: &quot;de4661630eeb5de22966b01756c752ae90781ed1ab5af032f3ea3d91c0977b95&quot;,
+          &quot;CONTRIBUTING.md&quot;: &quot;fdf6b093febefedbaa3bd75b4e072e60131f8d271dc271508df4e0509b9f980b&quot;,
+          &quot;LICENSE&quot;: &quot;68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14&quot;,
+          &quot;Makefile&quot;: &quot;928dc8c1df0d6ff86d985f520278a4c83498aa6353ff3d942270aa117397a8d1&quot;,
+          &quot;README.md&quot;: &quot;7ab4e17ece920921e9abb72dede69309665f065fcbbb5e0e7b9bf816eed667e5&quot;,
+          &quot;SECURITY.md&quot;: &quot;2757a9b579a7a0bf67dda586a82485803e42a0a7dec5348e0fec881afa5cf5f8&quot;,
+          &quot;component.json&quot;: &quot;f9e5ef95d8e8f65a5dcd3a200b38e5a13461ed95114dac053d908c391c12d731&quot;,
+          &quot;index.js&quot;: &quot;493a6af97ac314457d3f8aa64a4519918c43d7028ea00434176121e73e489193&quot;,
+          &quot;package-lock.json&quot;: &quot;c90117a06f7d3cf6a277c064da63ccd91661141af1e4e107bf27808736d6b66a&quot;,
+          &quot;package.json&quot;: &quot;774531bb5be7c58de3035b0d40c4c2fe9a20fc0572b5c4cea6c66ee6ee5ce2cb&quot;,
+          &quot;renovate.json&quot;: &quot;2e56c236621c44acad3d7ac2d3baf2f28278b0fb2afa6eeb008dda94c709b3a6&quot;,
+          &quot;spyglass.json&quot;: &quot;1b5328bea41cf1de0afc0bd7e6996aebc18ff70b9df26f27a2eefdc46917d06c&quot;,
+          &quot;tea.yaml&quot;: &quot;9f5acf390715bc47e683e514a2cfbf58bc9c8d414373f383be904ff297da80b5&quot;,
+          &quot;test.js&quot;: &quot;f7f8eed38dcaad98f24542049df8beb47f8d92f5a83bf75d3c460f8f537cea5a&quot;,
+          &quot;verification-plan.json&quot;: &quot;209e940531ff9d59bbc5d45d4b1c65194479554f2a0d4e888fc9384390a93eed&quot;
+        }
+      },
+      &quot;artifacts&quot;: [
+        {
+          &quot;path&quot;: &quot;eaa422f0-879-1-index.html&quot;,
+          &quot;sha256&quot;: &quot;10789356dcfbe9ee43080231468f78f924000fd9e228151f883e77b89bccf4c9&quot;,
+          &quot;kind&quot;: &quot;report&quot;,
+          &quot;step&quot;: &quot;eaa422f0-879&quot;
+        },
+        {
+          &quot;path&quot;: &quot;eaa422f0-879-2-summary.json&quot;,
+          &quot;sha256&quot;: &quot;5a34788eeaa43d4d360a243824b3531de65b0330d3a657f96c7e411b1f5f46e1&quot;,
+          &quot;kind&quot;: &quot;report-summary&quot;,
+          &quot;step&quot;: &quot;eaa422f0-879&quot;
+        }
+      ],
+      &quot;data&quot;: {
+        &quot;schemaVersion&quot;: 1,
+        &quot;status&quot;: &quot;passed&quot;,
+        &quot;complete&quot;: true,
+        &quot;run&quot;: &quot;guided-m2-pass&quot;,
+        &quot;app&quot;: &quot;isarray-checks&quot;,
+        &quot;operator&quot;: &quot;agent&quot;,
+        &quot;generatedAt&quot;: &quot;2026-11-04T14:00:27.693Z&quot;,
+        &quot;source&quot;: {
+          &quot;commit&quot;: &quot;8c8dd70d48ad5d0897733ca6726302a54ca9e177&quot;,
+          &quot;hash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+          &quot;currentHash&quot;: &quot;ea30424937c5ccbef4c260029dc8a8b22ba2e51191cb3f146184d9e43d99c131&quot;,
+          &quot;changed&quot;: []
+        },
+        &quot;claims&quot;: [
+          {
+            &quot;id&quot;: &quot;existing-check&quot;,
+            &quot;kind&quot;: &quot;behavior&quot;,
+            &quot;required&quot;: true,
+            &quot;outcome&quot;: &quot;passed&quot;,
+            &quot;behavior&quot;: &quot;The existing isarray checks accept the candidate.&quot;,
+            &quot;entryPoint&quot;: &quot;npm run tests-only&quot;,
+            &quot;precondition&quot;: &quot;The existing npm lockfile dependencies are installed.&quot;,
+            &quot;expected&quot;: &quot;All 28 existing Tape assertions pass in both named cases, with no skips.&quot;,
+            &quot;case&quot;: &quot;Unchanged candidate and an isolated always-false export fault.&quot;,
+            &quot;checks&quot;: [
+              &quot;verify&quot;
+            ],
+            &quot;requiredEvidence&quot;: [
+              &quot;Tape output and command exit status&quot;
+            ],
+            &quot;steps&quot;: [
+              &quot;e9789e51-0df&quot;
+            ],
+            &quot;observed&quot;: &quot;The existing tests-only script ran both named Tape cases with unchanged assertions: all 28 passed, no skips, child exit 0. Its isolated fault worktree failed the same four array assertions. This is a guided packaging retest, not a fresh adoption.&quot;,
+            &quot;artifacts&quot;: [
+              &quot;e9789e51-0df-1-verify-output.txt&quot;
+            ],
+            &quot;inspections&quot;: []
+          }
+        ],
+        &quot;gates&quot;: [],
+        &quot;controls&quot;: [
+          {
+            &quot;id&quot;: &quot;detects-fault&quot;,
+            &quot;failedRun&quot;: &quot;guided-m2-fault&quot;,
+            &quot;failedStep&quot;: &quot;1e5de173-be5&quot;,
+            &quot;restoredStep&quot;: &quot;e9789e51-0df&quot;,
+            &quot;observedFailure&quot;: &quot;The unchanged Tape assertions 1, 14, 15 and 28 fail with the always-false export: 24 passed, 4 failed, child exit 1, CHECK_FAILED containing not ok 1 should be truthy.&quot;,
+            &quot;observedPass&quot;: &quot;The same npm run tests-only command accepts the original export: 28 passed, no skips, child exit 0.&quot;,
+            &quot;claim&quot;: &quot;existing-check&quot;,
+            &quot;expectation&quot;: &quot;The unchanged Tape check rejects an export that returns false for arrays and accepts the original export.&quot;,
+            &quot;command&quot;: [
+              &quot;check&quot;,
+              &quot;verify&quot;
+            ],
+            &quot;failure&quot;: {
+              &quot;code&quot;: &quot;CHECK_FAILED&quot;,
+              &quot;contains&quot;: &quot;not ok 1 should be truthy&quot;
+            },
+            &quot;baseline&quot;: {
+              &quot;run&quot;: &quot;guided-m2-fault&quot;,
+              &quot;source&quot;: &quot;df79cef69c578aede848d98be5435b623c5f3f90989f70301b4d9a5d0a624685&quot;,
+              &quot;evidence&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray-fault/.spyglass/runs/guided-m2-fault&quot;
+            },
+            &quot;outcome&quot;: &quot;passed&quot;
+          }
+        ],
+        &quot;environment&quot;: [
+          {
+            &quot;name&quot;: &quot;source identity&quot;,
+            &quot;status&quot;: &quot;passed&quot;,
+            &quot;detail&quot;: &quot;Current source matches the baseline recorded at up.&quot;
+          },
+          {
+            &quot;name&quot;: &quot;artifact integrity&quot;,
+            &quot;status&quot;: &quot;passed&quot;,
+            &quot;detail&quot;: &quot;3 of 3 recorded artifacts match their checksums.&quot;
+          },
+          {
+            &quot;name&quot;: &quot;cleanup&quot;,
+            &quot;status&quot;: &quot;passed&quot;,
+            &quot;detail&quot;: &quot;Spyglass cleanup: true; external owner cleanup: true.&quot;
+          }
+        ],
+        &quot;visualObservations&quot;: [],
+        &quot;cleanup&quot;: {
+          &quot;runState&quot;: &quot;stopped&quot;,
+          &quot;spyglassResourcesCleaned&quot;: true,
+          &quot;externalOwnerCleaned&quot;: &quot;not required&quot;
+        },
+        &quot;limits&quot;: [
+          &quot;Only the existing tests-only script is adopted. Lint and the network-backed npm posttest audit are not gates or claims.&quot;,
+          &quot;Exit status is the check contract; the operator must inspect the retained Tape output for assertion counts and skips.&quot;,
+          &quot;The case named only polyfill deletes Array.isArray after requiring the module. On this Node runtime it does not prove execution of the fallback export.&quot;,
+          &quot;Legacy browser compatibility, package publication, browser behavior and human use are untested.&quot;
+        ],
+        &quot;findings&quot;: [],
+        &quot;report&quot;: {
+          &quot;page&quot;: {
+            &quot;path&quot;: &quot;eaa422f0-879-1-index.html&quot;,
+            &quot;sha256&quot;: &quot;10789356dcfbe9ee43080231468f78f924000fd9e228151f883e77b89bccf4c9&quot;,
+            &quot;kind&quot;: &quot;report&quot;,
+            &quot;step&quot;: &quot;eaa422f0-879&quot;
+          },
+          &quot;summary&quot;: {
+            &quot;path&quot;: &quot;eaa422f0-879-2-summary.json&quot;,
+            &quot;sha256&quot;: &quot;5a34788eeaa43d4d360a243824b3531de65b0330d3a657f96c7e411b1f5f46e1&quot;,
+            &quot;kind&quot;: &quot;report-summary&quot;,
+            &quot;step&quot;: &quot;eaa422f0-879&quot;
+          }
+        },
+        &quot;attemptCount&quot;: 9,
+        &quot;artifactCount&quot;: 3,
+        &quot;reportPath&quot;: &quot;/private/tmp/spyglass-final-m2.6CYUpN/isarray/.spyglass/runs/guided-m2-pass/spyglass/eaa422f0-879-1-index.html&quot;
+      }
+    }
+  ],
+  &quot;artifacts&quot;: [
+    {
+      &quot;path&quot;: &quot;201dbd83-70e-1-profile.json&quot;,
+      &quot;sha256&quot;: &quot;137bd641b189a05a88cff63116fabab9cf6e7419cfe3e0d44df6133fdf14f141&quot;,
+      &quot;kind&quot;: &quot;configuration&quot;,
+      &quot;step&quot;: &quot;201dbd83-70e&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;201dbd83-70e&quot;
+    },
+    {
+      &quot;path&quot;: &quot;201dbd83-70e-2-plan.json&quot;,
+      &quot;sha256&quot;: &quot;e95e3d05b32c09247b550b98da87ed43e79d756ea100e8baada406297260a90e&quot;,
+      &quot;kind&quot;: &quot;configuration&quot;,
+      &quot;step&quot;: &quot;201dbd83-70e&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;201dbd83-70e&quot;
+    },
+    {
+      &quot;path&quot;: &quot;e9789e51-0df-1-verify-output.txt&quot;,
+      &quot;sha256&quot;: &quot;e6dad4584b02be7d4064790940c940c774dd8dfd8650f1e10e3b1c5307a07f16&quot;,
+      &quot;kind&quot;: &quot;command-output&quot;,
+      &quot;step&quot;: &quot;e9789e51-0df&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;e9789e51-0df&quot;
+    },
+    {
+      &quot;path&quot;: &quot;eaa422f0-879-1-index.html&quot;,
+      &quot;sha256&quot;: &quot;10789356dcfbe9ee43080231468f78f924000fd9e228151f883e77b89bccf4c9&quot;,
+      &quot;kind&quot;: &quot;report&quot;,
+      &quot;step&quot;: &quot;eaa422f0-879&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;eaa422f0-879&quot;
+    },
+    {
+      &quot;path&quot;: &quot;eaa422f0-879-2-summary.json&quot;,
+      &quot;sha256&quot;: &quot;5a34788eeaa43d4d360a243824b3531de65b0330d3a657f96c7e411b1f5f46e1&quot;,
+      &quot;kind&quot;: &quot;report-summary&quot;,
+      &quot;step&quot;: &quot;eaa422f0-879&quot;,
+      &quot;valid&quot;: true,
+      &quot;sourceStep&quot;: &quot;eaa422f0-879&quot;
+    }
+  ],
+  &quot;findings&quot;: []
+}</pre></details></section>
+</body></html>
