@@ -8,6 +8,8 @@ results and retained evidence.
 | --- | --- | --- |
 | Input | The profile has an unsupported version or an unknown field. | The command exits with usage/profile status and names the invalid field. It does not launch the app. |
 | Installation | A local package is made from a checkout with private plans, retained run evidence or unrelated files. | The package contains only the distributable runtime, schemas and public guidance. `npm pack` builds the runtime before packaging. |
+| Installation | A public archive needs checkout files or install scripts, omits runtime dependencies, or cannot complete a run after installation. | Install the exact archive with scripts disabled in an isolated prefix. Version, help, schemas, a command-only claim, cleanup and the retained offline report must pass outside the source checkout. |
+| Publication | An unapproved source, mismatched release tag, missing CI, prerelease on `latest`, or already published version reaches staging. | Refuse before registry writes. Stage only the checked archive from an approved release merge on `main`, behind the `npm` environment. |
 | Setup | A fresh operator receives a proposed profile but has no plan or report procedure. | `init` identifies guessed fields and gives plan, check, cleanup and report commands. It names a discovered check and starts nothing. |
 | Setup | Two profiles match the repository. | The command asks for an explicit profile through an error and next action. It does not prompt. |
 | Setup | A profile or CLI binding uses a reserved run value (`repo`, `run`, `port`, `web`, `api` or `evidence`). | `up` rejects it before run allocation or owner readiness, with `RESERVED_BINDING` and a repair that uses a separate owner binding. |

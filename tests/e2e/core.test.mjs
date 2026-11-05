@@ -158,6 +158,101 @@ test("local installation packages contain only distributable runtime and guidanc
     );
 });
 
+test("the public npm archive installs without scripts and completes an isolated run", async () => {
+  const dir = await makeRepo();
+  try {
+    const manifest = JSON.parse(
+      await readFile(join(REPO_ROOT, "package.json"), "utf8"),
+    );
+    assert.equal(
+      manifest.name,
+      "@mattschramm/spyglass",
+      "the npm package must use the maintainer's account scope",
+    );
+    assert.notEqual(
+      manifest.private,
+      true,
+      "the approved package must permit publication",
+    );
+    assert.deepEqual(manifest.publishConfig, {
+      access: "public",
+      registry: "https://registry.npmjs.org/",
+    });
+    const packed = await spawnCapture(
+      "npm",
+      ["pack", "--json", "--pack-destination", dir],
+      {
+        cwd: REPO_ROOT,
+        timeoutMs: 120000,
+      },
+    );
+    assert.equal(packed.code, 0, packed.stderr);
+    const [archive] = JSON.parse(packed.stdout);
+    const output = join(dir, "proof");
+    const checked = await spawnCapture(
+      process.execPath,
+      [
+        join(REPO_ROOT, "scripts/check-package.mjs"),
+        join(dir, archive.filename),
+        output,
+      ],
+      { cwd: dir, timeoutMs: 120000 },
+    );
+    assert.equal(checked.code, 0, checked.stdout + checked.stderr);
+    const proof = JSON.parse(
+      await readFile(join(output, "package-check.json"), "utf8"),
+    );
+    assert.equal(proof.version, manifest.version);
+    assert.equal(proof.integrity, archive.integrity);
+    assert.equal(proof.complete, true);
+    assert.equal(proof.cleaned, true);
+    assert.match(
+      await readFile(join(output, "report.html"), "utf8"),
+      /Spyglass verification report/,
+    );
+
+    // A lazy browser entry point is not reached by the command-only journey.
+    // The package gate must still refuse an archive that omits it.
+    const unpacked = join(dir, "unpacked");
+    await mkdir(unpacked);
+    assert.equal(
+      (
+        await spawnCapture("tar", [
+          "-xzf",
+          join(dir, archive.filename),
+          "-C",
+          unpacked,
+        ])
+      ).code,
+      0,
+    );
+    await rm(join(unpacked, "package/dist/browser-proxy.js"));
+    const broken = join(dir, "broken.tgz");
+    assert.equal(
+      (await spawnCapture("tar", ["-czf", broken, "-C", unpacked, "package"]))
+        .code,
+      0,
+    );
+    const rejected = await spawnCapture(
+      process.execPath,
+      [
+        join(REPO_ROOT, "scripts/check-package.mjs"),
+        broken,
+        join(dir, "rejected"),
+      ],
+      { timeoutMs: 120000 },
+    );
+    assert.notEqual(
+      rejected.code,
+      0,
+      "the package gate must reject a missing lazy runtime entry point",
+    );
+    assert.match(rejected.stderr, /browser-proxy\.js/);
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
 test("up, status and down retain one run record and stop only its app", async () => {
   const dir = await makeRepo({ profile: baseProfile(), plan });
   let run;

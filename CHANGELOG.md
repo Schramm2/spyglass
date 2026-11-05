@@ -18,6 +18,10 @@ This file records the notable changes to Spyglass. The format follows
 
 ### Added
 
+- Public npm package configuration for `@mattschramm/spyglass`, an isolated
+  archive-install E2E gate and a protected, tokenless staged-publication
+  workflow. Registry approval stays with the maintainer; this change does
+  not itself publish a version.
 - Every report retains a checksummed Markdown review summary with source
   identity, claims, controls, gates, cleanup, limits and findings, including
   incomplete reports. `data.reviewPath` selects it; `data.report.review`

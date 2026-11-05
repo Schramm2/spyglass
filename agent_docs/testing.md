@@ -95,6 +95,13 @@ node --test --test-concurrency=1 tests/e2e/core.test.mjs
 node --test --test-concurrency=1 --test-name-pattern='source change' tests/e2e/core.test.mjs
 ```
 
+The core suite also packs the candidate and calls `scripts/check-package.mjs`.
+It installs the exact archive with install scripts disabled, drives the installed
+`spyglass` executable outside the checkout, keeps a report after cleanup and
+checks that the gate rejects a missing lazy runtime entry point. Runtime
+dependencies come from the public npm registry, so this check needs network
+access. The publication workflow retains the same gate's output and archive.
+
 `npm test` runs the files one at a time (`--test-concurrency=1` in
 `package.json`). Keep that setting when you add a test file.
 

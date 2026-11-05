@@ -12,9 +12,19 @@ its instructions before you execute them.
 
 ## Install and keep a version
 
-Spyglass is not published to npm. The supported release installation is a
-source checkout pinned to a release tag, as shown in the [README](../README.md#installation).
-Do not install from a moving branch when repeatability matters. Record:
+After the first npm release is approved, install an exact public version:
+
+```sh
+npm install --global @mattschramm/spyglass@VERSION
+# Or keep it in the target repository's development dependencies:
+npm install --save-dev --save-exact @mattschramm/spyglass@VERSION
+npm exec -- spyglass --version
+```
+
+Replace `VERSION` with an approved published version. Until that approval,
+use a source checkout pinned to an approved release tag. See the
+[README](https://github.com/Schramm2/spyglass#installation). Do not install from
+a moving branch when repeatability matters. Record:
 
 ```sh
 node --version
@@ -37,19 +47,21 @@ checkout**, after `npm ci` and `npm run build`:
 install_root=$(mktemp -d /tmp/spyglass-install.XXXXXX)
 npm pack --pack-destination "$install_root"
 # Use the exact .tgz path printed above, not a wildcard over old packages.
-npm install --prefix "$install_root/tool" "$install_root/schramm2-spyglass-1.3.1.tgz"
+npm install --ignore-scripts --prefix "$install_root/tool" "$install_root/ARCHIVE.tgz"
 "$install_root/tool/node_modules/.bin/spyglass" --version
 export PATH="$install_root/tool/node_modules/.bin:$PATH"
 ```
 
-This is local packaging, not npm publication. The version in a candidate
-package can still be 1.3.1; retain its source commit, working-tree changes and
-archive SHA-256. A version alone does not identify an unreleased candidate.
+Replace `ARCHIVE.tgz` with the exact filename printed by `npm pack`.
+This is local packaging, not npm publication. A candidate can have the same
+version as an earlier build; retain its source commit, working-tree changes
+and archive SHA-256. A version alone does not identify an unreleased candidate.
 Review the package contents with `npm pack --dry-run` before distributing it.
 
-For an upgrade, keep the old checkout or isolated prefix. Install the new tag
-in another location, build it, and check `--version`, command help and the
-release notes before changing `PATH`. Do not change CLI builds during an
+For an npm upgrade or rollback, install the selected exact version again.
+For source or archive installations, keep the old checkout or isolated prefix.
+Install the new tag in another location and build it when using source.
+Check `--version`, command help and the release notes before changing `PATH`. Do not change CLI builds during an
 active run. Complete or clean up old runs with their original build first.
 Start a new run with the new build; never reuse old evidence as proof of an
 upgrade. To roll back, restore the old `PATH` or run its CLI by absolute path.
