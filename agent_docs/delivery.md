@@ -17,7 +17,7 @@ and back-merges; use that guide to select the base and target.
 The tested `agent-browser` version is pinned in several places. Change all of
 them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:409`,
 `src/profile.ts:280`, `README.md`, `CONTRIBUTING.md`,
-`agent_docs/testing.md` and `landing/docs/index.html`.
+and `agent_docs/testing.md`.
 
 ## User-visible changes
 
@@ -27,8 +27,7 @@ changes the public contract. In the same pull request:
 - add an entry under `[Unreleased]` in `CHANGELOG.md`;
 - update the command table or text in `README.md`, and the help in
   `src/help.ts`;
-- update the skill text in `skills/` that names the command or field;
-- update the matching section of the docs page, `landing/docs/index.html`.
+- update the skill text in `skills/` that names the command or field.
 
 The version number changes only at release time; see "Version and release".
 
@@ -72,14 +71,13 @@ successful secret scan alone does not prove it is safe to publish.
 ## Version and release
 
 Change every copy of the version string together. Find them with
-`grep -rn '"X.Y.Z"\|X\.Y\.Z' package.json package-lock.json src README.md landing tests`:
+`grep -rn '"X.Y.Z"\|X\.Y\.Z' package.json package-lock.json src README.md tests`:
 
 - `package.json` and the two `version` fields of `package-lock.json`;
 - `src/cli.ts` (`--version` output), `src/state.ts` (the tool identity in
   each step record) and `src/lifecycle.ts` (the tool identity in `doctor`);
 - the step record assertion in `tests/e2e/core.test.mjs`;
-- `README.md`, the footer of `landing/index.html`, and the footer and clone
-  command of `landing/docs/index.html`.
+- `README.md`.
 
 The grep can also match a dependency in `package-lock.json` that has the same
 version; leave that one unchanged.

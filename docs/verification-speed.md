@@ -297,7 +297,7 @@ overhead gate, so `spyglass serve` was not built.
 Every slice starts with its failure case and its end-to-end test. Add the row
 to [failure-cases.md](failure-cases.md) first. Then write the test. Then
 write the code. When a slice changes a command, option, output field or schema,
-update `README.md`, `src/help.ts`, `skills/`, `landing/docs/index.html` and
+update `README.md`, `src/help.ts`, `skills/` and
 `CHANGELOG.md` as required by [agent_docs/delivery.md](../agent_docs/delivery.md).
 
 ### Slice 0: Tier 1 & Tier 2 benchmark harness (`bench/`)

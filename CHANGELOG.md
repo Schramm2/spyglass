@@ -6,6 +6,16 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Removed
+
+- The unlaunched marketing site and HTML manual in `landing/`. `README.md`
+  and `docs/quickstart.md` are the manual until a new site is built.
+
+### Changed
+
+- New brand: sea-black, chart-white and bronze colours, Gambarino and
+  General Sans type, and engraved README, logo and social images.
+
 ### Added
 
 - Every report retains a checksummed Markdown review summary with source
