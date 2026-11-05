@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="docs/assets/hero.png" alt="Spyglass. Verify code changes with real tools, and keep the evidence." width="100%">
+  <img src="docs/assets/hero.png" alt="Spyglass, a brass spyglass over a sea chart. Verify code changes with real tools, and keep the evidence." width="100%">
 </h1>
 
 <p align="center">
@@ -17,7 +17,7 @@ cleanup, so another agent or person can inspect the result later without the
 original chat or shell.
 
 <p align="center">
-  <img src="docs/assets/how-it-works.png" alt="One run: a code change, verified with real tools (browser, HTTP, database and checks), gives evidence (screenshots, logs, rows and checksums), and the evidence goes into a report." width="100%">
+  <img src="docs/assets/how-it-works.png" alt="One run, drawn as a coastline: a browser lighthouse, an HTTP signal mast and a database hold lead by a dotted course to an open logbook of evidence that stays after cleanup." width="100%">
 </p>
 
 > [!NOTE]

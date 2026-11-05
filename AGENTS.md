@@ -15,7 +15,6 @@ and `zod`; browser, Compose and secret tools stay external.
 - `tests/e2e/` and `fixtures/demo-app/`: built-CLI checks and their real target.
 - `skills/`: source of truth for the three Spyglass skills; keep their licenses.
 - `bench/`: scripted comparisons and approved public evidence.
-- `landing/`: static marketing site and manual, separate from the offline report.
 
 ## Work boundaries
 
@@ -48,7 +47,7 @@ repository instruction source; task-specific rules stay in the documents below.
 
 - `GLOSSARY.md`: domain terms; read before naming concepts in code or prose.
 - `ARCHITECTURE.md`: module ownership, run flow and invariants; read before changing structure, commands or state ownership.
-- `FRONTEND.md`: landing, manual and report engineering; read before changing a browser-facing surface.
+- `FRONTEND.md`: offline report engineering; read before changing a browser-facing surface.
 - `DESIGN.md`: implemented visual intent and surface exceptions; read before changing appearance or UI copy.
 - `agent_docs/testing.md`: E2E setup, focused checks and failure-first changes; read before running or changing tests.
 - `agent_docs/git-workflow.md`: branch roles, PR targets and protected merges; read before Git or GitHub delivery work.
