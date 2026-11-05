@@ -31,16 +31,33 @@ Ubuntu AppArmor rule used on disposable runners.
 
 ## Tested configurations
 
-| Configuration                                                                                                            | Evidence                                                                                                                            | Limits                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ubuntu 24.04 source candidate, Node 24, `agent-browser` 0.38.2, Chromium, PostgreSQL 17 through Compose | [M3 closing CI record](../bench/results/m3/hosted/41867158951/README.md): 89 core and 25 real-surface checks passed; [M3 review](review-m3.md) records source identities and limits | Only the recorded source and tools are covered, not every Node 24 patch or a released build. M1's historical cloud overhead and first-frame failures are not resolved by this correctness run. |
-| macOS 27.0.1 arm64, Node 24.11.1, npm 11.6.2, Git 2.56.0; `agent-browser` 0.38.2, Chromium, Compose 5.5.0, PostgreSQL 17 | [M2 adoption record](adoption-m2.md) and retained 89 core plus 25 real-surface E2E outcomes                                         | Only the recorded targets and tool paths are covered. Agent trials, not human-use evidence.                                                                   |
-| Target checks on a separate runtime                                                                                      | M2's Kleur check used Node 16.20.2 while Spyglass stayed on Node 24                                                                 | Compatibility repair for an old target runner, not support for running Spyglass on Node 16.                                                                   |
+| Configuration                                                                                                            | Evidence                                                                                                                                                                            | Limits                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ubuntu 24.04 source candidate, Node 24, `agent-browser` 0.38.2, Chromium, PostgreSQL 17 through Compose                  | [M3 closing CI record](../bench/results/m3/hosted/41867158951/README.md): 89 core and 25 real-surface checks passed; [M3 review](review-m3.md) records source identities and limits | Only the recorded source and tools are covered, not every Node 24 patch or a released build. M1's historical cloud overhead and first-frame failures are not resolved by this correctness run. |
+| macOS 27.0.1 arm64, Node 24.11.1, npm 11.6.2, Git 2.56.0; `agent-browser` 0.38.2, Chromium, Compose 5.5.0, PostgreSQL 17 | [M2 adoption record](adoption-m2.md) and retained 89 core plus 25 real-surface E2E outcomes                                                                                         | Only the recorded targets and tool paths are covered. Agent trials, not human-use evidence.                                                                                                    |
+| Target checks on a separate runtime                                                                                      | M2's Kleur check used Node 16.20.2 while Spyglass stayed on Node 24                                                                                                                 | Compatibility repair for an old target runner, not support for running Spyglass on Node 16.                                                                                                    |
 
 Windows, other architectures, other Node majors, alternative browser tools
 and alternative container engines have no M2 acceptance evidence. Treat them
 as unverified, not supported by inference. Native desktop, mobile and TUI
 drivers are not included; use repository-owned checks and declare limits.
+
+## Known workflow limits
+
+The [sustained-use review](usage-review.md) records browser proof timeouts on
+some sheets and development previews. A tested browser/tool configuration
+does not prove every page can be captured. These are observed adapter gaps,
+not diagnosed causes for every failed screenshot. Preserve the failure and
+report the visual claim as blocked when no image can be inspected. Do not
+attach to another browser or widen allowed origins as a repair.
+
+Owners can retain offline reports outside removed worktrees, but CLI state
+can still point to the original evidence path. Keep the report, artifacts,
+producing scripts and a checksum manifest together before removing a
+worktree. Do not assume a successful `status` means relocated evidence was
+found or validated. Direct retained-folder inspection and safer retention
+are planned in [M3.1](roadmap.md#m31-harden-the-current-workflow), not promised
+by the current CLI.
 
 ## Diagnose a setup failure
 
