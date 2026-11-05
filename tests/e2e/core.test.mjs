@@ -2198,13 +2198,24 @@ test("run evidence retains its profile, plan and tool identity for a handoff", a
       .split("\n")
       .map(JSON.parse);
     assert.equal(records[0].run, run);
-    assert.equal(records[0].tool.version, "1.4.0");
+    assert.equal(records[0].tool.version, "1.4.1");
     assert.match(records[0].profileHash, /^[a-f0-9]{64}$/);
     const doctor = assertEnvelope(
       await runCli(dir, ["--json", "doctor", "--run", run]),
       { ok: true, code: 0 },
     );
     assert.equal(doctor.data.environment.evidenceIgnored, true);
+    assert.equal(doctor.data.environment.tools.spyglass, "1.4.1");
+    const version = await runCli(dir, ["--version"]);
+    assert.equal(version.code, 0, version.stderr);
+    assert.equal(version.stdout.trim(), "1.4.1");
+    assert.equal(
+      assertEnvelope(await runCli(dir, ["--version", "--json"]), {
+        ok: true,
+        code: 0,
+      }).data.version,
+      "1.4.1",
+    );
     assert.match(doctor.data.environment.tools.node, /^v24\./);
     assert.equal(
       doctor.data.environment.tools.browser,
