@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="docs/assets/hero.png" alt="Spyglass, a brass spyglass over a sea chart. Verify code changes with real tools, and keep the evidence." width="100%">
+  <img src="https://raw.githubusercontent.com/Schramm2/spyglass/main/docs/assets/hero.png" alt="Spyglass, a brass spyglass over a sea chart. Verify code changes with real tools, and keep the evidence." width="100%">
 </h1>
 
 <p align="center">
@@ -17,7 +17,7 @@ cleanup, so another agent or person can inspect the result later without the
 original chat or shell.
 
 <p align="center">
-  <img src="docs/assets/how-it-works.png" alt="One run, drawn as a coastline: a browser lighthouse, an HTTP signal mast and a database hold lead by a dotted course to an open logbook of evidence that stays after cleanup." width="100%">
+  <img src="https://raw.githubusercontent.com/Schramm2/spyglass/main/docs/assets/how-it-works.png" alt="One run, drawn as a coastline: a browser lighthouse, an HTTP signal mast and a database hold lead by a dotted course to an open logbook of evidence that stays after cleanup." width="100%">
 </p>
 
 > [!NOTE]
@@ -62,35 +62,44 @@ These tools are necessary only for some surfaces:
 | A PostgreSQL database                                                 | Database reads (`db`). The driver is included.                                        |
 
 Spyglass does not install tools, fetch secrets or start your app during `init`.
-See [platform and external-tool support](docs/support.md) for tested
+See [platform and external-tool support](https://github.com/Schramm2/spyglass/blob/main/docs/support.md) for tested
 configurations and unverified platforms.
 
 ## Installation
 
-Spyglass is not on npm yet. Install it from source:
+The public npm package is `@mattschramm/spyglass`; the command is `spyglass`.
+After the first npm release is approved:
 
 ```sh
-git clone --branch v1.4.0 https://github.com/Schramm2/spyglass.git
-cd spyglass
-npm ci
-npm run build
-npm link
+npm install --global @mattschramm/spyglass
 spyglass --version
 ```
 
+For a fixed version without a global installation:
+
+```sh
+npm exec --yes --package=@mattschramm/spyglass@VERSION -- spyglass --version
+```
+
+Replace `VERSION` with an approved published version. Do not use `npm install
+spyglass` or `npx spyglass`: the unscoped name is a different package.
+Until the first registry approval, use a source checkout pinned to an approved
+release tag: `npm ci && npm run build && npm link`.
+
 For an isolated prefix, a local archive, upgrades and rollback, see
-[installation and version selection](docs/adoption.md#install-and-keep-a-version).
+[installation and version selection](https://github.com/Schramm2/spyglass/blob/main/docs/adoption.md#install-and-keep-a-version).
 Local `npm pack` builds the CLI and includes only the runtime, schemas and
 public guidance. It excludes local plans, run evidence and unrelated files.
-This does not authorize npm publication.
+Installation does not build source, download Chromium, fetch secrets or start
+a target. Maintainers use the [npm publication procedure](https://github.com/Schramm2/spyglass/blob/main/docs/npm-publication.md).
 
 ## Quick start
 
-The [terminal quickstart](docs/quickstart.md) runs a local demo app. It records
+The [terminal quickstart](https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md) runs a local demo app. It records
 a deliberate failure and a passing check, and keeps the report after cleanup.
 It takes approximately five minutes and uses no paid services.
 
-For your own repository, use the complete [adoption recipes](docs/adoption.md):
+For your own repository, use the complete [adoption recipes](https://github.com/Schramm2/spyglass/blob/main/docs/adoption.md):
 an existing suite or CLI, an isolated web app, or a repository-owned
 installation or library host. Each recipe covers a plan, intended failure,
 restored pass, cleanup and report reopening.
@@ -128,7 +137,7 @@ and start a new run.
 
 ## Review and CI
 
-Use the [GitHub Actions recipe](docs/ci.md) to retain reports on success and
+Use the [GitHub Actions recipe](https://github.com/Schramm2/spyglass/blob/main/docs/ci.md) to retain reports on success and
 failure and review them without the original conversation. `report` writes a
 checksummed Markdown summary at `data.reviewPath`, alongside the offline HTML
 at `data.reportPath` and JSON summary. `data.report.review` names the Markdown
@@ -291,7 +300,7 @@ modification time, change time, inode or mode changed since the last full check,
 and every new file. `data.sourceCheck` counts the files that they read again.
 `doctor` and `report` hash every file. `doctor` also runs its independent probes
 at the same time. `bench/overhead.mjs` measures the time that Spyglass adds to a
-browser command; see [browser-benchmark.md](docs/browser-benchmark.md).
+browser command; see [browser-benchmark.md](https://github.com/Schramm2/spyglass/blob/main/docs/browser-benchmark.md).
 
 ### Link steps to claims
 
@@ -386,10 +395,10 @@ fields before you run `up`. The `init` output includes `setup.reviewFields`,
 `setup.prerequisites`, `setup.commands` and `setup.notes`. These name the
 plan, a discovered check, result validation, cleanup and report reopening.
 Replace `CLAIM_ID` with a claim from your plan; write observations with
-`result set` after you read the evidence. See the [example profile](examples/demo.profile.json)
-and the [example plan](examples/demo.plan.json).
+`result set` after you read the evidence. See the [example profile](https://github.com/Schramm2/spyglass/blob/main/examples/demo.profile.json)
+and the [example plan](https://github.com/Schramm2/spyglass/blob/main/examples/demo.plan.json).
 
-The JSON schemas are in [`schemas/`](schemas). You can also print them:
+The JSON schemas are in [`schemas/`](https://github.com/Schramm2/spyglass/tree/main/schemas). You can also print them:
 
 ```sh
 spyglass schema profile
@@ -429,14 +438,14 @@ contain private data. Examine the page state before you take one.
 
 ## Agent skills
 
-The [`skills/`](skills) directory holds the agent skills for Spyglass. They
+The [`skills/`](https://github.com/Schramm2/spyglass/tree/main/skills) directory holds the agent skills for Spyglass. They
 use the [Agent Skills](https://agentskills.io) format.
 
 | Skill                                                                        | Purpose                                         |
 | ---------------------------------------------------------------------------- | ----------------------------------------------- |
-| [`spyglass`](skills/spyglass/SKILL.md)                                       | Run a verification with Spyglass.               |
-| [`create-verification-skill`](skills/create-verification-skill/SKILL.md)     | Create a repository's own `verify-<app>` skill. |
-| [`maintain-verification-skill`](skills/maintain-verification-skill/SKILL.md) | Keep that skill current as the app changes.     |
+| [`spyglass`](https://github.com/Schramm2/spyglass/blob/main/skills/spyglass/SKILL.md)                                       | Run a verification with Spyglass.               |
+| [`create-verification-skill`](https://github.com/Schramm2/spyglass/blob/main/skills/create-verification-skill/SKILL.md)     | Create a repository's own `verify-<app>` skill. |
+| [`maintain-verification-skill`](https://github.com/Schramm2/spyglass/blob/main/skills/maintain-verification-skill/SKILL.md) | Keep that skill current as the app changes.     |
 
 Copy a skill folder into the skills directory of your agent harness, for
 example `.claude/skills/` or `.agents/skills/`.
@@ -455,8 +464,8 @@ example `.claude/skills/` or `.agents/skills/`.
   (default: 1 hour). The next `ui` command reports `BROWSER_EXPIRED`, and a
   seat must sign in again. Run `down` when your checks are complete.
 
-See [failure cases](docs/failure-cases.md) for the failures that the CLI must
-detect, and [browser overhead](docs/browser-benchmark.md) for the measured cost
+See [failure cases](https://github.com/Schramm2/spyglass/blob/main/docs/failure-cases.md) for the failures that the CLI must
+detect, and [browser overhead](https://github.com/Schramm2/spyglass/blob/main/docs/browser-benchmark.md) for the measured cost
 of browser commands.
 
 ## Development
@@ -473,30 +482,30 @@ The end-to-end tests run the built CLI in temporary Git repositories. They
 need `agent-browser` on your `PATH`. The surface tests also need its Chromium
 and Docker. CI runs both suites on pull requests; its retained test output and
 offline report artifacts let a reviewer inspect what ran after cleanup.
-See the [CI guide](agent_docs/ci.md) for the evidence boundary.
+See the [CI guide](https://github.com/Schramm2/spyglass/blob/main/agent_docs/ci.md) for the evidence boundary.
 
 Development uses Git Flow: `dev` is the default integration branch; `main`
 receives releases and urgent hotfixes. Ordinary changes use a branch from
 `dev` and a pull request back to `dev`. See the
-[Git workflow](agent_docs/git-workflow.md) for protected gates and release
+[Git workflow](https://github.com/Schramm2/spyglass/blob/main/agent_docs/git-workflow.md) for protected gates and release
 back-merges.
 
 ## Roadmap
 
-See the [product roadmap](docs/roadmap.md) for priorities, completion checks
+See the [product roadmap](https://github.com/Schramm2/spyglass/blob/main/docs/roadmap.md) for priorities, completion checks
 and the next development task. The first operator comparison and its
-[API read-after-write repair](docs/operator-comparison-m1.2.md) are complete,
-with limits. [First adoption](docs/adoption-m2.md) now has retained agent
+[API read-after-write repair](https://github.com/Schramm2/spyglass/blob/main/docs/operator-comparison-m1.2.md) are complete,
+with limits. [First adoption](https://github.com/Schramm2/spyglass/blob/main/docs/adoption-m2.md) now has retained agent
 trials, complete recipes and observed setup repairs. Human trials are not
 planned or required for delivery; the current target is more effective agent
 verification. The next milestone is review and CI support.
 
 ## Contributing
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you
-open a pull request. This project follows a [code of conduct](CODE_OF_CONDUCT.md).
+Contributions are welcome. Read [CONTRIBUTING.md](https://github.com/Schramm2/spyglass/blob/main/CONTRIBUTING.md) before you
+open a pull request. This project follows a [code of conduct](https://github.com/Schramm2/spyglass/blob/main/CODE_OF_CONDUCT.md).
 
-To report a security vulnerability, follow [SECURITY.md](SECURITY.md). Do not
+To report a security vulnerability, follow [SECURITY.md](https://github.com/Schramm2/spyglass/blob/main/SECURITY.md). Do not
 open a public issue.
 
 ## License

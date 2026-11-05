@@ -50,6 +50,17 @@ verification failures must still fail CI. The aggregate requires both entries.
 Use [the public CI recipe](../docs/ci.md) for adaptation, download and review.
 No report is promised before run allocation, or after runner loss/cancellation.
 
+## npm publication
+
+`.github/workflows/publish.yml` is separate from ordinary CI. It runs only by
+manual dispatch on `main`, checks an approved tagged release merge and passing
+exact-source main CI, then installs and verifies one archive. A protected `npm`
+environment permits OIDC staging of that exact archive. It does not approve the
+stage. The archive, manifest and package-check report have 14-day retention.
+Server-side environment protection and npm trusted-publisher settings must be
+configured before use; see [the publication procedure](../docs/npm-publication.md).
+A passing local dry run does not prove OIDC or registry publication.
+
 ## Ubuntu browser setup
 
 Ubuntu 24.04 restricts unprivileged user namespaces for downloaded Chromium

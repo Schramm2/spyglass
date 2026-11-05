@@ -4,6 +4,15 @@ This file records the notable changes to Spyglass. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Public npm package configuration for `@mattschramm/spyglass`, an isolated
+  archive-install E2E gate and a protected, tokenless staged-publication
+  workflow. Registry approval stays with the maintainer; this change does
+  not itself publish a version.
+
 ## [1.4.0] - 2026-11-05
 
 ### Removed
