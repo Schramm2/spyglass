@@ -37,6 +37,9 @@ the build command empty.
   editing them by hand.
 - The star count comes from the GitHub API at page load and stays hidden when
   the request fails or the count is zero.
+- Documentation links name the `dev` branch, which is the default branch and
+  holds the current guides. Do not link to `blob/main`; files that exist only
+  on `dev` return 404 there.
 - Motion uses transform and opacity only. `prefers-reduced-motion: reduce`
   removes it without hiding content. Scroll-linked reveals run only in
   browsers that support CSS scroll-driven animations.
