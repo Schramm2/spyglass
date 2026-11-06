@@ -4,7 +4,7 @@
 
 This is the historical research that preceded the first npm release. Its
 original scope and repository-state findings below are not current installation
-instructions. Use [the README](../README.md#installation) to install Spyglass
+instructions. Use [the README](../README.md#install) to install Spyglass
 and [the publication procedure](npm-publication.md) for future releases.
 
 The maintainer confirmed the npm account `mattschramm`, not `schramm2`.
