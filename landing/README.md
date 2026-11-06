@@ -9,7 +9,7 @@ part of the npm package.
 | `index.html`  | All copy and markup. The page reads correctly without JavaScript.     |
 | `styles.css`  | Tokens, the tile board layout, the phone layout and motion.           |
 | `main.js`     | Copy buttons, the live GitHub star count and the "Break a run" panel. |
-| `favicon.svg` | The tab icon.                                                         |
+| `favicon.png` | The generated tab icon, saved at 64 × 64 pixels.                      |
 
 ## Preview
 

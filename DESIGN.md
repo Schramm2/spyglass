@@ -52,8 +52,9 @@ components:
 
 ## Overview
 
-Spyglass makes verification inspectable. The README carries the brand: large
-serif type and engraved imagery. The offline report leads with the result and
+Spyglass makes verification inspectable. The README hero shares the landing
+page tile board, large sans-serif type and lime accent. The separate wordmark
+keeps its serif type. The offline report leads with the result and
 the proof a reviewer needs. Keep those jobs distinct: brand scale does not
 belong inside an operational report. The HTML manual was removed before
 launch. The landing page in `landing/` is a deliberate exception to the brand
@@ -70,15 +71,15 @@ a shared visual decision changes. `FRONTEND.md` owns rendering, state and verifi
 
 | Surface        | Reader's job                                    | Hierarchy and exception                                                                                 |
 | -------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| README         | Understand the tool and start the quickstart    | Large serif wordmark, engraved chart imagery, then plain Markdown                                       |
+| README         | Understand the tool and start the quickstart    | Serif wordmark, tile-board hero, then plain Markdown                                       |
 | Offline report | Decide what was proved                          | Result, claims, source, findings, attempts, artifacts and cleanup; dense system-font layout             |
 | Demo app       | Supply a real verification target               | Preserve its fixture appearance unless a check requires a deliberate change; do not apply site branding |
 | Landing page   | Understand the tool, try a run, star or install | Its own tile-board system in `landing/styles.css`, not the brand tokens; see "Landing page"             |
 
 ### Landing page
 
-The landing page in `landing/` uses its own visual system, chosen to differ
-from the README brand: a board of flat tiles on 8px gaps, a soot ground
+The landing page in `landing/` shares its visual system with the README hero:
+a board of flat tiles on 8px gaps, a soot ground
 (`#0f0f0f`), white and grey fields, and one lime action colour (`#dafa9c`).
 Inter Tight is the only typeface; monospace appears only in commands and
 product fragments. Corners are square, and the page has no gradients, glows,
@@ -126,9 +127,14 @@ Keep operational report spacing compact enough to compare claims and steps.
 
 ## Imagery
 
-README and social images are one-ink copperplate engravings of the ship's
-watch on the sea-black ground, with bronze only on the instrument. Codex image
-generation drew the artwork without text; the type is set afterwards in the
+The README hero uses the landing page tile board: soot, white, grey and lime,
+with square corners and large sans-serif text. The generated favicon is a
+white and lime geometric S on soot. Generation prompts are in
+`docs/assets/imagegen-prompts.md`.
+
+The other brand and social images are one-ink copperplate engravings of the
+ship's watch on the sea-black ground, with bronze only on the instrument.
+Codex image generation drew the artwork without text; the type is set afterwards in the
 brand faces, so letters stay exact. Do not add gradients, glows or 3D renders.
 
 ## Elevation

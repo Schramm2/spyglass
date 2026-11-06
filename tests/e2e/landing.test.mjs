@@ -27,7 +27,7 @@ test(
         "/": "index.html",
         "/styles.css": "styles.css",
         "/main.js": "main.js",
-        "/favicon.svg": "favicon.svg",
+        "/favicon.png": "favicon.png",
       };
       if (!files[name]) {
         response.writeHead(404).end();
@@ -37,7 +37,7 @@ test(
         "/": "text/html",
         "/styles.css": "text/css",
         "/main.js": "text/javascript",
-        "/favicon.svg": "image/svg+xml",
+        "/favicon.png": "image/png",
       };
       response.setHeader("Content-Type", types[name]);
       response.end(
