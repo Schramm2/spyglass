@@ -1095,6 +1095,16 @@ code,
 .contact-note {
   color: #2b2b2b;
 }
+.contact-note a {
+  display: inline;
+  padding: 0;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.contact-note a:hover {
+  color: var(--bg);
+}
 .foot-end {
   display: flex;
   justify-content: space-between;
