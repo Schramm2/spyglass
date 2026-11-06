@@ -4,6 +4,10 @@ The public landing page for Spyglass: one static HTML page with a stylesheet
 and a small script. It has no build step, package or framework, and it is not
 part of the npm package.
 
+The live website is [spyglass.mattschramm.com](https://spyglass.mattschramm.com).
+The repository website setting and the `homepage` in `package.json` use this
+address.
+
 | File          | Contents                                                              |
 | ------------- | --------------------------------------------------------------------- |
 | `index.html`  | All copy and markup. The page reads correctly without JavaScript.     |
