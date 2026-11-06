@@ -9,7 +9,7 @@ in `package.json` is not proof that every version and platform works. Use
 | Component            | Requirement                                       | Boundary                                                                                                                     |
 | -------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Spyglass runtime     | Node.js 24 or later; Git on `PATH`                | ESM CLI; no interactive prompts. The target check can use a different runtime.                                               |
-| Package installation | npm; exact `@mattschramm/spyglass` version after registry approval, source or local archive before it | The command is `spyglass`. Installation needs no build scripts or browser downloads. |
+| Package installation | npm; an exact `@mattschramm/spyglass` version from the public registry | The command is `spyglass`. Installation needs no build scripts or browser downloads. |
 | Browser              | `agent-browser` 0.38.2 and its installed Chromium | Required at `up` when the profile declares `web`; Chromium is required for `ui`. Other browser-tool versions are unverified. |
 | HTTP                 | Node's fetch                                      | No external HTTP client; redirects are not followed.                                                                         |
 | Database             | PostgreSQL; bundled `pg` driver                   | Read-only transactions, one prepared statement; use a restricted role. Privileged functions remain a limit.                  |

@@ -12,8 +12,7 @@ its instructions before you execute them.
 
 ## Install and keep a version
 
-After the first npm release is approved, install an exact public version:
-
+Install an exact public version:
 ```sh
 npm install --global @mattschramm/spyglass@VERSION
 # Or keep it in the target repository's development dependencies:
@@ -21,10 +20,11 @@ npm install --save-dev --save-exact @mattschramm/spyglass@VERSION
 npm exec -- spyglass --version
 ```
 
-Replace `VERSION` with an approved published version. Until that approval,
-use a source checkout pinned to an approved release tag. See the
-[README](https://github.com/Schramm2/spyglass#installation). Do not install from
-a moving branch when repeatability matters. Record:
+Replace `VERSION` with an approved published version. For a version that is
+not on the registry, use a source checkout pinned to an approved release tag.
+See the
+[README](https://github.com/Schramm2/spyglass/blob/main/README.md#install). Do
+not install from a moving branch when repeatability matters. Record:
 
 ```sh
 node --version

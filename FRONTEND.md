@@ -1,8 +1,8 @@
 # Browser-facing surfaces
 
-Read this before changing the offline report. The marketing site and HTML
-manual were removed before launch; `README.md` and `docs/quickstart.md` are
-the manual until a new site is built.
+Read this before changing the offline report or the landing page. The HTML
+manual was removed before launch; `README.md` and `docs/quickstart.md` are the
+manual.
 `DESIGN.md` owns their visual intent; `ARCHITECTURE.md` owns the CLI around
 them. There is no frontend framework, package build or client-side router.
 These surfaces use HTML, CSS and browser JavaScript.
@@ -13,9 +13,12 @@ These surfaces use HTML, CSS and browser JavaScript.
 | -------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
 | Offline report | `renderHtml` in `src/report.ts` | CLI renders a self-contained page from the run, plan, result and checked artifacts |
 | Demo target    | `fixtures/demo-app/server.mjs`  | Fixture HTTP app, not the Spyglass product interface                               |
+| Landing page   | `landing/index.html`            | Static page, stylesheet and script; no build step and not in the npm package       |
 
 The report cannot depend on web fonts, a network request or a development
-server.
+server. The landing page may load its web font and the GitHub star count, but
+it must read correctly without JavaScript, with the request failed and with
+reduced motion. `landing/README.md` lists its content rules.
 
 ## State and data ownership
 

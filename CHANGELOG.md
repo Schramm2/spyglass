@@ -6,6 +6,25 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A static landing page in `landing/` with an interactive "Break a run" panel
+  that shows the CLI's own refusal messages. It is not part of the npm package.
+
+### Fixed
+
+- The landing page links to the documentation on `dev`, the default branch,
+  so its footer and hero links no longer reach missing files on `main`. The
+  security note in the footer links to `SECURITY.md`.
+
+### Changed
+
+- `README.md` is a short overview that links to focused guides. The workflow,
+  command and flag reference, configuration, agent skills and limitations moved
+  to `docs/usage.md`, `docs/commands.md`, `docs/configuration.md`,
+  `docs/agent-skills.md` and `docs/limitations.md`. Installation and the
+  requirements overview stay in the README.
+
 ## [1.4.1] - 2026-11-05
 
 ### Added
