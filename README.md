@@ -8,6 +8,12 @@
 <p align="center"><strong>Verify code changes with real tools. Keep the proof.</strong></p>
 
 <p align="center">
+  <a href="https://spyglass.mattschramm.com">Website</a> ·
+  <a href="#documentation">Documentation</a> ·
+  <a href="https://www.npmjs.com/package/@mattschramm/spyglass">npm</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Schramm2/spyglass/actions/workflows/ci.yml"><img src="https://github.com/Schramm2/spyglass/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/@mattschramm/spyglass"><img src="https://img.shields.io/npm/v/@mattschramm/spyglass" alt="npm version"></a>
   <a href="https://github.com/Schramm2/spyglass/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
@@ -53,7 +59,7 @@ a global installation, use
 The [install and keep a version][adopt] section covers an isolated prefix, a
 source checkout, upgrades and rollback.
 
-Run the [terminal quickstart][quickstart] to try the workflow on a local demo
+Run the [terminal quickstart][qs] to try the workflow on a local demo
 app first. It takes approximately five minutes, records a deliberate failure
 and a passing check, uses no paid services and keeps the report after cleanup.
 
@@ -95,6 +101,7 @@ completed, the artifacts exist, the source is current and the cleanup is done.
 
 | Guide                       | Contents                                                     |
 | --------------------------- | ------------------------------------------------------------ |
+| [Website][website]         | Product overview, example evidence and an interactive demo. |
 | [Terminal quickstart][qs]   | Try the workflow on a disposable demo app.                   |
 | [Adoption recipes][adopt]   | Install, plan and verify a real repository.                  |
 | [Run a verification][usage] | Start, prove, record, finish and review a run.               |
@@ -157,6 +164,7 @@ adapted from [`cursor/plugins`](https://github.com/cursor/plugins)
 (`pstack/skills`, commit `1dcc2ba`) by Lauren Tan, under the MIT license. Each
 skill keeps its original `LICENSE` file.
 
+[website]: https://spyglass.mattschramm.com
 [qs]: https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md
 [adopt]: https://github.com/Schramm2/spyglass/blob/main/docs/adoption.md
 [usage]: https://github.com/Schramm2/spyglass/blob/main/docs/usage.md
