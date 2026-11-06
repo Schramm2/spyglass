@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Schramm2/spyglass/main/docs/assets/hero.png" alt="One run, drawn as a coastline: a browser lighthouse, an HTTP signal mast and a database hold lead by a dotted course to an open logbook of evidence that stays after cleanup." width="100%">
+  <img src="https://raw.githubusercontent.com/Schramm2/spyglass/main/docs/assets/hero.png" alt="Spyglass: verify code changes with real tools. Keep the proof after cleanup. A tile board shows Browser, HTTP, PostgreSQL and Your own checks." width="100%">
 </p>
 
 Spyglass is a command-line tool for coding agents and the people who review
