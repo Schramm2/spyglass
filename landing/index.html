@@ -30,7 +30,7 @@
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
-    <main id="main">
+    <main id="main" tabindex="-1">
       <!-- Hero: name band and rails -->
       <section id="top" class="hero" aria-labelledby="hero-title">
         <div class="band ld l1">
@@ -75,37 +75,40 @@
           <span class="arr" aria-hidden="true">↗</span>
         </a>
 
-        <div class="rail-l">
-          <div class="tile tile-folder ld l4">
-            <div class="folder-path">.spyglass/runs/landing-demo</div>
-            <div class="code folder-list">
-              <span>log.jsonl</span>
-              <span>result.json</span>
-              <span>launch.log</span>
-              <span>app-state.json</span>
-              <span class="is-bad"
-                >13d5ab0f-6a3-1-<wbr />deliberate-failure-<wbr />output.txt</span
+        <div class="center ld l4">
+          <div class="statement">
+            <p class="s-lead">
+              An open-source CLI that verifies code changes with real tools and
+              keeps the proof after cleanup.
+            </p>
+            <a
+              class="btn btn-accent"
+              href="https://github.com/Schramm2/spyglass/blob/dev/docs/quickstart.md"
+            >
+              Open the quickstart <span aria-hidden="true">→</span>
+            </a>
+            <p class="install-requirements">
+              Node.js 24 or later and Git. Browser checks also need
+              agent-browser and Chromium.
+            </p>
+            <div class="install">
+              <code tabindex="0"
+                >npm install --global @mattschramm/spyglass</code
               >
-              <span class="is-good"
-                >d1eb89c8-c97-1-<wbr />health-<wbr />output.txt</span
+              <button
+                class="copy"
+                type="button"
+                data-copy="npm install --global @mattschramm/spyglass"
+                aria-label="Copy install command"
+                hidden
               >
-              <span>9700f20a-506-1-<wbr />index.html</span>
+                Copy
+              </button>
+              <span class="copy-status" role="status"></span>
             </div>
           </div>
-          <div class="tile tile-facts ld l5">
-            <ul>
-              <li>Version 1.4.1</li>
-              <li>MIT licence</li>
-              <li>Node.js 24 or later</li>
-              <li>Two runtime dependencies</li>
-              <li>Never prompts</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="center ld l4">
           <div
-            class="report pan"
+            class="report"
             role="img"
             aria-label="An excerpt of a Spyglass offline report for the demo run: incomplete, one failed and one passed attempt."
           >
@@ -160,22 +163,31 @@
               </div>
             </div>
           </div>
-          <div class="statement">
-            <p class="s-lead">
-              An open-source CLI that verifies code changes with real tools and
-              keeps the proof after cleanup.
-            </p>
-            <div class="install">
-              <code>npm install --global @mattschramm/spyglass</code>
-              <button
-                class="copy"
-                type="button"
-                data-copy="npm install --global @mattschramm/spyglass"
-                aria-live="polite"
+        </div>
+
+        <div class="rail-l">
+          <div class="tile tile-folder ld l4">
+            <div class="folder-path">.spyglass/runs/landing-demo</div>
+            <div class="code folder-list">
+              <span>log.jsonl</span><span>result.json</span
+              ><span>launch.log</span><span>app-state.json</span>
+              <span class="is-bad"
+                >13d5ab0f-6a3-1-<wbr />deliberate-failure-<wbr />output.txt</span
               >
-                Copy
-              </button>
+              <span class="is-good"
+                >d1eb89c8-c97-1-<wbr />health-<wbr />output.txt</span
+              >
+              <span>9700f20a-506-1-<wbr />index.html</span>
             </div>
+          </div>
+          <div class="tile tile-facts ld l5">
+            <ul>
+              <li>Version 1.4.1</li>
+              <li>MIT licence</li>
+              <li>Node.js 24 or later</li>
+              <li>Two runtime dependencies</li>
+              <li>Never prompts</li>
+            </ul>
           </div>
         </div>
 
@@ -184,13 +196,6 @@
           <div class="ld l6 rr-2">Real HTTP calls</div>
           <div class="ld l6 rr-3">Real PostgreSQL reads</div>
           <div class="ld l7 rr-4">Your own checks</div>
-          <a
-            class="ld l8 rr-go"
-            href="https://github.com/Schramm2/spyglass/blob/main/docs/quickstart.md"
-          >
-            <span>Run the five-minute quickstart</span>
-            <span aria-hidden="true" class="rr-arrow">→</span>
-          </a>
         </div>
       </section>
 
@@ -199,54 +204,16 @@
         <div class="show-head">
           <h2 id="break-title" class="rv">Break a run.</h2>
           <p class="s-body muted rv rv1">
-            Turn on a fault and see what Spyglass refuses. The messages are the
-            CLI's own; the run is the quickstart demo.
+            Explore a simulation of the quickstart run. Record a result and
+            finish cleanup, then turn on a fault to see what changes.
           </p>
         </div>
+        <p class="muted show-note" data-sim-note>
+          Local simulation only: no commands run and no files change. Enable
+          JavaScript to use the controls.
+        </p>
         <div class="panel rv rv1" data-sim>
-          <div class="out">
-            <div
-              class="term"
-              role="log"
-              aria-live="polite"
-              aria-label="Command output"
-              data-term
-            >
-              <div class="tl prompt">
-                $ spyglass up --run landing-demo --plan verification-plan.json
-              </div>
-              <div class="tl plain">state: ready</div>
-              <div class="tl plain">sourceChanges: none</div>
-              <div class="tl prompt gap">
-                $ spyglass check health --run landing-demo
-              </div>
-              <div class="tl plain">attempt: d1eb89c8-c97</div>
-              <div class="tl ok">overall: true</div>
-            </div>
-            <div class="verdict" aria-live="polite">
-              <div class="verdict-meta">
-                <span class="muted">spyglass report</span>
-                <span class="muted">exit status <span data-exit>1</span></span>
-              </div>
-              <div class="vword" data-verdict>Incomplete</div>
-              <div data-reasons>
-                <div class="reason">
-                  <span class="mk" aria-hidden="true"></span
-                  ><span>No result has been recorded for this run.</span>
-                </div>
-                <div class="reason">
-                  <span class="mk" aria-hidden="true"></span
-                  ><span>Cleanup has not run; the demo app is still up.</span>
-                </div>
-              </div>
-            </div>
-            <a
-              class="panel-link"
-              href="https://github.com/Schramm2/spyglass/blob/main/docs/failure-cases.md"
-              >Read every failure case it must detect →</a
-            >
-          </div>
-          <div class="ctrls">
+          <div class="ctrls" role="group" aria-label="Simulation controls">
             <div class="ctrl-group">Faults</div>
             <button
               type="button"
@@ -326,14 +293,55 @@
               <span>Cleanup done</span
               ><span class="knob" aria-hidden="true"></span>
             </button>
+            <p class="sim-status" role="status" data-sim-status>
+              Incomplete: result and cleanup are missing.
+            </p>
             <button type="button" class="sw sw-reset" data-reset disabled>
               <span>Reset the run</span><span aria-hidden="true">↺</span>
             </button>
           </div>
+          <div
+            class="out"
+            id="simulation-output"
+            role="region"
+            aria-label="Simulated report and command output"
+          >
+            <div class="verdict">
+              <div class="verdict-meta">
+                <span class="muted">spyglass report</span
+                ><span class="muted">exit status <span data-exit>1</span></span>
+              </div>
+              <div class="vword" data-verdict>Incomplete</div>
+              <div data-reasons>
+                <div class="reason">
+                  <span class="mk" aria-hidden="true"></span
+                  ><span>No result has been recorded for this run.</span>
+                </div>
+                <div class="reason">
+                  <span class="mk" aria-hidden="true"></span
+                  ><span>Cleanup has not run; the demo app is still up.</span>
+                </div>
+              </div>
+            </div>
+            <div class="term" data-term>
+              <div class="tl prompt">
+                $ spyglass up --run landing-demo --plan verification-plan.json
+              </div>
+              <div class="tl plain">state: ready</div>
+              <div class="tl plain">sourceChanges: none</div>
+              <div class="tl prompt gap">
+                $ spyglass check health --run landing-demo
+              </div>
+              <div class="tl plain">attempt: d1eb89c8-c97</div>
+              <div class="tl ok">overall: true</div>
+            </div>
+            <a
+              class="panel-link"
+              href="https://github.com/Schramm2/spyglass/blob/main/docs/failure-cases.md"
+              >Read every failure case it must detect →</a
+            >
+          </div>
         </div>
-        <p class="muted show-foot">
-          Try it: record a result and finish cleanup, then turn one fault on.
-        </p>
       </section>
 
       <!-- How it works: one card, four fields -->
@@ -413,16 +421,13 @@
         </div>
       </section>
 
-      <!-- Signature: marquee -->
+      <!-- Static signature: no continuous motion -->
       <div class="marquee" aria-hidden="true">
         <div class="mq-track">
           <span class="mq-item"
-            >Verify with real tools.
-            <span class="lime">Keep the proof.</span></span
-          >
-          <span class="mq-item"
-            >Verify with real tools.
-            <span class="lime">Keep the proof.</span></span
+            >Verify with real tools.<br /><span class="lime"
+              >Keep the proof.</span
+            ></span
           >
         </div>
       </div>
@@ -479,7 +484,8 @@
               <h3>Read-only database</h3>
               <p class="s-small muted">
                 PostgreSQL queries run in a read-only transaction. A write is
-                refused before it is sent.
+                refused before it is sent. Use a restricted role: read-only mode
+                is not a sandbox for privileged functions.
               </p>
             </div>
             <div class="frag dock-r">
@@ -515,10 +521,11 @@
           </div>
           <div class="cell rv rv1">
             <div class="txt">
-              <h3>Secrets stay out of reports</h3>
+              <h3>Secret masking, with limits</h3>
               <p class="s-small muted">
-                Credentials, cookies and authorization headers are masked in
-                reports and artifacts.
+                Known secret values and sensitive headers are masked in text
+                output. Keep secrets out of screenshots and review artifacts
+                before you share them.
               </p>
             </div>
             <div class="frag dock-l">
@@ -608,15 +615,17 @@
             records a failure, a pass and a report that outlives cleanup.
           </p>
           <div class="install on-paper">
-            <code>npm install --global @mattschramm/spyglass</code>
+            <code tabindex="0">npm install --global @mattschramm/spyglass</code>
             <button
               class="copy"
               type="button"
               data-copy="npm install --global @mattschramm/spyglass"
-              aria-live="polite"
+              aria-label="Copy install command"
+              hidden
             >
               Copy
             </button>
+            <span class="copy-status" role="status"></span>
           </div>
           <div class="cta-actions">
             <a

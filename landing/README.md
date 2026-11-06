@@ -41,5 +41,33 @@ the build command empty.
   removes it without hiding content. Scroll-linked reveals run only in
   browsers that support CSS scroll-driven animations.
 
+## Verify changes
+
+Read [the UI review](review.md) for the task, findings, decisions and limits.
+The page keeps its tile-board design. The quickstart stays beside the
+product description, report text is not covered by other content, and the
+signature does not move continuously.
+
+Run the opt-in Chromium checks from the repository root:
+
+```sh
+SPYGLASS_TEST_LANDING=1 \
+  SPYGLASS_LANDING_ARTIFACTS=.spyglass/landing-review/final \
+  node --test tests/e2e/landing.test.mjs
+```
+
+These checks need Node 24 and the installed `agent-browser` with Chromium.
+They serve the real page on an isolated loopback port and close their own
+browser and server. They retain viewport screenshots, full-page screenshots
+and layout observations at the selected artifact path. They cover copy
+completion and refusal, simulation faults and recovery, keyboard switches,
+JavaScript disabled, external requests blocked and a doubled-text check.
+They do not run the CLI surface suite or establish human usability.
+
+Keep Copy hidden until its handler is ready. A refused clipboard write must
+leave the command selected and explain manual copy. Keep simulation controls
+disabled until setup completes; its local-only notice must remain readable
+without JavaScript. Announce a concise result, not the whole transcript.
+
 `DESIGN.md` records the page's visual intent and why it differs from the
 README brand.

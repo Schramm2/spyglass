@@ -41,6 +41,7 @@ body {
   color: var(--ink);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+  overflow-wrap: anywhere;
 }
 ::selection {
   background: var(--accent);
@@ -181,6 +182,7 @@ code,
 .install {
   display: flex;
   align-items: stretch;
+  flex-wrap: wrap;
   background: var(--tile);
   max-width: 520px;
 }
@@ -191,8 +193,21 @@ code,
   font-size: 14px;
   color: var(--ink);
   user-select: all;
-  white-space: nowrap;
-  overflow-x: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.copy-status {
+  flex-basis: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.copy-status:empty {
+  display: none;
+}
+.copy:disabled {
+  cursor: wait;
 }
 .copy {
   min-width: 92px;
@@ -248,14 +263,36 @@ code,
   color: #2b4a00;
 }
 
+.btn-accent {
+  background: var(--accent);
+  color: var(--accent-ink);
+  align-self: flex-start;
+  padding-block: 14px;
+  line-height: 1.3;
+}
+.btn-accent:hover {
+  background: var(--accent-hover);
+}
+.install-requirements {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.statement :focus-visible {
+  outline-color: var(--accent);
+}
+.install.on-paper {
+  color: var(--bg);
+}
+
 /* Hero: name band and rails */
 .hero {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: 170px 64px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: var(--g);
   padding: var(--g);
-  height: max(780px, 100vh);
+  min-height: 100svh;
 }
 .band {
   grid-column: 1 / -1;
@@ -263,16 +300,15 @@ code,
   color: var(--bg);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  overflow: hidden;
+  align-items: center;
+  padding: 20px 8px;
 }
 .name {
   font-size: clamp(140px, 15.6vw, 240px);
   font-weight: 700;
   letter-spacing: -0.055em;
-  line-height: 0.74;
+  line-height: 1;
   margin: 0;
-  padding-top: 14px;
   white-space: nowrap;
 }
 .linktile {
@@ -284,6 +320,7 @@ code,
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 8px;
   transition: background-color 0.2s ease;
 }
 .linktile:hover {
@@ -292,7 +329,11 @@ code,
 .linktile-star {
   background: var(--tile);
 }
+.linktile > span {
+  min-width: 0;
+}
 .linktile .arr {
+  flex: none;
   transition: transform 0.25s ease;
 }
 .linktile:hover .arr {
@@ -300,12 +341,14 @@ code,
 }
 .inline-icon {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
 }
 
 .rail-l {
   grid-column: 1 / span 2;
+  grid-row: 3;
   display: flex;
   flex-direction: column;
   gap: var(--g);
@@ -320,6 +363,7 @@ code,
   color: var(--muted);
   margin-bottom: 8px;
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 .folder-list {
   display: flex;
@@ -355,15 +399,14 @@ code,
 
 .center {
   grid-column: 3 / span 8;
-  position: relative;
-  overflow: hidden;
+  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   background: var(--paper);
   color: var(--bg);
-  min-height: 0;
 }
 .report {
-  position: absolute;
-  inset: 0;
   padding: 28px 32px;
   font-family: var(--font-doc);
   font-size: 14px;
@@ -412,20 +455,17 @@ code,
   font-size: 13px;
 }
 .statement {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: min(640px, 72%);
   background: var(--bg);
   color: var(--ink);
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .rail-r {
   grid-column: 11 / span 2;
+  grid-row: 3;
   display: flex;
   flex-direction: column;
   gap: var(--g);
@@ -453,26 +493,6 @@ code,
 .rr-4 {
   background: var(--tile);
 }
-.rr-go {
-  background: var(--accent);
-  color: var(--accent-ink);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  font-weight: 600;
-  font-size: 17px;
-  transition: background-color 0.2s ease;
-}
-.rr-go:hover {
-  background: var(--accent-hover);
-}
-.rr-arrow {
-  font-size: 22px;
-  transition: transform 0.25s ease;
-}
-.rr-go:hover .rr-arrow {
-  transform: translateX(4px);
-}
 
 /* Showcase: break a run */
 .show-wrap {
@@ -494,18 +514,19 @@ code,
 .show-head p {
   max-width: 620px;
 }
-.show-foot {
+.show-note {
   max-width: 1040px;
-  margin: 20px auto 0;
+  margin: 0 auto 20px;
   font-size: 15px;
+  line-height: 1.5;
 }
 .panel {
   max-width: 1040px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 62fr 38fr;
+  grid-template-columns: minmax(0, 38fr) minmax(0, 62fr);
   background: var(--surface);
-  min-height: 640px;
+  min-height: 600px;
 }
 .out {
   background: #141414;
@@ -618,8 +639,16 @@ code,
 }
 .ctrls {
   padding: 20px 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+}
+.sim-status {
+  margin: 16px 20px;
+  padding: 12px;
+  border-left: 3px solid var(--accent);
+  font-size: 15px;
+  line-height: 1.5;
 }
 .ctrl-group {
   padding: 6px 20px 8px;
@@ -661,6 +690,7 @@ code,
   height: 24px;
   border-radius: 999px;
   background: var(--tile-2);
+  border: 1px solid var(--muted);
   position: relative;
   flex: none;
   transition: background-color 0.25s ease;
@@ -668,8 +698,8 @@ code,
 .knob::after {
   content: "";
   position: absolute;
-  top: 3px;
-  left: 3px;
+  top: 2px;
+  left: 2px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -695,7 +725,7 @@ code,
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .field {
-  min-height: 84svh;
+  min-height: 400px;
   padding: 28px;
   display: flex;
   flex-direction: column;
@@ -732,8 +762,9 @@ code,
   margin-top: 16px;
 }
 .card {
-  width: 260px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 320px;
+  overflow-wrap: anywhere;
   margin: auto 0 0;
   background: var(--paper);
   color: var(--bg);
@@ -754,44 +785,31 @@ code,
 }
 .card .row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
 }
 .card .k {
   color: var(--doc-muted);
 }
 
-/* Signature: marquee */
+/* Static signature */
 .marquee {
   overflow: hidden;
   padding: clamp(40px, 6vw, 96px) 0;
 }
 .mq-track {
-  display: flex;
-  width: max-content;
-  animation: marquee 38s linear infinite;
-}
-.marquee:hover .mq-track {
-  animation-play-state: paused;
+  padding: 0 24px;
 }
 .mq-item {
-  font-size: clamp(64px, 10vw, 168px);
+  font-size: clamp(32px, 8vw, 128px);
   font-weight: 600;
   letter-spacing: -0.05em;
   line-height: 1;
-  white-space: nowrap;
-  padding-right: 0.5em;
+  overflow-wrap: anywhere;
 }
 .lime {
   color: var(--accent);
-}
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
 }
 
 /* Features: staggered fragment cells */
@@ -806,7 +824,9 @@ code,
 }
 .cell {
   background: var(--surface);
-  height: 440px;
+  min-height: 400px;
+  min-width: 0;
+  gap: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -849,6 +869,7 @@ code,
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
   padding: 6px 0;
   border-bottom: 1px solid #e6e6e6;
 }
@@ -1158,14 +1179,6 @@ code,
     letter-spacing: -0.055em;
   }
 }
-@keyframes pan {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-14%);
-  }
-}
 @keyframes grow {
   from {
     transform: scaleY(0.35);
@@ -1189,11 +1202,6 @@ code,
     }
     .rv3 {
       animation-range: entry 18% entry 68%;
-    }
-    .pan {
-      animation: pan linear both;
-      animation-timeline: scroll(root);
-      animation-range: 0 100vh;
     }
     .blk {
       transform-origin: bottom;
@@ -1223,14 +1231,12 @@ code,
   }
   .center {
     grid-column: 1 / -1;
-    height: 620px;
-  }
-  .statement {
-    width: min(560px, 80%);
+    grid-row: auto;
   }
   .rail-l,
   .rail-r {
     grid-column: 1 / -1;
+    grid-row: auto;
     flex-direction: row;
   }
   .rail-l > *,
@@ -1266,11 +1272,10 @@ code,
     height: auto;
   }
   .band {
-    height: 110px;
+    min-height: 110px;
   }
   .name {
-    font-size: 26vw;
-    padding-top: 10px;
+    font-size: 25vw;
   }
   .linktile {
     grid-column: span 1;
@@ -1279,23 +1284,24 @@ code,
   }
   .center {
     grid-column: 1 / -1;
-    order: 1;
-    height: auto;
-    display: flex;
-    flex-direction: column;
     background: var(--bg);
   }
   .report {
-    position: relative;
-    inset: auto;
-    height: min(75vw, 340px);
-    overflow: hidden;
     padding: 18px;
-    font-size: 12.5px;
+    font-size: 14px;
     background: var(--paper);
   }
-  .report .hide-sm {
-    display: none;
+  .rtable {
+    table-layout: fixed;
+    overflow-wrap: anywhere;
+  }
+  .rtable td,
+  .rtable th {
+    padding-right: 6px;
+  }
+  .rtable .pill {
+    padding-inline: 6px;
+    white-space: normal;
   }
   .report-title {
     font-size: 18px;
@@ -1304,35 +1310,36 @@ code,
     grid-template-columns: 104px minmax(0, 1fr);
   }
   .statement {
-    order: -1;
-    position: static;
-    width: auto;
     padding: 20px;
     background: var(--surface);
   }
   .statement .s-lead {
     font-size: max(21px, 6vw);
   }
+  .install {
+    flex-direction: column;
+  }
+  .install code {
+    flex: auto;
+  }
+  .install .copy-status {
+    flex-basis: auto;
+  }
   .rail-l {
     grid-column: 1 / -1;
-    order: 2;
-    flex-direction: row;
+    flex-direction: column;
   }
   .rail-l > * {
-    flex: 1 1 0;
+    flex: none;
   }
   .rail-r {
     grid-column: 1 / -1;
-    order: 3;
-    flex-direction: row;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .rail-r > * {
     flex: 1 0 96px;
     min-height: 96px;
-  }
-  .rail-r > .rr-go {
-    flex: 2 0 180px;
   }
   .show-wrap {
     padding: 72px var(--g);
@@ -1350,7 +1357,7 @@ code,
     grid-template-columns: minmax(0, 1fr);
   }
   .field {
-    min-height: 64svh;
+    min-height: 0;
     padding: 20px;
   }
   .clause {
@@ -1364,16 +1371,14 @@ code,
   }
   .cell,
   .cell.rev {
+    min-height: 0;
     height: auto;
     flex-direction: column;
     gap: 12px;
   }
-  .cell:nth-child(even) .frag {
-    margin: 0 -24px 0 24px;
-  }
-  .cell:nth-child(odd) .frag {
-    margin: 0 24px 0 -24px;
-    padding-left: 44px;
+  .cell .frag {
+    margin: 0 16px 16px;
+    padding: 18px;
   }
   .marks {
     grid-template-columns: repeat(2, minmax(0, 1fr));
