@@ -27,6 +27,7 @@ engineering) and `DESIGN.md` (visual intent).
 | `tests/e2e/`, `fixtures/demo-app/` | Public CLI checks and their disposable target                                    |
 | `skills/`, `examples/`             | Operator workflows and public profile/plan examples                              |
 | `bench/`                           | Performance studies and sanitized retained public evidence                       |
+| `landing/`                         | Static public landing page; not part of the npm package                          |
 | `docs/`, `agent_docs/`             | Public contracts and focused contributor/agent procedures                        |
 | `.github/`                         | CI, dependency updates and contribution entry points                             |
 

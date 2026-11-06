@@ -13,6 +13,7 @@ and `zod`; browser, Compose and secret tools stay external.
 - `src/`: CLI, adapters, run state and offline report.
 - `schemas/`: committed JSON Schemas generated from `src/schema.ts`.
 - `tests/e2e/` and `fixtures/demo-app/`: built-CLI checks and their real target.
+- `landing/`: the static public landing page; no build step.
 - `skills/`: source of truth for the three Spyglass skills; keep their licenses.
 - `bench/`: scripted comparisons and approved public evidence.
 
