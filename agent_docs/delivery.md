@@ -15,9 +15,9 @@ and back-merges; use that guide to select the base and target.
 | `package-lock.json`     | `npm install`                                                                     | Change only with a dependency change.                                                                            |
 
 The tested `agent-browser` version is pinned in several places. Change all of
-them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:409`,
-`src/profile.ts:280`, `README.md`, `CONTRIBUTING.md`,
-and `agent_docs/testing.md`.
+them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:419`,
+`src/profile.ts:280`, `README.md`, `docs/configuration.md`, `docs/support.md`,
+`CONTRIBUTING.md`, and `agent_docs/testing.md`.
 
 ## User-visible changes
 
@@ -25,8 +25,8 @@ A new or changed command, option, output field, exit code or schema field
 changes the public contract. In the same pull request:
 
 - add an entry under `[Unreleased]` in `CHANGELOG.md`;
-- update the command table or text in `README.md`, and the help in
-  `src/help.ts`;
+- update `docs/commands.md` or `docs/usage.md`, `README.md` if the change
+  alters the overview, and the help in `src/help.ts`;
 - update the skill text in `skills/` that names the command or field.
 
 The version number changes only at release time; see "Version and release".
@@ -71,13 +71,12 @@ successful secret scan alone does not prove it is safe to publish.
 ## Version and release
 
 Change every copy of the version string together. Find them with
-`grep -rn '"X.Y.Z"\|X\.Y\.Z' package.json package-lock.json src README.md tests`:
+`grep -rn '"X.Y.Z"\|X\.Y\.Z' package.json package-lock.json src tests`:
 
 - `package.json` and the two `version` fields of `package-lock.json`;
 - `src/cli.ts` (`--version` output), `src/state.ts` (the tool identity in
   each step record) and `src/lifecycle.ts` (the tool identity in `doctor`);
-- the step record assertion in `tests/e2e/core.test.mjs`;
-- `README.md`.
+- the step record assertion in `tests/e2e/core.test.mjs`.
 
 The grep can also match a dependency in `package-lock.json` that has the same
 version; leave that one unchanged.

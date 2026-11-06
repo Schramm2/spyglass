@@ -34,5 +34,4 @@ These are examples of security problems in Spyglass:
 - an evidence import that reads a file outside its declared import root.
 
 Read-only database mode is not a sandbox for privileged database functions.
-Use a restricted database role. See the limitations in the
-[README](README.md#limitations).
+Use a restricted database role. See the [limitations](docs/limitations.md).

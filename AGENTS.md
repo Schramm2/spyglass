@@ -59,4 +59,5 @@ repository instruction source; task-specific rules stay in the documents below.
 - `docs/verification-speed.md`: speed targets and proof; read before changing tool driving, evidence recording or result validation.
 - `docs/roadmap.md`: current priorities and completion limits; read before selecting milestone work.
 - `CONTRIBUTING.md`: public contributor entry point; read before preparing a contribution.
-- `README.md` and `docs/quickstart.md`: public command and operator contracts; read before changing the documented workflow.
+- `README.md`, `docs/quickstart.md`, `docs/usage.md` and `docs/commands.md`: public command and operator contracts; read before changing the documented workflow.
+- `docs/configuration.md`, `docs/limitations.md` and `docs/support.md`: public profile, limit and platform contracts; read before changing them.
