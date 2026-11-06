@@ -81,20 +81,28 @@ const FAULT_ORDER = ["stale", "assert", "origin", "write", "busy"];
 
 function setupCopy() {
   for (const button of document.querySelectorAll("[data-copy]")) {
-    let timer;
+    const install = button.closest(".install");
+    const command = install.querySelector("code");
+    const status = install.querySelector(".copy-status");
+    button.hidden = false;
     button.addEventListener("click", async () => {
-      let ok = false;
+      button.disabled = true;
+      status.textContent = "Copying install command…";
       try {
         await navigator.clipboard.writeText(button.dataset.copy);
-        ok = true;
+        status.textContent = "Install command copied.";
       } catch {
-        ok = false;
+        command.focus();
+        const range = document.createRange();
+        range.selectNodeContents(command);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        status.textContent =
+          "Copy failed. The command is selected; copy it manually.";
+      } finally {
+        button.disabled = false;
       }
-      button.textContent = ok ? "Copied" : "Select it";
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        button.textContent = "Copy";
-      }, 2000);
     });
   }
 }
@@ -142,6 +150,9 @@ function setupSimulation() {
   const verdict = panel.querySelector("[data-verdict]");
   const reasonsBox = panel.querySelector("[data-reasons]");
   const exitBox = panel.querySelector("[data-exit]");
+  const status = panel.querySelector("[data-sim-status]");
+  document.querySelector("[data-sim-note]").textContent =
+    "Local simulation only: no commands run and no files change. The error messages come from the CLI.";
   const faultButtons = [...panel.querySelectorAll("[data-fault]")];
   const opButtons = [...panel.querySelectorAll("[data-op]")];
   const reset = panel.querySelector("[data-reset]");
@@ -203,6 +214,15 @@ function setupSimulation() {
     verdict.textContent = complete ? "Complete" : "Incomplete";
     verdict.classList.toggle("is-complete", complete);
     exitBox.textContent = String(exit);
+    const notices = [];
+    if (state.faults.has("write"))
+      notices.push(
+        "The write query was refused. It changes no data and does not remove the passing health check.",
+      );
+    if (state.faults.has("busy"))
+      notices.push(
+        "The second operator was blocked. The first operator's evidence stays valid.",
+      );
     const rows = complete
       ? [
           reasonRow(
@@ -211,7 +231,11 @@ function setupSimulation() {
           ),
         ]
       : reasons.map((text) => reasonRow(text, false));
+    for (const notice of notices) rows.push(reasonRow(notice, true));
     reasonsBox.replaceChildren(...rows);
+    status.textContent = complete
+      ? `Complete: required proof and cleanup are present.${notices.length ? " Refused optional actions do not remove earlier proof." : ""}`
+      : `Incomplete: ${reasons.length} required condition${reasons.length === 1 ? " is" : "s are"} missing. Review the simulated report below.`;
 
     for (const button of faultButtons) {
       button.setAttribute(
@@ -241,6 +265,7 @@ function setupSimulation() {
 
   for (const button of faultButtons) {
     button.disabled = false;
+    button.setAttribute("aria-controls", "simulation-output");
     button.addEventListener("click", () => {
       const id = button.dataset.fault;
       if (state.faults.has(id)) state.faults.delete(id);
@@ -250,6 +275,7 @@ function setupSimulation() {
   }
   for (const button of opButtons) {
     button.disabled = false;
+    button.setAttribute("aria-controls", "simulation-output");
     button.addEventListener("click", () => {
       const key = button.dataset.op;
       state[key] = !state[key];
