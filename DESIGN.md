@@ -55,23 +55,37 @@ components:
 Spyglass makes verification inspectable. The README carries the brand: large
 serif type and engraved imagery. The offline report leads with the result and
 the proof a reviewer needs. Keep those jobs distinct: brand scale does not
-belong inside an operational report. The marketing site and HTML manual were
-removed before launch; a future site takes its tokens from this contract.
+belong inside an operational report. The HTML manual was removed before
+launch. The landing page in `landing/` is a deliberate exception to the brand
+tokens below; see "Landing page".
 
 ### Evidence sources and ownership
 
-The brand tokens in the front matter are the source for brand images and any
-future site. The images live in `docs/assets/`. The report palette is defined
+The brand tokens in the front matter are the source for brand images. The
+images live in `docs/assets/`. The report palette is defined
 in `renderHtml` in `src/report.ts`; update this contract in the same PR when
 a shared visual decision changes. `FRONTEND.md` owns rendering, state and verification.
 
 ### Surface map
 
-| Surface        | Reader's job                                 | Hierarchy and exception                                                                                 |
-| -------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| README         | Understand the tool and start the quickstart | Large serif wordmark, engraved chart imagery, then plain Markdown                                       |
-| Offline report | Decide what was proved                       | Result, claims, source, findings, attempts, artifacts and cleanup; dense system-font layout             |
-| Demo app       | Supply a real verification target            | Preserve its fixture appearance unless a check requires a deliberate change; do not apply site branding |
+| Surface        | Reader's job                                    | Hierarchy and exception                                                                                 |
+| -------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| README         | Understand the tool and start the quickstart    | Large serif wordmark, engraved chart imagery, then plain Markdown                                       |
+| Offline report | Decide what was proved                          | Result, claims, source, findings, attempts, artifacts and cleanup; dense system-font layout             |
+| Demo app       | Supply a real verification target               | Preserve its fixture appearance unless a check requires a deliberate change; do not apply site branding |
+| Landing page   | Understand the tool, try a run, star or install | Its own tile-board system in `landing/styles.css`, not the brand tokens; see "Landing page"             |
+
+### Landing page
+
+The landing page in `landing/` uses its own visual system, chosen to differ
+from the README brand: a board of flat tiles on 8px gaps, a soot ground
+(`#0f0f0f`), white and grey fields, and one lime action colour (`#dafa9c`).
+Inter Tight is the only typeface; monospace appears only in commands and
+product fragments. Corners are square, and the page has no gradients, glows,
+resting shadows or engraved imagery. Its pictures are the product's own
+interface: report, folder, run-card and check fragments built from a real
+quickstart run. The tokens live at the top of `landing/styles.css`; change
+them there, not in the front matter above.
 
 ### Voice and content
 
