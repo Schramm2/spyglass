@@ -13,6 +13,12 @@ This file records the notable changes to Spyglass. The format follows
 
 ### Fixed
 
+- Browser proof retains page diagnostics before clearing buffers or capturing
+  an image. Capture failures name the stage and keep partial evidence. Capture
+  and failure recovery have bounded budgets, and a failed proof does not repeat
+  a screenshot timeout. Sheet previews that stop animation frames can still
+  produce a screenshot; failed screenshots remain incomplete visual proof.
+
 - The landing page links to the documentation on `dev`, the default branch,
   so its footer and hero links no longer reach missing files on `main`. The
   security note in the footer links to `SECURITY.md`.

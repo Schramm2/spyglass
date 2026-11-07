@@ -51,14 +51,14 @@ unreleased improvements.
 
 ## Priority order
 
-| Priority | Milestone                             | Status                   | Depends on                                      |
-| -------- | ------------------------------------- | ------------------------ | ----------------------------------------------- |
-| Done     | M1. Prove the current workflow        | Done, with limits        | Current CLI and public fixtures                 |
-| Done     | M2. Reduce first-adoption work        | Done, with limits        | M1 findings; fresh adoption attempts            |
-| Done     | M3. Support review and CI             | Done, with limits        | M1; a repeatable adoption recipe                |
-| Next     | M3.1. Harden the current workflow     | Planned; not implemented | Sustained-use findings and public failure cases |
-| Later    | M4. Expand from repeated adapter gaps | Demand-led               | M3.1 and repeated adoption need                 |
-| Later    | M5. Evaluate shared evidence services | Not committed            | Remaining team needs after M3.1                 |
+| Priority | Milestone                             | Status                    | Depends on                                      |
+| -------- | ------------------------------------- | ------------------------- | ----------------------------------------------- |
+| Done     | M1. Prove the current workflow        | Done, with limits         | Current CLI and public fixtures                 |
+| Done     | M2. Reduce first-adoption work        | Done, with limits         | M1 findings; fresh adoption attempts            |
+| Done     | M3. Support review and CI             | Done, with limits         | M1; a repeatable adoption recipe                |
+| Next     | M3.1. Harden the current workflow     | Slice 1 done; 2–4 planned | Sustained-use findings and public failure cases |
+| Later    | M4. Expand from repeated adapter gaps | Demand-led                | M3.1 and repeated adoption need                 |
+| Later    | M5. Evaluate shared evidence services | Not committed             | Remaining team needs after M3.1                 |
 
 Independent discovery can overlap. Do not use this order to delay a safety
 fix. Record scope changes and their reasons here.
@@ -244,8 +244,10 @@ sources, not arbitrary adoption, general speed or human usability.
 **Question:** Can an operator obtain the same proof with fewer failed captures,
 late validation repairs and manual retention steps?
 
-**Status: planned; no slice is complete.** The [sustained-use review](usage-review.md)
-owns the sanitized findings and their acceptance checks. Its private usage
+**Status: Slice 1 done, with limits; Slices 2–4 remain planned.** The
+[browser capture record](browser-capture-r1.md) covers issue #47 and its public
+failure-first checks. The [sustained-use review](usage-review.md) owns the
+sanitized findings and their acceptance checks. Its private usage
 counts are not public regression proof. Reproduce each selected failure with
 public fixtures before changing behavior; use existing E2E files first.
 
@@ -264,6 +266,14 @@ with inspectable images. A forced capture timeout retains earlier diagnostics,
 names the stalled stage and leaves the claim incomplete. Retain the report
 after cleanup. A private-target repeat, when available and authorized, stays
 separate from public proof; an unrun repeat remains a stated limit.
+
+**Slice 1 status: done, with limits; unreleased.** Public sheet capture now
+survives stopped animation frames. Forced screenshot timeouts retain earlier
+diagnostics, name the capture stage and do not repeat screenshot recovery.
+Failed visual proof remains incomplete, and diagnostic reports survive cleanup.
+The [capture record](browser-capture-r1.md) states the fixture, tool-wrapper
+boundary, repeated checks, image inspection and retained evidence. No private
+target repeat was run. This does not complete the other M3.1 slices.
 
 ### Slice 2 — early validation and safe completion
 

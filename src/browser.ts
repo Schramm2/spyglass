@@ -773,12 +773,19 @@ function validate(ctx: Context, command: Command): Command {
 }
 /**
  * A screenshot of a page that has not produced a frame yet can wait for the
- * first one for about 10 seconds in a headless browser. Two animation frames
- * first make the page draw, so the screenshot returns at once.
+ * first one for about 10 seconds in a headless browser. Request two frames
+ * before capture, but stop waiting after 250 ms when a preview suspends them.
+ * This is only a settling hint: the screenshot must still succeed.
  */
 const frameCommand: Command = [
   "eval",
-  "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+  `new Promise((resolve) => {
+    const timer = setTimeout(() => resolve("deadline"), 250);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      clearTimeout(timer);
+      resolve("frames");
+    }));
+  })`,
 ];
 function proofPath(ctx: Context, label: string): string {
   const name =
@@ -961,6 +968,7 @@ export function browserHelp(): Record<string, unknown> {
       "wait accepts a selector, --text, --url or --load. --fn runs page JavaScript, --download saves outside evidence, and agent-browser reads wait --state as a saved-state file; all three are refused.",
       "A run-owned loopback proxy enforces exact scheme, host and port on browser traffic; agent-browser also checks allowed hosts.",
       "verify runs actions, expectations and a proof as one step with ordered sub-steps. A failure keeps the sub-steps before it as passed, marks the failed one with its failure screenshot and delta snapshot, and marks the rest not run. Each --do is one command, such as find role button click --name Save; a click, fill, press or select settles before the next sub-step. An --expect is KIND=VALUE with the kinds of expect: url, text, title, selector, visible, hidden, enabled, checked, count (SEL=N), focused, attr (SEL:NAME=VALUE) and no-errors. --expect-focus-moved LABEL records the focus before the actions and after them in focused.json and fails when focus was already on LABEL or is not on it afterward. --proof LABEL saves proof-LABEL.png, its snapshot and its details; with --viewport WxH (repeat it) each viewport resizes, settles, checks every --expect again and saves proof-LABEL-WxH.png. A screenshot is never an action: its path is always inside run evidence.",
+      "Proof capture retains its snapshot and diagnostics before clearing buffers or capturing an image. Each viewport has a 20000 ms capture budget; a screenshot has at most 10000 ms. A capture failure names data.capture.stage, retains stage outcomes in data.capture.stages and a capture-error artifact, and keeps earlier diagnostics. verify does not repeat image capture after a proof capture failure. Failure capture after an action or expectation has a 5000 ms budget and a 2000 ms screenshot limit. These limits are separate from expectation --timeout-ms. Failed images never count as visual proof.",
       "expect polls every 100 ms until all expectations hold or --timeout-ms (default 5000, maximum 120000) ends. It saves expect.json and exits 1 with the last observation when an expectation never holds. It never reads an input value: --attr value is refused.",
       "A click, fill or similar command that matches no element fails with data.nearest: up to 10 interactive roles and names from the page, nearest to the request first.",
     ],
@@ -2130,59 +2138,30 @@ async function captureVerifyFailure(
   ctx: Context,
   id: Identity,
   domains: string,
-): Promise<PageObservation | undefined> {
-  const image = proofPath(ctx, "verify-failure");
+): Promise<{
+  observation?: PageObservation;
+  capture?: Record<string, unknown>;
+  captureError?: { code: string; message: string };
+}> {
   try {
-    const result = await run(
-      ctx,
-      id,
-      domains,
-      [
-        ["get", "url"],
-        ["get", "title"],
-        ["eval", focusedElementScript],
-        ["snapshot", "-i", "-c", "--delta"],
-        ["network", "requests"],
-        frameCommand,
-        ["screenshot", image],
-        ["console"],
-        ["console", "--clear"],
-        ["errors"],
-        ["errors", "--clear"],
-      ],
-      30000,
-    );
-    const picture = imageArtifact(ctx, image, "verify-failure.png");
-    const snapshot = (result.data as Row[]).find(
-      (item) => item?.command?.[0] === "snapshot",
-    );
-    const snapshotArtifact = ctx.artifact(
-      "verify-failure-snapshot.json",
-      snapshot ?? result.data,
-      "page-snapshot",
-    );
-    const page = ctx.artifact(
-      "verify-failure-page.json",
-      { pageContent: true, results: clean(ctx, result.data) },
-      "page-content",
-    );
-    return observationFrom(ctx, result.data, [
-      String(picture.path),
-      snapshotArtifact.path,
-      page.path,
-    ]);
+    return {
+      observation: (
+        await capturePage(ctx, id, domains, "verify-failure", {
+          budgetMs: 5000,
+          screenshotMs: 2000,
+        })
+      ).observation,
+    };
   } catch (error) {
-    rmSync(image, { force: true });
-    ctx.artifact(
-      "verify-failure-capture-error.json",
-      {
-        pageContent: true,
-        captureFailure:
-          error instanceof Error ? redactText(ctx, error.message) : "failed",
+    if (!(error instanceof Fault)) return {};
+    return {
+      observation: error.data.observation as PageObservation | undefined,
+      capture: {
+        ...(error.data.capture as Record<string, unknown>),
+        recovery: true,
       },
-      "page-content",
-    );
-    return undefined;
+      captureError: { code: error.code, message: error.message },
+    };
   }
 }
 /**
@@ -2342,60 +2321,145 @@ async function captureProof(
   label: string,
   suffix = "",
 ): Promise<ProofResult> {
-  const name = safeLabel(label) + suffix,
-    image = proofPath(ctx, "proof-" + name);
-  try {
-    const result = await run(ctx, id, domains, [
-      ["snapshot", "-i", "-c", "--delta"],
-      ["get", "url"],
-      ["get", "title"],
-      // Read each list before it is cleared: a clear returns no entries.
-      ["console"],
-      ["console", "--clear"],
-      ["errors"],
-      ["errors", "--clear"],
-      ["eval", focusedElementScript],
-      ["network", "requests"],
-      ["network", "requests", "--clear"],
-      frameCommand,
-      ["screenshot", image],
-    ]);
-    const picture = imageArtifact(ctx, image, "proof-" + name + ".png");
-    const snapshot = (result.data as Row[]).find(
-      (item) => item?.command?.[0] === "snapshot",
+  return capturePage(ctx, id, domains, "proof-" + safeLabel(label) + suffix, {
+    seat,
+    budgetMs: 20000,
+    screenshotMs: 10000,
+  });
+}
+
+/** Retain observations before any destructive read or potentially stalled image. */
+async function capturePage(
+  ctx: Context,
+  id: Identity,
+  domains: string,
+  name: string,
+  options: { seat?: string; budgetMs: number; screenshotMs: number },
+): Promise<ProofResult> {
+  const started = Date.now();
+  const image = proofPath(ctx, name);
+  const results: unknown[] = [];
+  const artifacts: Record<string, unknown>[] = [];
+  const stages: { stage: string; status: string; elapsedMs: number }[] = [];
+  let stage = "snapshot";
+  let detailsSaved = false;
+  const retain = (suffix: string, data: unknown, kind: string) => {
+    const artifact = ctx.artifact(name + suffix, data, kind);
+    artifacts.push(artifact as unknown as Record<string, unknown>);
+    return artifact;
+  };
+  const observation = () =>
+    observationFrom(
+      ctx,
+      results,
+      artifacts.map((a) => String(a.path)),
     );
-    const snapshotArtifact = ctx.artifact(
-      "proof-" + name + "-snapshot.json",
-      snapshot ?? result.data,
-      "page-snapshot",
-    );
-    const details = ctx.artifact(
-      "proof-" + name + "-details.json",
+  const capture = () => ({
+    stage,
+    budgetMs: options.budgetMs,
+    elapsedMs: Date.now() - started,
+    stages,
+  });
+  const saveDetails = () => {
+    if (detailsSaved) return;
+    retain(
+      name === "verify-failure" ? "-page.json" : "-details.json",
       {
         label: name,
-        seat,
+        seat: options.seat ?? id.seat,
         step: ctx.step.id,
         pageContent: true,
-        results: clean(ctx, result.data),
+        results: clean(ctx, results),
       },
       "page-content",
     );
-    return {
-      picture,
-      artifacts: [picture, snapshotArtifact, details] as unknown as Record<
-        string,
-        unknown
-      >[],
-      results: result.data,
-      observation: observationFrom(ctx, result.data, [
-        String(picture.path),
-        String((snapshotArtifact as { path: string }).path),
-        String((details as { path: string }).path),
-      ]),
-    };
+    detailsSaved = true;
+  };
+  const runStage = async (
+    label: string,
+    commands: Command[],
+    limitMs: number,
+  ) => {
+    stage = label;
+    const at = Date.now();
+    const remaining = options.budgetMs - (at - started);
+    try {
+      if (remaining <= 0)
+        throw new Fault(
+          "BROWSER_TIMEOUT",
+          "Capture budget expired.",
+          "Inspect retained capture diagnostics.",
+          1,
+        );
+      const result = await run(
+        ctx,
+        id,
+        domains,
+        commands,
+        Math.min(limitMs, remaining),
+      );
+      stages.push({ stage, status: "passed", elapsedMs: Date.now() - at });
+      return result.data;
+    } catch (error) {
+      stages.push({ stage, status: "failed", elapsedMs: Date.now() - at });
+      if (error instanceof Fault && Array.isArray(error.data.results))
+        results.push(...error.data.results);
+      throw error;
+    }
+  };
+  try {
+    const snapshot = await runStage(
+      "snapshot",
+      [["snapshot", "-i", "-c", "--delta"]],
+      5000,
+    );
+    results.push(...snapshot);
+    retain("-snapshot.json", snapshot[0] ?? snapshot, "page-snapshot");
+    results.push(
+      ...(await runStage("diagnostics", observationCommands(), 5000)),
+    );
+    saveDetails();
+    await runStage(
+      "buffer-clear",
+      [
+        ["console", "--clear"],
+        ["errors", "--clear"],
+        ["network", "requests", "--clear"],
+      ],
+      1000,
+    );
+    await runStage("frame-settle", [frameCommand], 1000);
+    await runStage("screenshot", [["screenshot", image]], options.screenshotMs);
+    const picture = imageArtifact(ctx, image, name + ".png");
+    artifacts.push(picture);
+    return { picture, artifacts, results, observation: observation() };
   } catch (error) {
+    const cause = error instanceof Fault ? error : fault(error);
+    saveDetails();
+    retain(
+      "-capture-error.json",
+      {
+        pageContent: true,
+        capture: capture(),
+        captureFailure: redactText(ctx, cause.message),
+      },
+      "page-content",
+    );
+    throw new Fault(
+      cause.code,
+      `Browser capture failed at ${stage}: ${cause.message}`,
+      "Inspect the retained capture diagnostics; recover the browser before collecting new proof.",
+      cause.exit,
+      {
+        ...cause.data,
+        pageContent: true,
+        capture: capture(),
+        observation: observation(),
+        artifacts,
+      },
+    );
+  } finally {
     rmSync(image, { force: true });
-    throw error;
   }
 }
 async function runVerify(
@@ -2634,9 +2698,14 @@ async function runVerify(
     if (!plan.deferExpects) await expectAll(plan.expects, expectSteps);
     if (plan.proof !== undefined) {
       if (!plan.viewports.length) {
-        page = (await captureProof(ctx, seat, id, domains, plan.proof))
-          .observation;
-        proofSteps[0]!.status = "passed";
+        try {
+          page = (await captureProof(ctx, seat, id, domains, plan.proof))
+            .observation;
+          proofSteps[0]!.status = "passed";
+        } catch (error) {
+          trackFailure(proofSteps[0], error);
+          throw error;
+        }
       } else
         for (let i = 0; i < plan.viewports.length; i++) {
           const viewport = plan.viewports[i]!;
@@ -2683,7 +2752,18 @@ async function runVerify(
       steps.find((step) => step.status === "failed"),
       error,
     );
-    page = await captureVerifyFailure(ctx, id, domains);
+    // A failed proof already retained what was available. Do not stall again
+    // or replace those observations with freshly cleared browser buffers.
+    if (error instanceof Fault && error.data.capture)
+      page = error.data.observation as PageObservation | undefined;
+    else {
+      const recovery = await captureVerifyFailure(ctx, id, domains);
+      page = recovery.observation;
+      if (recovery.capture) {
+        extra.capture = recovery.capture;
+        extra.captureError = recovery.captureError;
+      }
+    }
   }
 
   const failure = outcome.failure;

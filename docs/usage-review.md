@@ -87,6 +87,15 @@ diagnostics. A forced capture-stage timeout names the stage, keeps earlier
 evidence, bounds recovery and leaves the claim incomplete. Repeat affected
 real-tool checks and retain the report after cleanup.
 
+**Resolution (issue #47; unreleased):** the [public capture record](browser-capture-r1.md)
+retains the reproduction method, failure-first outcomes, image inspection and
+repeat commands. Capture now saves diagnostics before clearing buffers or
+capturing the image, names failed stages, bounds recovery and leaves failed
+visual claims incomplete. Public checks use a real browser with controlled
+frame suspension and a screenshot transport timeout. They do not establish
+the cause of the historical private timeouts; no private-target repeat was run.
+The historical observations above remain unchanged.
+
 ### R2. Validate control modes before starting work
 
 **Observed:** control declarations were rejected after checks had already

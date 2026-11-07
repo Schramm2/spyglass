@@ -132,6 +132,28 @@ const server = createServer(async (req, res) => {
     }
     return send(res, 404, { error: "not found" });
   }
+  if (url.pathname === "/proof-preview") {
+    return send(
+      res,
+      200,
+      `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Sheet preview</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font:18px system-ui;padding:2rem;background:#e8eee9}button{font:inherit;padding:.7rem}dialog{border:0;padding:2rem;max-width:26rem;box-shadow:0 8px 40px #1234}dialog[open]{animation:enter .15s ease-out}@keyframes enter{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}</style></head>
+<body><h1>Development preview</h1><button id="open">Open preview</button>
+<dialog aria-label="Preview sheet"><h2>Preview sheet</h2><p>The public preview is ready for inspection.</p><button autofocus>Save preview</button></dialog>
+<script>
+document.querySelector('#open').onclick=()=>{
+  document.querySelector('dialog').showModal();
+  console.error('preview diagnostic message');
+  setTimeout(()=>{throw new Error('preview diagnostic error')},0);
+  fetch('/health?preview=1');
+  const stall=new URLSearchParams(location.search).get('stall');
+  if(stall==='frames') window.requestAnimationFrame=()=>0;
+};
+</script></body></html>`,
+      "text/html; charset=utf-8",
+    );
+  }
   if (url.pathname === "/error") {
     return send(
       res,
