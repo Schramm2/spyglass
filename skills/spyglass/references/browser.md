@@ -22,9 +22,14 @@ spyglass --run <run-id> ui verify --open /dashboard \
 ```
 
 A failed sub-step keeps the sub-steps before it, marks the rest `not run`, and
-saves a failure screenshot and a delta snapshot. If the page capture fails
-too, the step keeps the capture error instead; recover the browser before you
-collect new proof. A step with a failed or skipped sub-step cannot back a
+attempts a bounded failure capture. Proof capture retains its snapshot and
+page diagnostics before clearing buffers or taking a screenshot. If capture
+fails, inspect `data.capture.stage` and the retained `*-capture-error.json`,
+snapshot and details artifacts. `verify` does not repeat screenshot capture
+after a proof capture failure. A proof has a 20-second capture budget per
+viewport; failure capture after an action or expectation has 5 seconds. These
+limits are separate from expectation `--timeout-ms`. Recover the browser before
+you collect new proof; retained DOM evidence is not visual proof. A step with a failed or skipped sub-step cannot back a
 claim. `ui proof <label> --viewport WxH --expect ...` does the same for the
 current page.
 

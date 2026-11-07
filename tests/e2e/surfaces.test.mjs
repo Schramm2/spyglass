@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { connect } from "node:net";
 import { existsSync } from "node:fs";
 import {
+  chmod,
   cp,
   mkdir,
   readFile,
@@ -1861,6 +1862,268 @@ const pendingFile = async (dir, run) =>
   JSON.parse(await readRunFile(dir, run, "spyglass/result.json"));
 const subSteps = (envelope) =>
   envelope.data.subSteps.map(({ id, status }) => `${id}:${status}`);
+
+surfaceTest(
+  "sheet proof captures an image when a development preview stops animation frames",
+  async () => {
+    const dir = await makeRepo({ profile: baseProfile() });
+    let run;
+    try {
+      run = assertEnvelope(await runCli(dir, ["--json", "up"]), {
+        ok: true,
+        code: 0,
+      }).run;
+      await ui(dir, run, ["open", "/proof-preview?stall=frames"]);
+      await ui(dir, run, [
+        "find",
+        "role",
+        "button",
+        "click",
+        "--name",
+        "Open preview",
+      ]);
+      const proof = assertEnvelope(
+        await runCli(dir, ["--json", "--run", run, "ui", "proof", "sheet"], {
+          timeoutMs: 100000,
+        }),
+        { ok: true, code: 0 },
+      );
+      const image = proof.artifacts.find((a) =>
+        a.path.endsWith("proof-sheet.png"),
+      );
+      assert.ok(
+        image,
+        "a sheet with stopped animation frames must retain an image",
+      );
+      const bytes = await readFile(
+        join(dir, ".spyglass/runs", run, "spyglass", image.path),
+      );
+      assert.equal(bytes.subarray(1, 4).toString(), "PNG");
+      if (process.env.SPYGLASS_TEST_ARTIFACTS) {
+        const destination = join(
+          process.env.SPYGLASS_TEST_ARTIFACTS,
+          "browser-capture",
+        );
+        await mkdir(destination, { recursive: true });
+        await cp(
+          join(dir, ".spyglass/runs", run, "spyglass", image.path),
+          join(destination, "sheet.png"),
+        );
+      }
+    } finally {
+      if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+      await removeRepo(dir);
+    }
+  },
+);
+
+for (const operation of ["proof", "verify", "recovery"])
+  surfaceTest(
+    `${operation} screenshot timeout retains diagnostics, names the stage and cannot pass a visual claim`,
+    async () => {
+      const dir = await makeRepo({
+        profile: baseProfile(),
+        plan: visualPlan(),
+      });
+      let run;
+      try {
+        run = assertEnvelope(
+          await runCli(dir, ["--json", "up", "--plan", "plan.json"]),
+          { ok: true, code: 0 },
+        ).run;
+        await ui(dir, run, ["open", "/proof-preview"]);
+        await ui(dir, run, [
+          "find",
+          "role",
+          "button",
+          "click",
+          "--name",
+          "Open preview",
+        ]);
+        // All observations and actions use real Chromium. Only screenshot transport
+        // completion is withheld by this external-tool wrapper.
+        const tool = (
+          await spawnCapture("which", ["agent-browser"])
+        ).stdout.trim();
+        const bin = join(dir, ".spyglass", "timeout-bin");
+        const marker = join(bin, "capture.json");
+        await mkdir(bin, { recursive: true });
+        await writeFile(
+          join(bin, "agent-browser"),
+          `#!/usr/bin/env node
+import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+const args=process.argv.slice(2), input=readFileSync(0,'utf8');
+let commands; try { commands=JSON.parse(input); } catch {}
+const evidence=${JSON.stringify(join(dir, ".spyglass/runs", run, "spyglass"))};
+if(commands?.some(c=>c.includes('--clear'))) {
+  const retained=existsSync(evidence)&&readdirSync(evidence).some(p=>p.endsWith('proof-stalled-details.json')||p.endsWith('verify-failure-page.json'));
+  const marker=${JSON.stringify(marker)};
+  const record=existsSync(marker)?JSON.parse(readFileSync(marker,'utf8')):{};
+  writeFileSync(marker,JSON.stringify({...record,retainedBeforeClear:retained}));
+}
+const shot=commands?.findIndex(c=>c[0]==='screenshot')??-1;
+if(shot>=0) {
+  const marker=${JSON.stringify(marker)};
+  const record=existsSync(marker)?JSON.parse(readFileSync(marker,'utf8')):{};
+  writeFileSync(marker,JSON.stringify({...record,screenshotAttempts:(record.screenshotAttempts??0)+1}));
+  if(shot) spawnSync(${JSON.stringify(tool)},args,{input:JSON.stringify(commands.slice(0,shot))});
+  setInterval(()=>{},1000);
+} else {
+  const result=spawnSync(${JSON.stringify(tool)},args,{input,encoding:'utf8'});
+  process.stdout.write(result.stdout??''); process.stderr.write(result.stderr??''); process.exit(result.status??1);
+}
+`,
+        );
+        await chmod(join(bin, "agent-browser"), 0o755);
+        const started = Date.now();
+        const failed = assertEnvelope(
+          await runCli(
+            dir,
+            [
+              "--json",
+              "--run",
+              run,
+              "ui",
+              operation === "recovery" ? "verify" : operation,
+              ...(operation === "proof"
+                ? ["stalled"]
+                : operation === "recovery"
+                  ? [
+                      "--expect",
+                      "text=Missing preview text",
+                      "--timeout-ms",
+                      "100",
+                    ]
+                  : ["--proof", "stalled"]),
+              "--claim",
+              "dashboard-visible",
+            ],
+            { timeoutMs: 110000, env: { PATH: bin + ":" + process.env.PATH } },
+          ),
+          { ok: false, code: 1 },
+        );
+        assert.equal(
+          failed.error.code,
+          operation === "recovery"
+            ? "BROWSER_EXPECTATION_FAILED"
+            : "BROWSER_TIMEOUT",
+        );
+        if (operation === "recovery") {
+          assert.equal(failed.data.capture.recovery, true);
+          assert.equal(failed.data.captureError.code, "BROWSER_TIMEOUT");
+        }
+        assert.equal(
+          failed.data.capture.stage,
+          "screenshot",
+          "the failed capture must name the stalled stage",
+        );
+        assert.ok(
+          Date.now() - started < (operation === "recovery" ? 10000 : 25000),
+          "capture must not repeat the full screenshot timeout during recovery",
+        );
+        const details = failed.artifacts.find((a) =>
+          a.path.endsWith(
+            operation === "recovery"
+              ? "verify-failure-page.json"
+              : "proof-stalled-details.json",
+          ),
+        );
+        const snapshot = failed.artifacts.find(
+          (a) => a.kind === "page-snapshot",
+        );
+        assert.ok(
+          details && snapshot,
+          "diagnostics must survive a stalled screenshot",
+        );
+        assert.equal(
+          JSON.parse(await readFile(marker, "utf8")).retainedBeforeClear,
+          true,
+          "diagnostics must be durable before a buffer clear",
+        );
+        assert.equal(
+          JSON.parse(await readFile(marker, "utf8")).screenshotAttempts,
+          1,
+          "a capture failure must not trigger a second screenshot attempt",
+        );
+        const text = await readRunFile(dir, run, "spyglass/" + details.path);
+        for (const value of [
+          "Sheet preview",
+          "/proof-preview",
+          "preview diagnostic message",
+          "preview diagnostic error",
+          "Save preview",
+          "/health?preview=1",
+        ])
+          assert.ok(
+            text.includes(value),
+            `retained diagnostics must contain ${value}`,
+          );
+        assert.ok(
+          !failed.artifacts.some((a) => a.path.endsWith(".png")),
+          "a stalled screenshot must not produce visual proof",
+        );
+        if (operation === "verify")
+          assert.ok(subSteps(failed).includes("proof:failed"));
+        const pending = await pendingFile(dir, run);
+        assert.deepEqual(
+          pending.claims[0].steps,
+          [],
+          "failed capture must not link visual proof",
+        );
+        assertEnvelope(
+          await runCli(dir, [
+            "--json",
+            "--run",
+            run,
+            "result",
+            "set",
+            "--claim",
+            "dashboard-visible",
+            "--outcome",
+            "passed",
+            "--observed",
+            "Attempted sheet capture.",
+            "--step",
+            failed.step,
+          ]),
+          { ok: true, code: 0 },
+        );
+        const result = assertEnvelope(
+          await runCli(dir, ["--json", "--run", run, "result", "--check"]),
+          { ok: false, code: 1 },
+        );
+        assert.ok(result.data.findings.some((f) => f.code === "FAILED_STEP"));
+        assertEnvelope(await runCli(dir, ["--json", "--run", run, "down"]), {
+          ok: true,
+          code: 0,
+        });
+        const report = assertEnvelope(
+          await runCli(dir, ["--json", "--run", run, "report"]),
+          { ok: false, code: 1 },
+        );
+        assert.equal(report.data.complete, false);
+        const html = await readFile(report.data.reportPath, "utf8");
+        assert.ok(
+          html.includes("screenshot"),
+          "the offline report retains capture diagnostics after cleanup",
+        );
+        if (process.env.SPYGLASS_TEST_ARTIFACTS) {
+          const destination = join(
+            process.env.SPYGLASS_TEST_ARTIFACTS,
+            "browser-capture",
+            operation,
+          );
+          await cp(join(dir, ".spyglass/runs", run), destination, {
+            recursive: true,
+          });
+        }
+      } finally {
+        if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+        await removeRepo(dir);
+      }
+    },
+  );
 
 surfaceTest(
   "ui verify runs actions, expectations and a two-viewport proof as one step and links the claim",

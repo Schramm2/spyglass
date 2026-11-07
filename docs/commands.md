@@ -114,6 +114,24 @@ after you look at the image.
 does the same for the current page: it resizes, settles, checks the
 expectations and saves one screenshot per viewport.
 
+Proof capture saves the snapshot and page diagnostics before clearing browser
+buffers or taking the screenshot. Capture has a 20-second total budget per
+viewport: snapshot and diagnostics each have at most 5 seconds, buffer clearing
+and frame settling each have at most 1 second, and the screenshot has at most
+10 seconds, limited by the remaining total budget. Frame settling waits for two
+frames or 250 ms; the image still requires a successful screenshot.
+
+A capture failure names its stage in `data.capture.stage` and retains stage
+outcomes in `data.capture.stages` and a `*-capture-error.json` artifact. Earlier
+snapshot and details artifacts remain valid. A failed proof leaves its claim
+incomplete; DOM evidence cannot replace a screenshot inspection. `ui verify`
+uses the retained diagnostics instead of attempting another screenshot after a
+capture failure. For an action or expectation failure, its diagnostic capture
+has a separate 5-second total budget and a 2-second screenshot limit. If this
+recovery capture fails, the original action or expectation error stays in
+`error`; `data.capture.recovery` is `true`, and `data.captureError` records the
+capture error. These capture limits are separate from the expectation flag `--timeout-ms`.
+
 Add `--settle` to one `click`, `dblclick`, `press`, `fill`, `select`, `type` or
 `find ... click` command. Spyglass then waits until the page is loaded and no
 DOM change has happened for 150 ms, for at most 3 seconds, and records it in
