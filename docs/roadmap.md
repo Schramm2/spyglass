@@ -22,9 +22,21 @@ The operator selects coverage, judges behavior and inspects images. More
 commands, faster calls or more artifacts do not by themselves mean better
 verification.
 
+The next milestones have two goals, in this order:
+
+1. **Honest, complete proof.** A run never passes without its proof. Spyglass
+   shows the operator each changed behavior that has no claim or limit.
+2. **A short agent loop.** A fresh agent reaches complete proof with few tool
+   calls, little reading, no rejected results and no manual cleanup steps.
+
+When the two goals conflict, the first goal wins.
+
 ## Starting point
 
-The documented release is 1.4.1. The core run, claim, source identity,
+The published release is 1.4.3 on npm (`@mattschramm/spyglass`). Version
+1.4.2 is available from GitHub only; 1.4.3 has the same package contents.
+Version 1.4.2 released M3.1 Slice 1 (reliable browser proof). The core run,
+claim, source identity,
 evidence, cleanup and offline report contracts are built. Browser, HTTP,
 PostgreSQL, Compose and repository checks are supported. The workflow now
 includes live claim linking, bounded expectations and polling, `ui verify`,
@@ -51,17 +63,55 @@ unreleased improvements.
 
 ## Priority order
 
-| Priority | Milestone                             | Status                    | Depends on                                      |
-| -------- | ------------------------------------- | ------------------------- | ----------------------------------------------- |
-| Done     | M1. Prove the current workflow        | Done, with limits         | Current CLI and public fixtures                 |
-| Done     | M2. Reduce first-adoption work        | Done, with limits         | M1 findings; fresh adoption attempts            |
-| Done     | M3. Support review and CI             | Done, with limits         | M1; a repeatable adoption recipe                |
-| Next     | M3.1. Harden the current workflow     | Slice 1 done; 2–4 planned | Sustained-use findings and public failure cases |
-| Later    | M4. Expand from repeated adapter gaps | Demand-led                | M3.1 and repeated adoption need                 |
-| Later    | M5. Evaluate shared evidence services | Not committed             | Remaining team needs after M3.1                 |
+| Priority | Milestone                             | Status                        | Depends on                                      | Issues  |
+| -------- | ------------------------------------- | ----------------------------- | ----------------------------------------------- | ------- |
+| Done     | M1. Prove the current workflow        | Done, with limits             | Current CLI and public fixtures                 |         |
+| Done     | M2. Reduce first-adoption work        | Done, with limits             | M1 findings; fresh adoption attempts            |         |
+| Done     | M3. Support review and CI             | Done, with limits             | M1; a repeatable adoption recipe                |         |
+| Now      | M3.0. Proof-integrity repairs         | Five repairs on `dev`         | 16 November source audit                        | PR #68  |
+| Next     | M3.1. Harden the current workflow     | Slice 1 released; 2–4 planned | Sustained-use findings and public failure cases | #46–#53 |
+| Next     | M3.2. Short, measured agent loop      | Proposed                      | Baseline now; changes after M3.1 Slice 2        |         |
+| Later    | M4. Expand from repeated adapter gaps | Demand-led                    | M3.1 and repeated adoption need                 | #54     |
+| Later    | M5. Evaluate shared evidence services | Not committed                 | Remaining team needs after M3.1                 | #55     |
 
 Independent discovery can overlap. Do not use this order to delay a safety
 fix. Record scope changes and their reasons here.
+
+**Why this order.** A verification tool that gives a false pass is worse
+than a slow one, so proof-integrity repairs come first. M3.1 Slice 2 (#48,
+#49, #50) then removes the largest observed agent waste: rejected controls
+found late, failed runs without a report and manual lock removal. M3.2
+measures the agent loop before and after each change, so a speed claim
+has evidence. New surfaces (M4) and shared services (M5) wait for a
+recorded need.
+
+## M3.0. Proof-integrity repairs
+
+**Question:** Can a run pass, or keep a value readable, when the proof
+contract says it must not?
+
+A source audit on 16 November 2026 (commit `6a46d79`) found five defects with
+high leverage: `logs` expectations evaluated on masked text, a step that a
+malformed pending result could drop from the step log, a side-effect claim
+that could pass with no real action, credential response headers and
+database password parts left unmasked, and cited gate and control rows that
+a later step could corrupt.
+
+**Status: five repairs merged to `dev` in PR #68; unreleased.** The
+`CHANGELOG.md` `[Unreleased]` section lists them. The side-effect rule
+covers part of
+[R4](usage-review.md#r4-keep-claim-scope-and-completion-scope-distinct);
+record that overlap in #53.
+
+Smaller audit findings remain: one source for the version string, `doctor`
+compares the installed `agent-browser` version with the tested pin, and a
+check that leaves a background child is not recorded as a timeout. Release
+the five repairs without waiting for these.
+
+**Completion:** each repair has a failure-first built-CLI E2E check, a
+`docs/failure-cases.md` row and a `CHANGELOG.md` entry. The real-surface
+suite passes for the repairs that need it. A release contains the masking
+repairs.
 
 ## M1. Prove the current workflow
 
@@ -244,7 +294,8 @@ sources, not arbitrary adoption, general speed or human usability.
 **Question:** Can an operator obtain the same proof with fewer failed captures,
 late validation repairs and manual retention steps?
 
-**Status: Slice 1 done, with limits; Slices 2–4 remain planned.** The
+**Status: Slice 1 done, with limits, and released in 1.4.2; Slices 2–4 remain
+planned.** Issue #46 tracks the milestone. The
 [browser capture record](browser-capture-r1.md) covers issue #47 and its public
 failure-first checks. The [sustained-use review](usage-review.md) owns the
 sanitized findings and their acceptance checks. Its private usage
@@ -267,7 +318,7 @@ names the stalled stage and leaves the claim incomplete. Retain the report
 after cleanup. A private-target repeat, when available and authorized, stays
 separate from public proof; an unrun repeat remains a stated limit.
 
-**Slice 1 status: done, with limits; unreleased.** Public sheet capture now
+**Slice 1 status: done, with limits; released in 1.4.2.** Public sheet capture now
 survives stopped animation frames. Forced screenshot timeouts retain earlier
 diagnostics, name the capture stage and do not repeat screenshot recovery.
 Failed visual proof remains incomplete, and diagnostic reports survive cleanup.
@@ -276,6 +327,9 @@ boundary, repeated checks, image inspection and retained evidence. No private
 target repeat was run. This does not complete the other M3.1 slices.
 
 ### Slice 2 — early validation and safe completion
+
+Issues: #48 (R2), #49 (R5), #50 (R8). Deliver #48 and #49 first: they remove
+the most agent repair calls.
 
 Cover [R2](usage-review.md#r2-validate-control-modes-before-starting-work),
 [R5](usage-review.md#r5-finish-failed-and-abandoned-runs-with-a-report) and
@@ -291,6 +345,8 @@ failed verification into a pass.
 
 ### Slice 3 — portable, compact proof
 
+Issues: #51 (R3), #52 (R6).
+
 Cover [R3](usage-review.md#r3-inspect-proof-after-worktree-removal) and
 [R6](usage-review.md#r6-retain-the-source-baseline-without-repeating-its-full-file-map):
 inspect retained evidence without its original worktree or run store, make
@@ -304,6 +360,8 @@ at equal proof. Changed bytes still fail; old evidence remains readable.
 Retain the before/after artifact and record any compatibility boundary.
 
 ### Slice 4 — adoption and repository completion
+
+Issue: #53 (R4, R7, R9). M3.0 delivered the side-effect action rule of R4.
 
 Cover [R4](usage-review.md#r4-keep-claim-scope-and-completion-scope-distinct),
 [R7](usage-review.md#r7-bring-adoption-recipes-up-to-the-delivered-workflow) and
@@ -324,6 +382,79 @@ source, with failure-first public E2E evidence, retained reports and remaining
 limits. No public claim depends on access to private data. Keep historical
 comparison results unchanged; new measurements must name their own sources,
 method and limits. No version or release is assigned by this milestone.
+
+## M3.2. Short, measured agent loop
+
+**Question:** Can a fresh agent get complete proof for a change with fewer
+tool calls, less reading and no rejected results, at equal proof? Can
+Spyglass show the agent which changed behavior has no proof yet?
+
+M1.1 and M1.2 measured the agent loop once each. Speed work since then has
+scripted measurements only. This milestone makes the agent measurement
+repeatable, then removes the waste that it shows. Interface names below are
+design work, not promised commands.
+
+### Item 1 — agent scorecard (start first)
+
+Turn the [operator comparison](operator-comparison.md) protocol into a
+repeatable scorecard on public fixtures. Use fixed journeys: browser and API,
+command only, and library or installation. Use fresh agent operators and
+record, for each run:
+
+- tool calls per verified claim, and total tool calls;
+- bytes of skill, help and schema text read before the first useful step;
+- blocking findings at `result --check`, and setup repairs;
+- failed attempts that were not planned controls;
+- wall time, and tokens when the harness exposes them.
+
+Record a baseline on 1.4.3 before M3.1 Slice 2 changes behavior. Run the
+scorecard on each release candidate and keep its results in
+`bench/results/<version>/`. Report raw values and ranges; a small number of
+runs gives no general speed claim.
+
+### Item 2 — check the plan before the run
+
+#48 makes `up` refuse an impossible plan before it allocates resources. An
+agent also needs to check a plan without a run, so a plan repair costs one
+call and starts nothing. Return every finding at once with its repair, as
+`result --check` does, and show the `resultRules` that `up` would give.
+
+### Item 3 — changed-file coverage
+
+This item is for verification quality. Let profile checks and claims
+declare the source paths that they exercise. Then `status --work` and the
+report can list each changed file, compared with a stated base commit, that
+no cited step covers. This is a mechanical fact, not a semantic verdict: the
+operator still adds a claim or records a limit for each listed file. Files
+with no declaration stay visible as unknown; Spyglass does not guess.
+
+### Item 4 — fewer calls after a repair
+
+After a source change, an agent now starts a new run, previews `replay`, then
+executes it. Let one call start the new run and replay the steps that the
+earlier run cited. Every required claim still needs proof from the new run,
+and the steps that `replay` omits stay listed in `status --work`.
+
+### Item 5 — less reading to start
+
+The agent skill and its references are about 20 KB, and each command's help
+is 1–4.5 KB. Use the scorecard to find the reads that agents repeat or do
+not use. Shorten the skill where `--help --json`, `init` output or `error.next`
+already gives the same rule. Keep each rule in one place.
+
+### Item 6 — decide on an MCP server
+
+Evaluate a Model Context Protocol server that exposes the CLI operations as
+typed tools. Typed tools can remove help reads and argument errors. A server
+can also add process and lock ownership risk. Compare it with the CLI on the
+scorecard journeys. Record a go or no-go decision here. The run, evidence and
+lock contracts must stay the same on both paths.
+
+**Completion:** the scorecard has a 1.4.3 baseline and a candidate result on
+the same journeys at equal proof. Each delivered item has a failure-first
+built-CLI E2E check. Proof checks, controls and source identity are not
+weaker. The roadmap records which items reduced agent work and which did
+not.
 
 ## M4. Expand from repeated adapter gaps
 
@@ -359,6 +490,11 @@ cost and an explicit go/no-go decision. Keep offline reports supported.
 - Automatic semantic verdicts or fabricated visual observations.
 - More low-level commands when a bounded claim-level operation is sufficient.
 - A hosted dashboard before evidence of a review or sharing problem.
+- Reuse of claim proof from a run on different source, even when the changed
+  files seem unrelated to the claim. This would weaken source identity; use
+  M3.2 Item 4 to make a new run cheaper.
+- Automatic claim drafting from a diff. Spyglass can list uncovered files
+  (M3.2 Item 3); the operator writes the claims.
 
 ## Roadmap maintenance
 
