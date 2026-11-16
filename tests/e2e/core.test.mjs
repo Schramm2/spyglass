@@ -5893,6 +5893,140 @@ test("up --cite-gates-from and result set --gate-run cite the gates of a named r
   }
 });
 
+test("a gate run again in this run replaces the citation from the earlier run", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: gatePlan });
+  try {
+    const earlier = await passedRun(dir, "gate-first");
+    const cited = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "gate-rerun",
+        "--plan",
+        "plan.json",
+        "--cite-gates-from",
+        earlier,
+      ]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(cited.data.citedGates[0].run, earlier);
+    assert.equal(
+      (await pendingResult(dir, "gate-rerun")).gates[0].run,
+      earlier,
+    );
+    const again = await drive(dir, "gate-rerun", [
+      "exec",
+      "--gate",
+      "unit",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    assert.deepEqual((await pendingResult(dir, "gate-rerun")).gates[0], {
+      name: "unit",
+      outcome: "passed",
+      steps: [again.step],
+    });
+    assert.ok(
+      again.data.linked.skipped.some(
+        (note) => /unit/.test(note) && new RegExp(earlier).test(note),
+      ),
+      "the step says that it replaced the citation",
+    );
+    await drive(dir, "gate-rerun", ["check", "pass", "--claim", "ready"]);
+    await drive(dir, "gate-rerun", [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Passed.",
+    ]);
+    await drive(dir, "gate-rerun", ["result"]);
+    await drive(dir, "gate-rerun", ["down"]);
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
+test("a failed control attempt in this run replaces a failed attempt cited from another run", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: linkPlan });
+  try {
+    assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "control-old",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    const oldFailed = await drive(
+      dir,
+      "control-old",
+      [
+        "check",
+        "fail",
+        "--claim",
+        "ready",
+        "--control",
+        "ready-control:failed",
+      ],
+      { ok: false, code: 1 },
+    );
+    await drive(dir, "control-old", ["down"]);
+    assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "control-new",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    await drive(dir, "control-new", [
+      "result",
+      "set",
+      "--control",
+      "ready-control",
+      "--failed-run",
+      "control-old",
+      "--failed-step",
+      oldFailed.step,
+    ]);
+    const citedRow = (await pendingResult(dir, "control-new")).controls[0];
+    assert.equal(citedRow.failedRun, "control-old");
+    assert.equal(citedRow.failedStep, oldFailed.step);
+    const newFailed = await drive(
+      dir,
+      "control-new",
+      [
+        "check",
+        "fail",
+        "--claim",
+        "ready",
+        "--control",
+        "ready-control:failed",
+      ],
+      { ok: false, code: 1 },
+    );
+    const row = (await pendingResult(dir, "control-new")).controls[0];
+    assert.equal(row.failedRun, "control-new");
+    assert.equal(row.failedStep, newFailed.step);
+    await drive(dir, "control-new", ["down"]);
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
 test("status --work lists what each claim, control and gate still needs", async () => {
   const { dir, run } = await readyToFinish("work", linkPlan);
   try {

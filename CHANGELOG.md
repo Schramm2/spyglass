@@ -30,6 +30,13 @@ This file records the notable changes to Spyglass. The format follows
 - Every command of a run registers the database password itself, not only the
   whole connection string. Output such as a driver error or the app's own
   connection URL, which names another host, no longer retains the password.
+- A gate or control row cited from an earlier run no longer mixes step IDs from
+  two runs. A step of the current run takes the row over: it names this run's
+  step only and `linked.skipped` records the replaced citation. A failed
+  rerun sets the gate to `failed`, and a new failed control attempt names this
+  run. Before this fix, `result` refused such a row with `MISSING_STEP` or
+  `CONTROL_INVALID` even though both the citation and the new attempt were
+  valid.
 
 ## [1.4.3] - 2026-11-16
 

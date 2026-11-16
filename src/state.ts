@@ -642,6 +642,7 @@ export function linkPendingResult(
       let row = pending.controls.find((item) => item.id === id);
       if (!row) pending.controls.push((row = blankControl(run, id)));
       if (state === "failed") {
+        row.failedRun = run.id;
         row.failedStep = step.id;
         summary.controls.push(`${id}:failed`);
       } else if (passed) {
@@ -660,6 +661,15 @@ export function linkPendingResult(
       let row = pending.gates.find((item) => item.name === name);
       if (!row)
         pending.gates.push((row = { name, outcome: "not run", steps: [] }));
+      // A step of this run takes the row over: it cannot mix step IDs from
+      // two runs under one run name.
+      if (row.run && row.run !== run.id) {
+        summary.skipped.push(
+          `gate ${name}: the citation from run ${row.run} is replaced by this run's step`,
+        );
+        delete row.run;
+        row.steps = [];
+      }
       row.outcome = passed ? "passed" : "failed";
       if (passed) addOnce(row.steps, step.id);
       summary.gates.push(`${name}:${row.outcome}`);
