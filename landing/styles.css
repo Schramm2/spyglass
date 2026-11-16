@@ -3,6 +3,28 @@
  * A board of flat tiles on 8px gaps: soot ground, white and grey fields,
  * one lime action colour. Square corners, no shadows, no gradients.
  */
+
+/*
+ * The hero name never wraps, so its width follows the font. When Inter Tight
+ * does not load, these local faces are scaled to its width, so the name still
+ * fits the band: Arial and its metric clones at 94%, DejaVu Sans (the usual
+ * Linux default) at 84%.
+ */
+@font-face {
+  font-family: "Spyglass Name Fallback";
+  src:
+    local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold"),
+    local("LiberationSans-Bold"), local("Arimo Bold"), local("Arimo-Bold"),
+    local("Helvetica Bold"), local("Helvetica-Bold");
+  font-weight: 700;
+  size-adjust: 94%;
+}
+@font-face {
+  font-family: "Spyglass Name DejaVu";
+  src: local("DejaVu Sans Bold"), local("DejaVuSans-Bold");
+  font-weight: 700;
+  size-adjust: 84%;
+}
 :root {
   --bg: #0f0f0f;
   --surface: #1a1a1a;
@@ -304,6 +326,8 @@ code,
   padding: 20px 8px;
 }
 .name {
+  font-family:
+    "Inter Tight", "Spyglass Name Fallback", "Spyglass Name DejaVu", var(--font);
   font-size: clamp(140px, 15.6vw, 240px);
   font-weight: 700;
   letter-spacing: -0.055em;

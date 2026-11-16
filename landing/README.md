@@ -4,6 +4,10 @@ The public landing page for Spyglass: one static HTML page with a stylesheet
 and a small script. It has no build step, package or framework, and it is not
 part of the npm package.
 
+The live website is [spyglass.mattschramm.com](https://spyglass.mattschramm.com).
+The repository website setting and the `homepage` in `package.json` use this
+address.
+
 | File          | Contents                                                              |
 | ------------- | --------------------------------------------------------------------- |
 | `index.html`  | All copy and markup. The page reads correctly without JavaScript.     |
@@ -65,7 +69,8 @@ browser and server. They retain viewport screenshots, full-page screenshots
 and layout observations at the selected artifact path. They cover copy
 completion and refusal, simulation faults and recovery, keyboard switches,
 JavaScript disabled, external requests blocked and a doubled-text check.
-They do not run the CLI surface suite or establish human usability.
+They do not run the CLI surface suite or establish human usability. CI runs
+them in the required real surface job and retains their artifacts for 14 days.
 
 Keep Copy hidden until its handler is ready. A refused clipboard write must
 leave the command selected and explain manual copy. Keep simulation controls

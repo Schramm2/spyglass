@@ -17,25 +17,25 @@ current source. To rerun tests without a rebuild, run `node --test` directly
 
 ## Files
 
-| File                          | Covers                                                                                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `tests/e2e/helper.mjs`        | Shared helpers: `makeRepo`, `removeRepo`, `runCli`, `startCli`, `assertEnvelope`, `baseProfile`, `readRunFile`, `waitFor`, `spawnCapture` |
-| `tests/e2e/core.test.mjs`     | Run lifecycle, checks, evidence, source identity, claims, controls, reports, locks and errors. Needs no browser or Docker.                |
-| `tests/e2e/landing.test.mjs` | The static landing page in real Chromium: responsive layout, copy recovery, local simulation, keyboard access and no-JavaScript fallback. Opt-in with `SPYGLASS_TEST_LANDING=1`; see `landing/README.md`. |
-| `tests/e2e/surfaces.test.mjs` | Real Chromium through `agent-browser`, HTTP, PostgreSQL and Compose. Opt-in.                                                              |
-| `fixtures/demo-app/`          | The app under test: `server.mjs` (HTTP app), `check.mjs` (a named check that passes or fails on request), `compose.yaml` (PostgreSQL 17)  |
-| `docs/failure-cases.md`       | The failure cases the suite must cover                                                                                                    |
+| File                          | Covers                                                                                                                                                                                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/e2e/helper.mjs`        | Shared helpers: `makeRepo`, `removeRepo`, `runCli`, `startCli`, `assertEnvelope`, `baseProfile`, `readRunFile`, `waitFor`, `spawnCapture`                                                                                                     |
+| `tests/e2e/core.test.mjs`     | Run lifecycle, checks, evidence, source identity, claims, controls, reports, locks and errors. Needs no browser or Docker.                                                                                                                    |
+| `tests/e2e/landing.test.mjs`  | The static landing page in real Chromium: responsive layout, copy recovery, local simulation, keyboard access and no-JavaScript fallback. Opt-in with `SPYGLASS_TEST_LANDING=1`; CI runs it in the real surface job. See `landing/README.md`. |
+| `tests/e2e/surfaces.test.mjs` | Real Chromium through `agent-browser`, HTTP, PostgreSQL and Compose. Opt-in.                                                                                                                                                                  |
+| `fixtures/demo-app/`          | The app under test: `server.mjs` (HTTP app), `check.mjs` (a named check that passes or fails on request), `compose.yaml` (PostgreSQL 17)                                                                                                      |
+| `docs/failure-cases.md`       | The failure cases the suite must cover                                                                                                                                                                                                        |
 
-`makeRepo` (`tests/e2e/helper.mjs:15`) copies the demo fixture into a
+`makeRepo` (`tests/e2e/helper.mjs:23`) copies the demo fixture into a
 temporary directory, writes `.gitignore`, `package.json`, an optional
 `spyglass.json` profile and `plan.json`, and commits a baseline. Call
 `removeRepo` in a `finally` block; it removes the directory and its state home.
 
-`startCli` (`tests/e2e/helper.mjs:104`) sets `XDG_STATE_HOME` to a directory
+`startCli` (`tests/e2e/helper.mjs:125`) sets `XDG_STATE_HOME` to a directory
 beside the temporary repository, so run state never touches your own
 `~/.local/state/spyglass`. Keep that isolation in new helpers.
 
-`baseProfile` (`tests/e2e/helper.mjs:67`) gives an owned demo app with a
+`baseProfile` (`tests/e2e/helper.mjs:88`) gives an owned demo app with a
 `${port}` binding, a web and API origin, a source scope and a browser
 allowlist. Override fields with its argument.
 

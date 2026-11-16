@@ -15,9 +15,16 @@ and back-merges; use that guide to select the base and target.
 | `package-lock.json`     | `npm install`                                                                     | Change only with a dependency change.                                                                            |
 
 The tested `agent-browser` version is pinned in several places. Change all of
-them together: `.github/workflows/ci.yml`, `src/lifecycle.ts:419`,
-`src/profile.ts:280`, `README.md`, `docs/configuration.md`, `docs/support.md`,
-`CONTRIBUTING.md`, and `agent_docs/testing.md`.
+them together. Find them with `git grep -n '0\.38\.2' -- ':!bench/results'`,
+using the current version: CI, the `testedVersion` values in `src/`, the
+landing page, and the requirement and install lines in `README.md`,
+`CONTRIBUTING.md`, `docs/configuration.md`, `docs/support.md` and
+`agent_docs/testing.md`. Recheck the version-specific comment in
+`tests/e2e/surfaces.test.mjs`. Leave the version in a record of a past
+measurement or comparison unchanged: `docs/browser-benchmark.md`,
+`docs/operator-comparison*.md`, the measured results in
+`docs/verification-speed.md` and the "Tested configurations" table of
+`docs/support.md`.
 
 ## User-visible changes
 

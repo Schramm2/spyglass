@@ -1,5 +1,8 @@
 # Adopt Spyglass in an existing repository
 
+For a product overview, example evidence and an interactive demo, open the
+[Spyglass website](https://spyglass.mattschramm.com).
+
 Use the repository's checks and lifecycle tools. Do not replace its test
 runner or add a Spyglass runtime dependency to the target app. A first useful
 report has a named claim, a detected intended failure, a restored pass, source

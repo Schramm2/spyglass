@@ -1,0 +1,408 @@
+{
+  "date": "2026-11-07",
+  "node": "v24.11.1",
+  "agentBrowser": "agent-browser 0.38.2",
+  "pairs": 20,
+  "budgetsMs": {
+    "p50": 120,
+    "p95": 150,
+    "cold": 100
+  },
+  "coldStart": {
+    "p50": 27.5,
+    "p95": 28.4
+  },
+  "scenarios": [
+    {
+      "name": "ui get title",
+      "pairs": [
+        {
+          "pair": 1,
+          "direct": 4,
+          "spyglass": 49.4,
+          "added": 45.4
+        },
+        {
+          "pair": 2,
+          "direct": 4.1,
+          "spyglass": 48.9,
+          "added": 44.8
+        },
+        {
+          "pair": 3,
+          "direct": 4.6,
+          "spyglass": 49,
+          "added": 44.5
+        },
+        {
+          "pair": 4,
+          "direct": 4.2,
+          "spyglass": 49.8,
+          "added": 45.6
+        },
+        {
+          "pair": 5,
+          "direct": 4.2,
+          "spyglass": 48.7,
+          "added": 44.4
+        },
+        {
+          "pair": 6,
+          "direct": 4.5,
+          "spyglass": 55.5,
+          "added": 51.1
+        },
+        {
+          "pair": 7,
+          "direct": 4.5,
+          "spyglass": 51.5,
+          "added": 46.9
+        },
+        {
+          "pair": 8,
+          "direct": 4.4,
+          "spyglass": 54,
+          "added": 49.7
+        },
+        {
+          "pair": 9,
+          "direct": 4.3,
+          "spyglass": 48,
+          "added": 43.8
+        },
+        {
+          "pair": 10,
+          "direct": 4,
+          "spyglass": 50.2,
+          "added": 46.2
+        },
+        {
+          "pair": 11,
+          "direct": 4.5,
+          "spyglass": 48.2,
+          "added": 43.7
+        },
+        {
+          "pair": 12,
+          "direct": 4.7,
+          "spyglass": 51.9,
+          "added": 47.2
+        },
+        {
+          "pair": 13,
+          "direct": 4.3,
+          "spyglass": 55,
+          "added": 50.7
+        },
+        {
+          "pair": 14,
+          "direct": 4.3,
+          "spyglass": 53.7,
+          "added": 49.4
+        },
+        {
+          "pair": 15,
+          "direct": 4.2,
+          "spyglass": 50.6,
+          "added": 46.3
+        },
+        {
+          "pair": 16,
+          "direct": 4.5,
+          "spyglass": 48.9,
+          "added": 44.4
+        },
+        {
+          "pair": 17,
+          "direct": 4.6,
+          "spyglass": 52.7,
+          "added": 48.1
+        },
+        {
+          "pair": 18,
+          "direct": 4.2,
+          "spyglass": 54.9,
+          "added": 50.6
+        },
+        {
+          "pair": 19,
+          "direct": 4.5,
+          "spyglass": 52.3,
+          "added": 47.7
+        },
+        {
+          "pair": 20,
+          "direct": 4,
+          "spyglass": 48.5,
+          "added": 44.4
+        }
+      ],
+      "directP50": 4.3,
+      "spyglassP50": 50.2,
+      "addedP50": 46.2,
+      "addedP95": 50.7,
+      "addedMax": 51.1
+    },
+    {
+      "name": "ui expect --title",
+      "pairs": [
+        {
+          "pair": 1,
+          "direct": 4.2,
+          "spyglass": 55,
+          "added": 50.8
+        },
+        {
+          "pair": 2,
+          "direct": 4.3,
+          "spyglass": 49.1,
+          "added": 44.9
+        },
+        {
+          "pair": 3,
+          "direct": 4,
+          "spyglass": 50.9,
+          "added": 46.9
+        },
+        {
+          "pair": 4,
+          "direct": 4.3,
+          "spyglass": 51.6,
+          "added": 47.3
+        },
+        {
+          "pair": 5,
+          "direct": 4.9,
+          "spyglass": 57.1,
+          "added": 52.2
+        },
+        {
+          "pair": 6,
+          "direct": 4.6,
+          "spyglass": 55.7,
+          "added": 51.1
+        },
+        {
+          "pair": 7,
+          "direct": 4.2,
+          "spyglass": 51,
+          "added": 46.8
+        },
+        {
+          "pair": 8,
+          "direct": 4.5,
+          "spyglass": 53.8,
+          "added": 49.2
+        },
+        {
+          "pair": 9,
+          "direct": 4.3,
+          "spyglass": 129.5,
+          "added": 125.2
+        },
+        {
+          "pair": 10,
+          "direct": 6,
+          "spyglass": 83.1,
+          "added": 77.2
+        },
+        {
+          "pair": 11,
+          "direct": 8,
+          "spyglass": 71.1,
+          "added": 63.1
+        },
+        {
+          "pair": 12,
+          "direct": 7.2,
+          "spyglass": 53.6,
+          "added": 46.3
+        },
+        {
+          "pair": 13,
+          "direct": 4.4,
+          "spyglass": 51.3,
+          "added": 46.9
+        },
+        {
+          "pair": 14,
+          "direct": 4.8,
+          "spyglass": 53.2,
+          "added": 48.4
+        },
+        {
+          "pair": 15,
+          "direct": 4.6,
+          "spyglass": 51.4,
+          "added": 46.9
+        },
+        {
+          "pair": 16,
+          "direct": 4.4,
+          "spyglass": 53,
+          "added": 48.6
+        },
+        {
+          "pair": 17,
+          "direct": 4.3,
+          "spyglass": 54.3,
+          "added": 50
+        },
+        {
+          "pair": 18,
+          "direct": 4.9,
+          "spyglass": 52.4,
+          "added": 47.5
+        },
+        {
+          "pair": 19,
+          "direct": 4,
+          "spyglass": 47.6,
+          "added": 43.5
+        },
+        {
+          "pair": 20,
+          "direct": 4.1,
+          "spyglass": 48.9,
+          "added": 44.7
+        }
+      ],
+      "directP50": 4.4,
+      "spyglassP50": 53,
+      "addedP50": 47.5,
+      "addedP95": 77.2,
+      "addedMax": 125.2
+    },
+    {
+      "name": "ui verify (5 actions + proof)",
+      "pairs": [
+        {
+          "pair": 1,
+          "direct": 83,
+          "spyglass": 141.8,
+          "added": 58.8
+        },
+        {
+          "pair": 2,
+          "direct": 75.9,
+          "spyglass": 138.3,
+          "added": 62.5
+        },
+        {
+          "pair": 3,
+          "direct": 81.5,
+          "spyglass": 137.1,
+          "added": 55.6
+        },
+        {
+          "pair": 4,
+          "direct": 73.3,
+          "spyglass": 131.9,
+          "added": 58.6
+        },
+        {
+          "pair": 5,
+          "direct": 71,
+          "spyglass": 138.2,
+          "added": 67.3
+        },
+        {
+          "pair": 6,
+          "direct": 75.3,
+          "spyglass": 142.8,
+          "added": 67.6
+        },
+        {
+          "pair": 7,
+          "direct": 77,
+          "spyglass": 139.6,
+          "added": 62.6
+        },
+        {
+          "pair": 8,
+          "direct": 75.2,
+          "spyglass": 157.9,
+          "added": 82.7
+        },
+        {
+          "pair": 9,
+          "direct": 77.2,
+          "spyglass": 140.9,
+          "added": 63.7
+        },
+        {
+          "pair": 10,
+          "direct": 75.5,
+          "spyglass": 137.8,
+          "added": 62.3
+        },
+        {
+          "pair": 11,
+          "direct": 76.3,
+          "spyglass": 123.9,
+          "added": 47.6
+        },
+        {
+          "pair": 12,
+          "direct": 78.6,
+          "spyglass": 139.2,
+          "added": 60.5
+        },
+        {
+          "pair": 13,
+          "direct": 77.2,
+          "spyglass": 124,
+          "added": 46.8
+        },
+        {
+          "pair": 14,
+          "direct": 76.3,
+          "spyglass": 121.6,
+          "added": 45.3
+        },
+        {
+          "pair": 15,
+          "direct": 78.5,
+          "spyglass": 138.8,
+          "added": 60.3
+        },
+        {
+          "pair": 16,
+          "direct": 74.3,
+          "spyglass": 124.4,
+          "added": 50.1
+        },
+        {
+          "pair": 17,
+          "direct": 77.3,
+          "spyglass": 140.3,
+          "added": 62.9
+        },
+        {
+          "pair": 18,
+          "direct": 78.1,
+          "spyglass": 136.8,
+          "added": 58.8
+        },
+        {
+          "pair": 19,
+          "direct": 79.2,
+          "spyglass": 159.7,
+          "added": 80.5
+        },
+        {
+          "pair": 20,
+          "direct": 73.7,
+          "spyglass": 137.1,
+          "added": 63.4
+        }
+      ],
+      "directP50": 76.3,
+      "spyglassP50": 138.2,
+      "addedP50": 60.5,
+      "addedP95": 80.5,
+      "addedMax": 82.7
+    }
+  ],
+  "passed": true
+}

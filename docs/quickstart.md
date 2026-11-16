@@ -9,6 +9,9 @@ Use this disposable demo to learn the same workflow that an agent uses. It
 starts a local HTTP app, records a failed assertion and a later passing check,
 and keeps its report after cleanup. It does not use paid services.
 
+For a product overview and an interactive demo, open the
+[Spyglass website](https://spyglass.mattschramm.com).
+
 ## Prepare the demo
 
 From the Spyglass checkout, copy the fixture and examples into a new temporary
