@@ -5269,6 +5269,63 @@ test("api --expect-json and --expect-body-contains fail on a wrong or missing va
   }
 });
 
+test("api masks a response header whose name marks it as a credential", async () => {
+  const token = `header-token-${randomUUID()}`;
+  const marker = `m${randomUUID().replaceAll("-", "")}`;
+  const dir = await makeRepo({ profile: apiProfile() });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-headers"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    ).run;
+    const call = await runCli(
+      dir,
+      [
+        "--json",
+        "--run",
+        run,
+        "api",
+        "POST",
+        "/reflect",
+        "--seat",
+        "agent",
+        "--data",
+        JSON.stringify({ value: marker }),
+        "--expect",
+        "200",
+      ],
+      apiEnv(token),
+    );
+    const result = assertEnvelope(call, { ok: true, code: 0 });
+    const path = result.artifacts.find((item) => item.kind === "api").path;
+    const text = await readRunFile(dir, run, `spyglass/${path}`);
+    const record = JSON.parse(text);
+    assert.equal(
+      record.response.headers["x-session-token"],
+      "[REDACTED]",
+      "a credential-named response header is masked",
+    );
+    assert.match(record.response.headers["content-type"], /application\/json/);
+    const secret = `fixture-header-token-${marker}`;
+    const log = await readRunFile(dir, run, "spyglass/log.jsonl");
+    for (const [label, value] of [
+      ["stdout", call.stdout],
+      ["stderr", call.stderr],
+      ["the artifact", text],
+      ["the step log", log],
+    ])
+      assert.ok(!value.includes(secret), `${label} hides the header value`);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"], apiEnv(token));
+    await removeRepo(dir);
+  }
+});
+
 test("logs --since-step, --since-last, --grep, --expect-text and --forbid-text read the app log without a mark", async () => {
   const token = `logs-token-${randomUUID()}`;
   const dir = await makeRepo({ profile: apiProfile() });

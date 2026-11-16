@@ -128,7 +128,12 @@ const server = createServer(async (req, res) => {
       } catch {
         return send(res, 400, { error: "invalid JSON" });
       }
-      return send(res, 200, { reflected: input.value ?? "" });
+      // The header value stays printable: a reflected lone surrogate or a
+      // control character would make writeHead throw and end the fixture.
+      const printable = String(input.value ?? "").replace(/[^\x20-\x7e]/g, "");
+      return send(res, 200, { reflected: input.value ?? "" }, undefined, {
+        "x-session-token": `fixture-header-token-${printable}`,
+      });
     }
     return send(res, 404, { error: "not found" });
   }

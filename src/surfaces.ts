@@ -374,7 +374,11 @@ async function api(
   const headers = Object.fromEntries(
     [...response.headers.entries()].map(([name, value]) => [
       name,
-      name.toLowerCase() === "location" ? safeLocation(target, value) : value,
+      name.toLowerCase() === "location"
+        ? safeLocation(target, value)
+        : SENSITIVE_FIELD.test(name)
+          ? "[REDACTED]"
+          : value,
     ]),
   );
   const responseRecord = {

@@ -24,6 +24,9 @@ This file records the notable changes to Spyglass. The format follows
   action step before its independent read. A result that passed only because
   it cited `up` or a failed step as its action is now refused with
   `INDEPENDENT_READ_MISSING`.
+- `api` masks a response header whose name marks it as a credential, such as
+  `x-auth-token` or `x-api-key`, in the retained response, the step log and
+  the envelope. Other response headers stay readable.
 
 ## [1.4.3] - 2026-11-16
 
