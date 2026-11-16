@@ -43,7 +43,8 @@ from successful report generation alone.
 
 For a landing page change, run the opt-in Chromium checks in
 `landing/README.md` ("Verify changes") with `SPYGLASS_TEST_LANDING=1`, and
-open the retained screenshots. CI does not run these checks.
+open the retained screenshots. CI runs them in the required real surface job
+and retains their screenshots.
 
 Update this map when entry points, state owners, rendering boundaries or the
 frontend stack change. New UI behavior needs a failure case and owning E2E

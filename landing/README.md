@@ -69,7 +69,8 @@ browser and server. They retain viewport screenshots, full-page screenshots
 and layout observations at the selected artifact path. They cover copy
 completion and refusal, simulation faults and recovery, keyboard switches,
 JavaScript disabled, external requests blocked and a doubled-text check.
-They do not run the CLI surface suite or establish human usability.
+They do not run the CLI surface suite or establish human usability. CI runs
+them in the required real surface job and retains their artifacts for 14 days.
 
 Keep Copy hidden until its handler is ready. A refused clipboard write must
 leave the command selected and explain manual copy. Keep simulation controls

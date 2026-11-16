@@ -17,14 +17,14 @@ current source. To rerun tests without a rebuild, run `node --test` directly
 
 ## Files
 
-| File                          | Covers                                                                                                                                                                                                                        |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tests/e2e/helper.mjs`        | Shared helpers: `makeRepo`, `removeRepo`, `runCli`, `startCli`, `assertEnvelope`, `baseProfile`, `readRunFile`, `waitFor`, `spawnCapture`                                                                                     |
-| `tests/e2e/core.test.mjs`     | Run lifecycle, checks, evidence, source identity, claims, controls, reports, locks and errors. Needs no browser or Docker.                                                                                                    |
-| `tests/e2e/landing.test.mjs`  | The static landing page in real Chromium: responsive layout, copy recovery, local simulation, keyboard access and no-JavaScript fallback. Opt-in with `SPYGLASS_TEST_LANDING=1`; CI does not run it. See `landing/README.md`. |
-| `tests/e2e/surfaces.test.mjs` | Real Chromium through `agent-browser`, HTTP, PostgreSQL and Compose. Opt-in.                                                                                                                                                  |
-| `fixtures/demo-app/`          | The app under test: `server.mjs` (HTTP app), `check.mjs` (a named check that passes or fails on request), `compose.yaml` (PostgreSQL 17)                                                                                      |
-| `docs/failure-cases.md`       | The failure cases the suite must cover                                                                                                                                                                                        |
+| File                          | Covers                                                                                                                                                                                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/e2e/helper.mjs`        | Shared helpers: `makeRepo`, `removeRepo`, `runCli`, `startCli`, `assertEnvelope`, `baseProfile`, `readRunFile`, `waitFor`, `spawnCapture`                                                                                                     |
+| `tests/e2e/core.test.mjs`     | Run lifecycle, checks, evidence, source identity, claims, controls, reports, locks and errors. Needs no browser or Docker.                                                                                                                    |
+| `tests/e2e/landing.test.mjs`  | The static landing page in real Chromium: responsive layout, copy recovery, local simulation, keyboard access and no-JavaScript fallback. Opt-in with `SPYGLASS_TEST_LANDING=1`; CI runs it in the real surface job. See `landing/README.md`. |
+| `tests/e2e/surfaces.test.mjs` | Real Chromium through `agent-browser`, HTTP, PostgreSQL and Compose. Opt-in.                                                                                                                                                                  |
+| `fixtures/demo-app/`          | The app under test: `server.mjs` (HTTP app), `check.mjs` (a named check that passes or fails on request), `compose.yaml` (PostgreSQL 17)                                                                                                      |
+| `docs/failure-cases.md`       | The failure cases the suite must cover                                                                                                                                                                                                        |
 
 `makeRepo` (`tests/e2e/helper.mjs:23`) copies the demo fixture into a
 temporary directory, writes `.gitignore`, `package.json`, an optional
