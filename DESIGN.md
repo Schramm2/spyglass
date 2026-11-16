@@ -4,7 +4,6 @@ name: Spyglass
 description: Repo-local brand and visual contract for the README images and offline evidence report.
 colors:
   primary: "#b08d6e"
-  on-primary: "#0f1514"
   surface: "#0f1514"
   on-surface: "#e9eeea"
   surface-raised: "#18201f"
@@ -30,13 +29,7 @@ typography:
 rounded:
   marketing: "0px"
   evidence: "10px"
-spacing:
-  button-inline: "1.5rem"
 components:
-  primary-action:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    rounded: "{rounded.marketing}"
   evidence-panel:
     backgroundColor: "{colors.surface-raised}"
     textColor: "{colors.on-surface}"
@@ -105,9 +98,8 @@ profile has no external owner.
 The brand is a ship's watch: the spyglass, the sea chart and the logbook that
 keeps each sighting after the voyage. The brand uses a sea-black ground
 (`#0f1514`), chart-white text (`#e9eeea`) and one bronze action accent
-(`#b08d6e`). Chart-paper sections provide intentional contrast in the
-marketing page. Pass and
-fail colors identify evidence states, not decorative marketing categories.
+(`#b08d6e`), which appears only on the instrument in the engraved images.
+Pass and fail colors identify evidence states, not decorative marketing categories.
 Always pair a status color with text. The report is an intentional separate
 palette, defined in `renderHtml`; it does not load the brand's dark theme.
 
@@ -144,28 +136,29 @@ instrument imagery is not a reason to add dashboard shadows or card grids.
 
 ## Shapes
 
-Brand actions are square. Evidence fragments use the small rounded panel
+Brand images and landing tiles are square. Evidence fragments use the small rounded panel
 shape in the tokens. Search fields, copy controls and status pills keep their
 implemented surface-specific shapes; do not force them into one radius.
 
 ## Components
 
-Primary actions use bronze with sea-black text. Hover uses the stronger bronze
-value; pressed actions scale slightly. Report states keep incomplete, failed
-and passed records distinct.
+No current surface has a bronze action. Landing page actions use its lime
+accent; see "Landing page". Report states keep incomplete, failed and passed
+records distinct.
 
 ### Accessibility and states
 
-Keep the bronze focus outline, skip links, native keyboard controls and visible
-labels. Check normal text contrast at 4.5:1 and large text at 3:1 when changing
+Keep native keyboard controls and visible labels. The landing page keeps its
+skip link and a 2px lime focus outline, which turns soot on lime fields. The
+report keeps the browser's default focus ring on its `details` controls. Check normal text contrast at 4.5:1 and large text at 3:1 when changing
 colors. Preserve status words as well as color. Reduced motion removes staged reveals
 and movement without hiding the final information.
 
 ### Motion and interaction
 
-Motion explains the change from a claim to its evidence. Keep the implemented
-reduced-motion fallback and coarse-pointer behavior. Avoid introducing motion
-into the report, which must work offline and without JavaScript.
+Motion exists only on the landing page, where it uses transform and opacity
+and `prefers-reduced-motion: reduce` removes it. The report has no motion; it
+must work offline and without JavaScript.
 
 ## Open Questions
 

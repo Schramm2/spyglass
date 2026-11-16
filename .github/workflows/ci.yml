@@ -148,6 +148,19 @@ jobs:
             --test-reporter=junit --test-reporter-destination="$RUNNER_TEMP/e2e/surfaces.xml" \
             --test-reporter=spec --test-reporter-destination=stdout \
             tests/e2e/surfaces.test.mjs
+      - name: Run landing page Chromium E2E
+        # Runs after a surface failure too, so both results are retained.
+        if: ${{ !cancelled() }}
+        env:
+          SPYGLASS_TEST_LANDING: "1"
+          SPYGLASS_LANDING_ARTIFACTS: ${{ runner.temp }}/e2e/landing-proof
+        run: |
+          mkdir -p "$RUNNER_TEMP/e2e"
+          node --test --test-concurrency=1 \
+            --test-reporter=tap --test-reporter-destination="$RUNNER_TEMP/e2e/landing.tap" \
+            --test-reporter=junit --test-reporter-destination="$RUNNER_TEMP/e2e/landing.xml" \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            tests/e2e/landing.test.mjs
       - name: Retain surface results and safe visual proof
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -19,6 +19,10 @@ This file records the notable changes to Spyglass. The format follows
   a screenshot timeout. Sheet previews that stop animation frames can still
   produce a screenshot; failed screenshots remain incomplete visual proof.
 
+- The landing page hero name no longer overflows narrow and mid-width screens
+  when its web font fails to load. It now falls back to local fonts scaled to
+  the web font's width.
+
 - The landing page links to the documentation on `dev`, the default branch,
   so its footer and hero links no longer reach missing files on `main`. The
   security note in the footer links to `SECURITY.md`.

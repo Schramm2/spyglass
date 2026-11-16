@@ -26,7 +26,7 @@ no changed-path filter that can silently omit a surface check.
 | ----------------- | ------------------------------------------------------------------------------------------------------------- |
 | PR branch policy  | Refuse invalid Git Flow source/target routes, including fork branches that impersonate long-lived back-merges |
 | Default E2E       | Formatting, type-check/build, schema drift and the core built-CLI suite                                       |
-| Real surface E2E  | Actual Chromium, HTTP, PostgreSQL and Compose checks                                                          |
+| Real surface E2E  | Actual Chromium, HTTP, PostgreSQL and Compose checks, then the landing page Chromium checks                   |
 | Review proof      | Public recipe checks retained complete and deliberately incomplete reports, source context and cleanup |
 | Secret scan       | TruffleHog scan of introduced history; full history on scheduled/manual runs                                  |
 | Dependency review | Refuse new dependencies with moderate-or-higher known vulnerabilities; PR events only                         |
@@ -39,7 +39,8 @@ code has no security defects. Review new findings as well as job status.
 
 Each E2E job prints test results in its job log and uploads TAP and JUnit
 output, including on failure when files exist. The surface job also uploads the checked visual journey's self-contained
-report, two screenshots and provenance. These artifacts have 14-day retention.
+report, two screenshots and provenance, and the landing checks' screenshots and
+layout observations. These artifacts have 14-day retention.
 They are examples of the actual suite's retained proof, not a report for every
 test. A failure before the visual journey completes can leave only test logs.
 

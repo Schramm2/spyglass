@@ -28,6 +28,7 @@ engineering) and `DESIGN.md` (visual intent).
 | `skills/`, `examples/`             | Operator workflows and public profile/plan examples                              |
 | `bench/`                           | Performance studies and sanitized retained public evidence                       |
 | `landing/`                         | Static public landing page; not part of the npm package                          |
+| `scripts/`                         | Package gate (`check-package.mjs`): installs the packed archive and drives it    |
 | `docs/`, `agent_docs/`             | Public contracts and focused contributor/agent procedures                        |
 | `.github/`                         | CI, dependency updates and contribution entry points                             |
 
