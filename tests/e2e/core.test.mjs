@@ -4195,6 +4195,75 @@ test("steps run with --claim, --control and --gate link themselves into the pend
   }
 });
 
+test("a malformed row in the pending result does not remove the step from the log", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: linkPlan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "malformed",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const resultPath = join(
+      dir,
+      ".spyglass/runs/malformed/spyglass/result.json",
+    );
+    const pending = await pendingResult(dir, run);
+    pending.claims = pending.claims.map((row) =>
+      row.id === "ready"
+        ? { id: "ready", outcome: "not run", observed: "", artifacts: [] }
+        : row,
+    );
+    await writeFile(resultPath, JSON.stringify(pending, null, 2) + "\n");
+    const claimStep = await drive(dir, run, [
+      "check",
+      "pass",
+      "--claim",
+      "ready",
+    ]);
+    assert.equal(typeof claimStep.data.linked.error, "string");
+    assert.match(
+      claimStep.data.linked.error,
+      /Cannot update the pending result/,
+    );
+    const claimLines = (await readRunFile(dir, run, "spyglass/log.jsonl"))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line))
+      .filter((entry) => entry.id === claimStep.step);
+    assert.equal(claimLines.length, 1, "the step is logged exactly once");
+    assert.equal(claimLines[0].status, "passed");
+
+    pending.gates = {};
+    await writeFile(resultPath, JSON.stringify(pending, null, 2) + "\n");
+    const gateStep = await drive(dir, run, [
+      "exec",
+      "--gate",
+      "unit",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    assert.equal(typeof gateStep.data.linked.error, "string");
+    const gateLines = (await readRunFile(dir, run, "spyglass/log.jsonl"))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line))
+      .filter((entry) => entry.id === gateStep.step);
+    assert.equal(gateLines.length, 1, "the step is logged exactly once");
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
 test("a failed claim step cannot support a passed claim", async () => {
   const dir = await makeRepo({
     profile: linkProfile(),

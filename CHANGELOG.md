@@ -14,6 +14,11 @@ This file records the notable changes to Spyglass. The format follows
   result, and `maskedRegions` reports how many masked parts the log holds.
   Compose log expectations are evaluated on the unmasked text, and the
   retained log stays masked.
+- A malformed row in the pending result, such as a claim without a `steps`
+  array, no longer removes the finished step from `log.jsonl`. The step keeps
+  its outcome, exactly one log line records it, and `linked.error` names the
+  problem instead of failing the command with `ENVIRONMENT`. The result file
+  is left unchanged, and a second `finish` cannot log the step twice.
 
 ## [1.4.3] - 2026-11-16
 

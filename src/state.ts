@@ -584,87 +584,92 @@ export function linkPendingResult(
     summary.error = `Cannot update the pending result ${run.resultPath}: ${error instanceof Error ? error.message : String(error)}`;
     return summary;
   }
-  pending.controls ??= [];
-  pending.gates ??= [];
-  const passed = stepSucceeded(step);
-  const paths = step.artifacts.map((artifact) => artifact.path);
-  const claimRow = (id: string) => {
-    let row = pending.claims.find((item) => item.id === id);
-    if (!row) {
-      row = blankClaim(run.plan.claims.find((item) => item.id === id)!);
-      pending.claims.push(row);
-    }
-    return row;
-  };
-  const cite = (id: string) => {
-    const row = claimRow(id);
-    addOnce(row.steps, step.id);
-    if (links.evidenceFor) addOnce(row.steps, links.evidenceFor);
-    row.artifacts ??= [];
-    for (const path of paths) addOnce(row.artifacts, path);
-    return row;
-  };
-  for (const id of links.claims) {
-    if (!passed) {
-      summary.skipped.push(`claim ${id}: the step failed, so it is not cited`);
-      continue;
-    }
-    const row = cite(id);
-    if (links.independentRead) row.independentRead = step.id;
-    // A visual claim gets one inspection per viewport that the step captured.
-    // The viewport and the screenshot are facts of the run; what the image
-    // shows stays for the operator to write.
-    const shots = step.data?.viewports;
-    if (
-      run.plan.claims.find((item) => item.id === id)?.kind === "visual" &&
-      Array.isArray(shots)
-    ) {
-      row.inspections ??= [];
-      for (const shot of shots as { viewport?: string; artifact?: string }[])
-        if (
-          shot.viewport &&
-          shot.artifact &&
-          !row.inspections.some((item) => item.artifact === shot.artifact)
-        )
-          row.inspections.push({
-            viewport: shot.viewport,
-            expected: "",
-            observed: "",
-            artifact: shot.artifact,
-          });
-    }
-    summary.claims.push(id);
-  }
-  for (const { id, state } of links.controls) {
-    let row = pending.controls.find((item) => item.id === id);
-    if (!row) pending.controls.push((row = blankControl(run, id)));
-    if (state === "failed") {
-      row.failedStep = step.id;
-      summary.controls.push(`${id}:failed`);
-    } else if (passed) {
-      row.restoredStep = step.id;
-      // The control's own claim must cite the restored pass.
-      const spec = run.plan.controls.find((item) => item.id === id);
-      if (spec && run.plan.claims.some((item) => item.id === spec.claim))
-        cite(spec.claim);
-      summary.controls.push(`${id}:restored`);
-    } else
-      summary.skipped.push(
-        `control ${id}: the restored step failed, so it is not linked`,
-      );
-  }
-  for (const name of links.gates) {
-    let row = pending.gates.find((item) => item.name === name);
-    if (!row)
-      pending.gates.push((row = { name, outcome: "not run", steps: [] }));
-    row.outcome = passed ? "passed" : "failed";
-    if (passed) addOnce(row.steps, step.id);
-    summary.gates.push(`${name}:${row.outcome}`);
-  }
   try {
+    pending.controls ??= [];
+    pending.gates ??= [];
+    const passed = stepSucceeded(step);
+    const paths = step.artifacts.map((artifact) => artifact.path);
+    const claimRow = (id: string) => {
+      let row = pending.claims.find((item) => item.id === id);
+      if (!row) {
+        row = blankClaim(run.plan.claims.find((item) => item.id === id)!);
+        pending.claims.push(row);
+      }
+      return row;
+    };
+    const cite = (id: string) => {
+      const row = claimRow(id);
+      addOnce(row.steps, step.id);
+      if (links.evidenceFor) addOnce(row.steps, links.evidenceFor);
+      row.artifacts ??= [];
+      for (const path of paths) addOnce(row.artifacts, path);
+      return row;
+    };
+    for (const id of links.claims) {
+      if (!passed) {
+        summary.skipped.push(
+          `claim ${id}: the step failed, so it is not cited`,
+        );
+        continue;
+      }
+      const row = cite(id);
+      if (links.independentRead) row.independentRead = step.id;
+      // A visual claim gets one inspection per viewport that the step captured.
+      // The viewport and the screenshot are facts of the run; what the image
+      // shows stays for the operator to write.
+      const shots = step.data?.viewports;
+      if (
+        run.plan.claims.find((item) => item.id === id)?.kind === "visual" &&
+        Array.isArray(shots)
+      ) {
+        row.inspections ??= [];
+        for (const shot of shots as { viewport?: string; artifact?: string }[])
+          if (
+            shot.viewport &&
+            shot.artifact &&
+            !row.inspections.some((item) => item.artifact === shot.artifact)
+          )
+            row.inspections.push({
+              viewport: shot.viewport,
+              expected: "",
+              observed: "",
+              artifact: shot.artifact,
+            });
+      }
+      summary.claims.push(id);
+    }
+    for (const { id, state } of links.controls) {
+      let row = pending.controls.find((item) => item.id === id);
+      if (!row) pending.controls.push((row = blankControl(run, id)));
+      if (state === "failed") {
+        row.failedStep = step.id;
+        summary.controls.push(`${id}:failed`);
+      } else if (passed) {
+        row.restoredStep = step.id;
+        // The control's own claim must cite the restored pass.
+        const spec = run.plan.controls.find((item) => item.id === id);
+        if (spec && run.plan.claims.some((item) => item.id === spec.claim))
+          cite(spec.claim);
+        summary.controls.push(`${id}:restored`);
+      } else
+        summary.skipped.push(
+          `control ${id}: the restored step failed, so it is not linked`,
+        );
+    }
+    for (const name of links.gates) {
+      let row = pending.gates.find((item) => item.name === name);
+      if (!row)
+        pending.gates.push((row = { name, outcome: "not run", steps: [] }));
+      row.outcome = passed ? "passed" : "failed";
+      if (passed) addOnce(row.steps, step.id);
+      summary.gates.push(`${name}:${row.outcome}`);
+    }
     writeJson(run.resultPath, pending);
   } catch (error) {
-    summary.error = `Cannot write the pending result: ${error instanceof Error ? error.message : String(error)}`;
+    summary.claims = [];
+    summary.controls = [];
+    summary.gates = [];
+    summary.error = `Cannot update the pending result ${run.resultPath}: ${error instanceof Error ? error.message : String(error)}`;
   }
   return summary;
 }
@@ -674,6 +679,8 @@ export class Context {
   run: Run;
   links?: StepLinks;
   linked?: LinkSummary;
+  /** The step is in the log; a second finish must not append it again. */
+  private logged = false;
   /** up --warm: start the seat's browser while the app starts. */
   warm?: { seat?: string };
   constructor(run: Run, command: string, args: string[]) {
@@ -792,16 +799,22 @@ export class Context {
     if (lastSourceCheck)
       this.step.data = { ...this.step.data, sourceCheck: lastSourceCheck };
     // A removed worktree took the pending result with it.
-    if (this.links && !worktreeRemoved(this.run)) {
+    if (
+      this.links &&
+      !this.logged &&
+      this.linked === undefined &&
+      !worktreeRemoved(this.run)
+    ) {
       this.linked = linkPendingResult(this.run, this.step, this.links);
       this.step.data = { ...this.step.data, linked: this.linked };
     }
     // A removed worktree took the log with it; never recreate its folders.
-    if (!worktreeRemoved(this.run)) {
+    if (!this.logged && !worktreeRemoved(this.run)) {
       const file = safePath(join(this.run.evidence, "spyglass"), "log.jsonl");
       appendFileSync(file, JSON.stringify(this.vault.clean(this.step)) + "\n", {
         mode: 0o600,
       });
+      this.logged = true;
     }
     saveRun(this.run);
   }
