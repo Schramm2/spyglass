@@ -19,6 +19,11 @@ This file records the notable changes to Spyglass. The format follows
   its outcome, exactly one log line records it, and `linked.error` names the
   problem instead of failing the command with `ENVIRONMENT`. The result file
   is left unchanged, and a second `finish` cannot log the step twice.
+- `result` now refuses a side-effect claim whose earlier cited step failed or
+  is administrative, such as the `up` step. Such a claim needs a successful
+  action step before its independent read. A result that passed only because
+  it cited `up` or a failed step as its action is now refused with
+  `INDEPENDENT_READ_MISSING`.
 
 ## [1.4.3] - 2026-11-16
 

@@ -4862,6 +4862,130 @@ test("api --then stops on a failed write and refuses unsafe follow-up requests",
   }
 });
 
+test("a side-effect claim cannot pass without a passed action before its independent read", async () => {
+  const token = `action-token-${randomUUID()}`;
+  const dir = await makeRepo({ profile: apiProfile(), plan: asyncPlan });
+  const resultFile = join(
+    dir,
+    ".spyglass/runs/api-no-action/spyglass/result.json",
+  );
+  const rewrite = async (steps, read) => {
+    const pending = JSON.parse(await readFile(resultFile, "utf8"));
+    const row = pending.claims.find((item) => item.id === "question-completed");
+    row.steps = steps;
+    row.independentRead = read;
+    row.artifacts = [];
+    row.outcome = "passed";
+    row.observed = "The state was readable.";
+    await writeFile(resultFile, JSON.stringify(pending, null, 2) + "\n");
+  };
+  const refused = async (label) => {
+    const checked = await drive(dir, run, ["result", "--check"], {
+      ok: false,
+      code: 1,
+    });
+    assert.ok(
+      checked.data.findings.some(
+        (item) =>
+          item.code === "INDEPENDENT_READ_MISSING" &&
+          item.claim === "question-completed",
+      ),
+      `${label}: ${JSON.stringify(checked.data.findings)}`,
+    );
+  };
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-no-action", "--plan", "plan.json"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    // Case A: the only earlier step is the administrative up step.
+    const read = await apiCall(dir, run, token, [
+      "GET",
+      "/questions",
+      "--seat",
+      "agent",
+      "--expect",
+      "200",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "question-completed",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The list was readable.",
+      "--step",
+      up.step,
+      "--step",
+      read.step,
+      "--independent-read",
+      read.step,
+    ]);
+    await refused("administrative up step");
+
+    // Case B: the only earlier action failed, without structured assertions.
+    const failedAction = assertEnvelope(
+      await runCli(
+        dir,
+        [
+          "--json",
+          "--run",
+          run,
+          "exec",
+          "--",
+          process.execPath,
+          "-e",
+          "process.exit(1)",
+        ],
+        apiEnv(token),
+      ),
+      { ok: false, code: 1 },
+    );
+    const read2 = await apiCall(dir, run, token, [
+      "GET",
+      "/questions",
+      "--seat",
+      "agent",
+      "--expect",
+      "200",
+    ]);
+    await rewrite([failedAction.step, read2.step], read2.step);
+    await refused("failed action");
+
+    // Case C: a passed write and a completed read are accepted.
+    const post = await submitQuestion(dir, run, token);
+    const read3 = await apiCall(dir, run, token, [
+      "GET",
+      `/questions/${post.data.body.id}`,
+      "--seat",
+      "agent",
+      "--wait-until",
+      "status=complete",
+      "--timeout-ms",
+      "5000",
+      "--interval-ms",
+      "50",
+      "--expect",
+      "200",
+    ]);
+    await rewrite([post.step, read3.step], read3.step);
+    await drive(dir, run, ["result", "--check"]);
+  } finally {
+    if (run) {
+      await runCli(dir, ["--json", "--run", run, "down"], apiEnv(token));
+    }
+    await removeRepo(dir);
+  }
+});
+
 test("api --wait-until polls one job to completion and satisfies the independent read", async () => {
   const token = `wait-token-${randomUUID()}`;
   const dir = await makeRepo({ profile: apiProfile(), plan: asyncPlan });
