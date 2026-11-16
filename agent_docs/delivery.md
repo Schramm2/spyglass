@@ -17,9 +17,13 @@ and back-merges; use that guide to select the base and target.
 The tested `agent-browser` version is pinned in several places. Change all of
 them together. Find them with `git grep -n '0\.38\.2' -- ':!bench/results'`,
 using the current version: CI, the `testedVersion` values in `src/`, the
-landing page and the setup guides. Leave the version in a record of a past
-measurement or comparison unchanged, for example `docs/browser-benchmark.md`,
-`docs/operator-comparison*.md` and the tested-platform rows of
+landing page, and the requirement and install lines in `README.md`,
+`CONTRIBUTING.md`, `docs/configuration.md`, `docs/support.md` and
+`agent_docs/testing.md`. Recheck the version-specific comment in
+`tests/e2e/surfaces.test.mjs`. Leave the version in a record of a past
+measurement or comparison unchanged: `docs/browser-benchmark.md`,
+`docs/operator-comparison*.md`, the measured results in
+`docs/verification-speed.md` and the "Tested configurations" table of
 `docs/support.md`.
 
 ## User-visible changes
