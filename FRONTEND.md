@@ -25,6 +25,10 @@ reduced motion. `landing/README.md` lists its content rules.
 - The run record, not the browser DOM, owns report status. `report` checks
   source identity, cited steps and artifact hashes before rendering. Use
   `htmlEscape` for untrusted text; never insert target output as raw markup.
+- The landing page holds no product state. `FAULTS` in `landing/main.js`
+  copies the CLI's error messages from `src/`; change both in one pull
+  request. The star count comes from the GitHub API and stays hidden when the
+  request fails. Card output comes from a real quickstart run.
 
 ## Interaction and verification
 
@@ -36,6 +40,10 @@ app or a network connection. Check passed and incomplete results, failed
 attempts, changed-source findings, missing artifacts, long output and cleanup
 state. Retain the report and its source identity. Do not infer a visual pass
 from successful report generation alone.
+
+For a landing page change, run the opt-in Chromium checks in
+`landing/README.md` ("Verify changes") with `SPYGLASS_TEST_LANDING=1`, and
+open the retained screenshots. CI does not run these checks.
 
 Update this map when entry points, state owners, rendering boundaries or the
 frontend stack change. New UI behavior needs a failure case and owning E2E
