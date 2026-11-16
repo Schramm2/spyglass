@@ -688,6 +688,16 @@ export class Context {
     lastSourceCheck = undefined;
     this.vault = new Secrets(run.repo);
     this.vault.collect(run.profile);
+    // The app reaches its database through its own host name, so the whole
+    // connection string does not match what it logs; mask the password itself.
+    const dbReference = run.profile.db?.connection;
+    if (dbReference) {
+      try {
+        this.vault.connection(this.vault.resolve(dbReference));
+      } catch {
+        /* Unresolved here: collect() skipped it in the same way. */
+      }
+    }
     this.step = {
       run: run.id,
       profileHash: run.profileHash,

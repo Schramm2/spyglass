@@ -27,6 +27,9 @@ This file records the notable changes to Spyglass. The format follows
 - `api` masks a response header whose name marks it as a credential, such as
   `x-auth-token` or `x-api-key`, in the retained response, the step log and
   the envelope. Other response headers stay readable.
+- Every command of a run registers the database password itself, not only the
+  whole connection string. Output such as a driver error or the app's own
+  connection URL, which names another host, no longer retains the password.
 
 ## [1.4.3] - 2026-11-16
 

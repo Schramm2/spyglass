@@ -1093,7 +1093,7 @@ function databaseConnection(ctx: Context): string {
   const connectionString = SECRET_REFERENCE.test(connectionSource)
     ? ctx.vault.resolve(connectionSource)
     : ctx.vault.register(connectionSource);
-  registerConnectionSecrets(ctx, connectionString);
+  ctx.vault.connection(connectionString);
   return connectionString;
 }
 
@@ -1211,29 +1211,6 @@ function boundedRows(
     bytes += size;
   }
   return { rows: kept, bytes, truncated: false };
-}
-
-function registerConnectionSecrets(
-  ctx: Context,
-  connectionString: string,
-): void {
-  ctx.vault.register(connectionString);
-  try {
-    const url = new URL(connectionString);
-    if (url.password) {
-      ctx.vault.register(url.password);
-      try {
-        ctx.vault.register(decodeURIComponent(url.password));
-      } catch {
-        /* Keep the encoded value registered. */
-      }
-    }
-    const queryPassword = url.searchParams.get("password");
-    if (queryPassword) ctx.vault.register(queryPassword);
-  } catch {
-    const match = connectionString.match(/(?:^|\s)password\s*=\s*([^\s]+)/i);
-    if (match?.[1]) ctx.vault.register(match[1].replace(/^['"]|['"]$/g, ""));
-  }
 }
 
 function stripLeadingSqlComments(sql: string): string {
