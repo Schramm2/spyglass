@@ -132,5 +132,5 @@ jobs:
           assert.equal(integrity, manifest.integrity);
           NODE
           archive=$(node -p "JSON.parse(require('fs').readFileSync('candidate/manifest.json'))[0].filename")
-          npm stage publish "candidate/$archive" --ignore-scripts --access public --tag "$DIST_TAG"
+          npm stage publish "./candidate/$archive" --ignore-scripts --access public --tag "$DIST_TAG"
           echo 'Candidate staged. Review the retained archive and proof, then approve on npm with 2FA. This workflow does not approve it.' >> "$GITHUB_STEP_SUMMARY"

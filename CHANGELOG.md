@@ -6,6 +6,16 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-11-16
+
+### Fixed
+
+- The npm publication workflow stages the checked archive by its relative
+  file path (`./candidate/...`). Without the `./`, npm read the path as a
+  GitHub repository and the 1.4.2 stage failed before any registry write, so
+  1.4.2 is available from GitHub only. 1.4.3 has the same package contents as
+  1.4.2 apart from the version.
+
 ## [1.4.2] - 2026-11-16
 
 ### Added
@@ -356,7 +366,8 @@ This file records the notable changes to Spyglass. The format follows
 - The agent skills `spyglass`, `create-verification-skill` and
   `maintain-verification-skill`.
 
-[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/Schramm2/spyglass/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/Schramm2/spyglass/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/Schramm2/spyglass/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/Schramm2/spyglass/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Schramm2/spyglass/compare/v1.3.1...v1.4.0
