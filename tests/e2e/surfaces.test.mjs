@@ -1096,6 +1096,12 @@ surfaceTest(
         required: ["db"],
       },
       db: { connection: "env:SPYGLASS_TEST_DATABASE_URL" },
+      checks: {
+        note: {
+          command: ["node", "-e", "0"],
+          env: { LOG_NOTE: "env:SPYGLASS_TEST_LOG_SECRET" },
+        },
+      },
     });
     const dir = await makeRepo({ profile });
     let run;
@@ -1132,6 +1138,7 @@ surfaceTest(
       );
       const connection = `postgres://spyglass:spyglass-demo-only@127.0.0.1:${port}/spyglass_demo`;
       const dbEnv = { SPYGLASS_TEST_DATABASE_URL: connection };
+      const dbPassword = new URL(connection).password;
 
       const up = assertEnvelope(
         await runCli(dir, ["--json", "up", "--run", "db-surface"], {
@@ -1140,6 +1147,32 @@ surfaceTest(
         { ok: true, code: 0 },
       );
       run = up.run ?? up.data.id;
+
+      // The app logs its own connection URL with another host and the same
+      // password; every command of the run masks the password itself.
+      const leak = await runCli(
+        dir,
+        [
+          "--json",
+          "--run",
+          run,
+          "exec",
+          "--",
+          process.execPath,
+          "-e",
+          "console.log('connect failed: postgres://app:' + process.env.LEAK + '@db:5432/app')",
+        ],
+        { env: { ...dbEnv, LEAK: dbPassword } },
+      );
+      assertEnvelope(leak, { ok: true, code: 0 });
+      assert.match(leak.stdout, /\[REDACTED\]/);
+      const leakLog = await readRunFile(dir, run, "spyglass/log.jsonl");
+      for (const [label, value] of [
+        ["stdout", leak.stdout],
+        ["stderr", leak.stderr],
+        ["the step log", leakLog],
+      ])
+        assert.ok(!value.includes(dbPassword), `${label} hides the password`);
 
       const mark = assertEnvelope(
         await runCli(dir, ["--json", "--run", run, "mark", "before-restart"], {
@@ -1422,6 +1455,39 @@ surfaceTest(
       );
       assert.match(JSON.stringify(logs.data), /ready to accept connections/i);
       assert.ok(mark.step);
+      const secretLog = assertEnvelope(
+        await runCli(
+          dir,
+          [
+            "--json",
+            "--run",
+            run,
+            "logs",
+            "db",
+            "--since",
+            "before-restart",
+            "--expect-text",
+            "ready to accept connections",
+          ],
+          {
+            env: {
+              ...dbEnv,
+              SPYGLASS_TEST_LOG_SECRET: "ready to accept connections",
+            },
+          },
+        ),
+        { ok: true, code: 0 },
+      );
+      assert.equal(
+        secretLog.data.claims[0].ok,
+        true,
+        "the expectation is evaluated before masking",
+      );
+      assert.ok(
+        !JSON.stringify(secretLog.data).includes("ready to accept connections"),
+        "the retained log stays masked",
+      );
+      assert.match(JSON.stringify(secretLog.data), /\[REDACTED\]/);
 
       await runCli(dir, ["--json", "--run", run, "down"], { env: dbEnv });
       const stillRunning = await spawnCapture(

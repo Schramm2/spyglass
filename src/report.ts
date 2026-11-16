@@ -356,9 +356,11 @@ function validateClaimProof(
           ? stepMap.get(claim.independentRead)
           : undefined;
         const earlierAction = resolved.some(
-          ({ index }) =>
+          ({ entry, index }) =>
             index < (independent?.index ?? -1) &&
-            entries[index]?.id !== claim.independentRead,
+            entry.id !== claim.independentRead &&
+            stepPassed(entry) &&
+            !administrativeStep(run, entry),
         );
         if (
           !independent ||
@@ -369,7 +371,7 @@ function validateClaimProof(
         ) {
           findings.push({
             code: "INDEPENDENT_READ_MISSING",
-            message: `Side-effect claim ${claim.id} needs a later successful read that observes completed state; a write request or HTTP 202 acceptance is not an independent read.`,
+            message: `Side-effect claim ${claim.id} needs a successful action step and a later successful read that observes completed state; a write request or HTTP 202 acceptance is not an independent read, and an administrative or failed step is not an action.`,
           });
         }
       }

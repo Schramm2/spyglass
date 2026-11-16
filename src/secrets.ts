@@ -76,6 +76,26 @@ export class Secrets {
     else if (value && typeof value === "object")
       Object.values(value).forEach((v) => this.collect(v, strict));
   }
+  /** Register the password inside a database connection string as its own secret. */
+  connection(connectionString: string): void {
+    this.register(connectionString);
+    try {
+      const url = new URL(connectionString);
+      if (url.password) {
+        this.register(url.password);
+        try {
+          this.register(decodeURIComponent(url.password));
+        } catch {
+          /* Keep the encoded value registered. */
+        }
+      }
+      const queryPassword = url.searchParams.get("password");
+      if (queryPassword) this.register(queryPassword);
+    } catch {
+      const match = connectionString.match(/(?:^|\s)password\s*=\s*([^\s]+)/i);
+      if (match?.[1]) this.register(match[1].replace(/^['"]|['"]$/g, ""));
+    }
+  }
   text(s: string): string {
     this.ordered ??= [...this.values]
       .sort((a, b) => b.length - a.length)

@@ -4195,6 +4195,75 @@ test("steps run with --claim, --control and --gate link themselves into the pend
   }
 });
 
+test("a malformed row in the pending result does not remove the step from the log", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: linkPlan });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "malformed",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    ).run;
+    const resultPath = join(
+      dir,
+      ".spyglass/runs/malformed/spyglass/result.json",
+    );
+    const pending = await pendingResult(dir, run);
+    pending.claims = pending.claims.map((row) =>
+      row.id === "ready"
+        ? { id: "ready", outcome: "not run", observed: "", artifacts: [] }
+        : row,
+    );
+    await writeFile(resultPath, JSON.stringify(pending, null, 2) + "\n");
+    const claimStep = await drive(dir, run, [
+      "check",
+      "pass",
+      "--claim",
+      "ready",
+    ]);
+    assert.equal(typeof claimStep.data.linked.error, "string");
+    assert.match(
+      claimStep.data.linked.error,
+      /Cannot update the pending result/,
+    );
+    const claimLines = (await readRunFile(dir, run, "spyglass/log.jsonl"))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line))
+      .filter((entry) => entry.id === claimStep.step);
+    assert.equal(claimLines.length, 1, "the step is logged exactly once");
+    assert.equal(claimLines[0].status, "passed");
+
+    pending.gates = {};
+    await writeFile(resultPath, JSON.stringify(pending, null, 2) + "\n");
+    const gateStep = await drive(dir, run, [
+      "exec",
+      "--gate",
+      "unit",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    assert.equal(typeof gateStep.data.linked.error, "string");
+    const gateLines = (await readRunFile(dir, run, "spyglass/log.jsonl"))
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line))
+      .filter((entry) => entry.id === gateStep.step);
+    assert.equal(gateLines.length, 1, "the step is logged exactly once");
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
 test("a failed claim step cannot support a passed claim", async () => {
   const dir = await makeRepo({
     profile: linkProfile(),
@@ -4793,6 +4862,130 @@ test("api --then stops on a failed write and refuses unsafe follow-up requests",
   }
 });
 
+test("a side-effect claim cannot pass without a passed action before its independent read", async () => {
+  const token = `action-token-${randomUUID()}`;
+  const dir = await makeRepo({ profile: apiProfile(), plan: asyncPlan });
+  const resultFile = join(
+    dir,
+    ".spyglass/runs/api-no-action/spyglass/result.json",
+  );
+  const rewrite = async (steps, read) => {
+    const pending = JSON.parse(await readFile(resultFile, "utf8"));
+    const row = pending.claims.find((item) => item.id === "question-completed");
+    row.steps = steps;
+    row.independentRead = read;
+    row.artifacts = [];
+    row.outcome = "passed";
+    row.observed = "The state was readable.";
+    await writeFile(resultFile, JSON.stringify(pending, null, 2) + "\n");
+  };
+  const refused = async (label) => {
+    const checked = await drive(dir, run, ["result", "--check"], {
+      ok: false,
+      code: 1,
+    });
+    assert.ok(
+      checked.data.findings.some(
+        (item) =>
+          item.code === "INDEPENDENT_READ_MISSING" &&
+          item.claim === "question-completed",
+      ),
+      `${label}: ${JSON.stringify(checked.data.findings)}`,
+    );
+  };
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-no-action", "--plan", "plan.json"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    // Case A: the only earlier step is the administrative up step.
+    const read = await apiCall(dir, run, token, [
+      "GET",
+      "/questions",
+      "--seat",
+      "agent",
+      "--expect",
+      "200",
+    ]);
+    await drive(dir, run, [
+      "result",
+      "set",
+      "--claim",
+      "question-completed",
+      "--outcome",
+      "passed",
+      "--observed",
+      "The list was readable.",
+      "--step",
+      up.step,
+      "--step",
+      read.step,
+      "--independent-read",
+      read.step,
+    ]);
+    await refused("administrative up step");
+
+    // Case B: the only earlier action failed, without structured assertions.
+    const failedAction = assertEnvelope(
+      await runCli(
+        dir,
+        [
+          "--json",
+          "--run",
+          run,
+          "exec",
+          "--",
+          process.execPath,
+          "-e",
+          "process.exit(1)",
+        ],
+        apiEnv(token),
+      ),
+      { ok: false, code: 1 },
+    );
+    const read2 = await apiCall(dir, run, token, [
+      "GET",
+      "/questions",
+      "--seat",
+      "agent",
+      "--expect",
+      "200",
+    ]);
+    await rewrite([failedAction.step, read2.step], read2.step);
+    await refused("failed action");
+
+    // Case C: a passed write and a completed read are accepted.
+    const post = await submitQuestion(dir, run, token);
+    const read3 = await apiCall(dir, run, token, [
+      "GET",
+      `/questions/${post.data.body.id}`,
+      "--seat",
+      "agent",
+      "--wait-until",
+      "status=complete",
+      "--timeout-ms",
+      "5000",
+      "--interval-ms",
+      "50",
+      "--expect",
+      "200",
+    ]);
+    await rewrite([post.step, read3.step], read3.step);
+    await drive(dir, run, ["result", "--check"]);
+  } finally {
+    if (run) {
+      await runCli(dir, ["--json", "--run", run, "down"], apiEnv(token));
+    }
+    await removeRepo(dir);
+  }
+});
+
 test("api --wait-until polls one job to completion and satisfies the independent read", async () => {
   const token = `wait-token-${randomUUID()}`;
   const dir = await makeRepo({ profile: apiProfile(), plan: asyncPlan });
@@ -5076,6 +5269,63 @@ test("api --expect-json and --expect-body-contains fail on a wrong or missing va
   }
 });
 
+test("api masks a response header whose name marks it as a credential", async () => {
+  const token = `header-token-${randomUUID()}`;
+  const marker = `m${randomUUID().replaceAll("-", "")}`;
+  const dir = await makeRepo({ profile: apiProfile() });
+  let run;
+  try {
+    run = assertEnvelope(
+      await runCli(
+        dir,
+        ["--json", "up", "--run", "api-headers"],
+        apiEnv(token),
+      ),
+      { ok: true, code: 0 },
+    ).run;
+    const call = await runCli(
+      dir,
+      [
+        "--json",
+        "--run",
+        run,
+        "api",
+        "POST",
+        "/reflect",
+        "--seat",
+        "agent",
+        "--data",
+        JSON.stringify({ value: marker }),
+        "--expect",
+        "200",
+      ],
+      apiEnv(token),
+    );
+    const result = assertEnvelope(call, { ok: true, code: 0 });
+    const path = result.artifacts.find((item) => item.kind === "api").path;
+    const text = await readRunFile(dir, run, `spyglass/${path}`);
+    const record = JSON.parse(text);
+    assert.equal(
+      record.response.headers["x-session-token"],
+      "[REDACTED]",
+      "a credential-named response header is masked",
+    );
+    assert.match(record.response.headers["content-type"], /application\/json/);
+    const secret = `fixture-header-token-${marker}`;
+    const log = await readRunFile(dir, run, "spyglass/log.jsonl");
+    for (const [label, value] of [
+      ["stdout", call.stdout],
+      ["stderr", call.stderr],
+      ["the artifact", text],
+      ["the step log", log],
+    ])
+      assert.ok(!value.includes(secret), `${label} hides the header value`);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"], apiEnv(token));
+    await removeRepo(dir);
+  }
+});
+
 test("logs --since-step, --since-last, --grep, --expect-text and --forbid-text read the app log without a mark", async () => {
   const token = `logs-token-${randomUUID()}`;
   const dir = await makeRepo({ profile: apiProfile() });
@@ -5143,6 +5393,69 @@ test("logs --since-step, --since-last, --grep, --expect-text and --forbid-text r
     assert.equal(noWindow.error.code, "INVALID_ARGUMENT");
   } finally {
     if (run) await runCli(dir, ["--json", "--run", run, "down"]);
+    await removeRepo(dir);
+  }
+});
+
+test("logs refuses a process-log expectation that secret masking changes, and reports masked regions", async () => {
+  const token = `logs-masked-${randomUUID()}`;
+  const base = apiProfile();
+  const profile = {
+    ...base,
+    launch: {
+      ...base.launch,
+      env: { PORT: "${port}", LOG_NOTE: "env:SPYGLASS_TEST_LOG_SECRET" },
+    },
+  };
+  const env = {
+    env: {
+      DEMO_TOKEN: token,
+      SPYGLASS_TEST_API_TOKEN: token,
+      SPYGLASS_TEST_LOG_SECRET: "demo app listening",
+    },
+  };
+  const dir = await makeRepo({ profile });
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "logs-masked"], env),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    const logs = (args, expected) =>
+      runCli(dir, ["--json", "--run", run, "logs", "app", ...args], env).then(
+        (result) =>
+          expected
+            ? assertEnvelope(result, expected)
+            : assertEnvelope(result, { ok: true, code: 0 }),
+      );
+    const plain = await logs(["--since-step", up.step]);
+    assert.match(plain.data.logs, /\[REDACTED\] on 127\.0\.0\.1/);
+    assert.ok(!plain.data.logs.includes("demo app listening"));
+    assert.ok(
+      plain.data.maskedRegions >= 1,
+      "the command says how many masked regions it retained",
+    );
+    const forbidden = await logs(
+      ["--since-step", up.step, "--forbid-text", "demo app listening"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(forbidden.error.code, "LOG_EXPECTATION_MASKED");
+    const generic = await logs(
+      ["--since-step", up.step, "--expect-text", "Bearer abc"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(generic.error.code, "LOG_EXPECTATION_MASKED");
+    const safe = await logs([
+      "--since-step",
+      up.step,
+      "--forbid-text",
+      "never-logged-text",
+    ]);
+    assert.equal(safe.data.claims[0].ok, true);
+    assert.match(safe.data.claims[0].detail, /masked region/);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"], env);
     await removeRepo(dir);
   }
 });
@@ -5575,6 +5888,140 @@ test("up --cite-gates-from and result set --gate-run cite the gates of a named r
     );
     assert.equal(none.error.code, "GATE_CITATION_REJECTED");
     await drive(dir, "gate-set", ["down"]);
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
+test("a gate run again in this run replaces the citation from the earlier run", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: gatePlan });
+  try {
+    const earlier = await passedRun(dir, "gate-first");
+    const cited = assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "gate-rerun",
+        "--plan",
+        "plan.json",
+        "--cite-gates-from",
+        earlier,
+      ]),
+      { ok: true, code: 0 },
+    );
+    assert.equal(cited.data.citedGates[0].run, earlier);
+    assert.equal(
+      (await pendingResult(dir, "gate-rerun")).gates[0].run,
+      earlier,
+    );
+    const again = await drive(dir, "gate-rerun", [
+      "exec",
+      "--gate",
+      "unit",
+      "--",
+      process.execPath,
+      "-e",
+      "0",
+    ]);
+    assert.deepEqual((await pendingResult(dir, "gate-rerun")).gates[0], {
+      name: "unit",
+      outcome: "passed",
+      steps: [again.step],
+    });
+    assert.ok(
+      again.data.linked.skipped.some(
+        (note) => /unit/.test(note) && new RegExp(earlier).test(note),
+      ),
+      "the step says that it replaced the citation",
+    );
+    await drive(dir, "gate-rerun", ["check", "pass", "--claim", "ready"]);
+    await drive(dir, "gate-rerun", [
+      "result",
+      "set",
+      "--claim",
+      "ready",
+      "--outcome",
+      "passed",
+      "--observed",
+      "Passed.",
+    ]);
+    await drive(dir, "gate-rerun", ["result"]);
+    await drive(dir, "gate-rerun", ["down"]);
+  } finally {
+    await removeRepo(dir);
+  }
+});
+
+test("a failed control attempt in this run replaces a failed attempt cited from another run", async () => {
+  const dir = await makeRepo({ profile: linkProfile(), plan: linkPlan });
+  try {
+    assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "control-old",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    const oldFailed = await drive(
+      dir,
+      "control-old",
+      [
+        "check",
+        "fail",
+        "--claim",
+        "ready",
+        "--control",
+        "ready-control:failed",
+      ],
+      { ok: false, code: 1 },
+    );
+    await drive(dir, "control-old", ["down"]);
+    assertEnvelope(
+      await runCli(dir, [
+        "--json",
+        "up",
+        "--run",
+        "control-new",
+        "--plan",
+        "plan.json",
+      ]),
+      { ok: true, code: 0 },
+    );
+    await drive(dir, "control-new", [
+      "result",
+      "set",
+      "--control",
+      "ready-control",
+      "--failed-run",
+      "control-old",
+      "--failed-step",
+      oldFailed.step,
+    ]);
+    const citedRow = (await pendingResult(dir, "control-new")).controls[0];
+    assert.equal(citedRow.failedRun, "control-old");
+    assert.equal(citedRow.failedStep, oldFailed.step);
+    const newFailed = await drive(
+      dir,
+      "control-new",
+      [
+        "check",
+        "fail",
+        "--claim",
+        "ready",
+        "--control",
+        "ready-control:failed",
+      ],
+      { ok: false, code: 1 },
+    );
+    const row = (await pendingResult(dir, "control-new")).controls[0];
+    assert.equal(row.failedRun, "control-new");
+    assert.equal(row.failedStep, newFailed.step);
+    await drive(dir, "control-new", ["down"]);
   } finally {
     await removeRepo(dir);
   }

@@ -6,6 +6,38 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- `logs --expect-text` and `--forbid-text` on the owned process log no longer
+  pass or fail on text that secret masking already rewrote. An expectation that
+  masking changes now exits 2 with `LOG_EXPECTATION_MASKED` instead of a false
+  result, and `maskedRegions` reports how many masked parts the log holds.
+  Compose log expectations are evaluated on the unmasked text, and the
+  retained log stays masked.
+- A malformed row in the pending result, such as a claim without a `steps`
+  array, no longer removes the finished step from `log.jsonl`. The step keeps
+  its outcome, exactly one log line records it, and `linked.error` names the
+  problem instead of failing the command with `ENVIRONMENT`. The result file
+  is left unchanged, and a second `finish` cannot log the step twice.
+- `result` now refuses a side-effect claim whose earlier cited step failed or
+  is administrative, such as the `up` step. Such a claim needs a successful
+  action step before its independent read. A result that passed only because
+  it cited `up` or a failed step as its action is now refused with
+  `INDEPENDENT_READ_MISSING`.
+- `api` masks a response header whose name marks it as a credential, such as
+  `x-auth-token` or `x-api-key`, in the retained response, the step log and
+  the envelope. Other response headers stay readable.
+- Every command of a run registers the database password itself, not only the
+  whole connection string. Output such as a driver error or the app's own
+  connection URL, which names another host, no longer retains the password.
+- A gate or control row cited from an earlier run no longer mixes step IDs from
+  two runs. A step of the current run takes the row over: it names this run's
+  step only and `linked.skipped` records the replaced citation. A failed
+  rerun sets the gate to `failed`, and a new failed control attempt names this
+  run. Before this fix, `result` refused such a row with `MISSING_STEP` or
+  `CONTROL_INVALID` even though both the citation and the new attempt were
+  valid.
+
 ## [1.4.3] - 2026-11-16
 
 ### Fixed
