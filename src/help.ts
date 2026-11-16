@@ -80,7 +80,7 @@ const details: Record<
     usage:
       "logs [SERVICE] (--since MARK | --since-step STEP_ID | --since-last) [--grep PATTERN] [--expect-text TEXT] [--forbid-text TEXT] --run ID",
     description:
-      "Read retained app logs or the declared Compose project since an existing mark. Save masked evidence. Missing marks fail and list the known marks. --since-step STEP_ID starts at that step's start time and needs no mark; an unknown step fails with UNKNOWN_STEP. --since-last starts at the previous step. --grep PATTERN keeps the lines that match a regular expression. --expect-text TEXT and --forbid-text TEXT (repeatable) check the kept log; a failed one exits 1 with LOG_EXPECTATION_FAILED and keeps the log artifact. Diagnostics remain available after a drive fails.",
+      "Read retained app logs or the declared Compose project since an existing mark. Save masked evidence. Missing marks fail and list the known marks. --since-step STEP_ID starts at that step's start time and needs no mark; an unknown step fails with UNKNOWN_STEP. --since-last starts at the previous step. --grep PATTERN keeps the lines that match a regular expression. --expect-text TEXT and --forbid-text TEXT (repeatable) check the kept log; a failed one exits 1 with LOG_EXPECTATION_FAILED and keeps the log artifact. On Compose logs an expectation is evaluated before masking; the owned process log is stored masked, so an expectation that masking would change fails with LOG_EXPECTATION_MASKED, and maskedRegions counts the masked parts that a --forbid-text search could not read. Diagnostics remain available after a drive fails.",
     example: "spyglass logs app --since before-action --run change-42 --json",
   },
   evidence: {

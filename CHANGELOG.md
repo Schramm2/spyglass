@@ -6,6 +6,15 @@ This file records the notable changes to Spyglass. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- `logs --expect-text` and `--forbid-text` on the owned process log no longer
+  pass or fail on text that secret masking already rewrote. An expectation that
+  masking changes now exits 2 with `LOG_EXPECTATION_MASKED` instead of a false
+  result, and `maskedRegions` reports how many masked parts the log holds.
+  Compose log expectations are evaluated on the unmasked text, and the
+  retained log stays masked.
+
 ## [1.4.3] - 2026-11-16
 
 ### Fixed

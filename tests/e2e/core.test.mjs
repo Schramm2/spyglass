@@ -5147,6 +5147,69 @@ test("logs --since-step, --since-last, --grep, --expect-text and --forbid-text r
   }
 });
 
+test("logs refuses a process-log expectation that secret masking changes, and reports masked regions", async () => {
+  const token = `logs-masked-${randomUUID()}`;
+  const base = apiProfile();
+  const profile = {
+    ...base,
+    launch: {
+      ...base.launch,
+      env: { PORT: "${port}", LOG_NOTE: "env:SPYGLASS_TEST_LOG_SECRET" },
+    },
+  };
+  const env = {
+    env: {
+      DEMO_TOKEN: token,
+      SPYGLASS_TEST_API_TOKEN: token,
+      SPYGLASS_TEST_LOG_SECRET: "demo app listening",
+    },
+  };
+  const dir = await makeRepo({ profile });
+  let run;
+  try {
+    const up = assertEnvelope(
+      await runCli(dir, ["--json", "up", "--run", "logs-masked"], env),
+      { ok: true, code: 0 },
+    );
+    run = up.run;
+    const logs = (args, expected) =>
+      runCli(dir, ["--json", "--run", run, "logs", "app", ...args], env).then(
+        (result) =>
+          expected
+            ? assertEnvelope(result, expected)
+            : assertEnvelope(result, { ok: true, code: 0 }),
+      );
+    const plain = await logs(["--since-step", up.step]);
+    assert.match(plain.data.logs, /\[REDACTED\] on 127\.0\.0\.1/);
+    assert.ok(!plain.data.logs.includes("demo app listening"));
+    assert.ok(
+      plain.data.maskedRegions >= 1,
+      "the command says how many masked regions it retained",
+    );
+    const forbidden = await logs(
+      ["--since-step", up.step, "--forbid-text", "demo app listening"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(forbidden.error.code, "LOG_EXPECTATION_MASKED");
+    const generic = await logs(
+      ["--since-step", up.step, "--expect-text", "Bearer abc"],
+      { ok: false, code: 2 },
+    );
+    assert.equal(generic.error.code, "LOG_EXPECTATION_MASKED");
+    const safe = await logs([
+      "--since-step",
+      up.step,
+      "--forbid-text",
+      "never-logged-text",
+    ]);
+    assert.equal(safe.data.claims[0].ok, true);
+    assert.match(safe.data.claims[0].detail, /masked region/);
+  } finally {
+    if (run) await runCli(dir, ["--json", "--run", run, "down"], env);
+    await removeRepo(dir);
+  }
+});
+
 // Slice 5 of docs/verification-speed.md: status --work, cited gates, finish.
 const finishPlan = {
   claims: [linkClaim("ready", "behavior", ["pass"])],

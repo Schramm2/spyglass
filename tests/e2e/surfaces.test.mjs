@@ -1096,6 +1096,12 @@ surfaceTest(
         required: ["db"],
       },
       db: { connection: "env:SPYGLASS_TEST_DATABASE_URL" },
+      checks: {
+        note: {
+          command: ["node", "-e", "0"],
+          env: { LOG_NOTE: "env:SPYGLASS_TEST_LOG_SECRET" },
+        },
+      },
     });
     const dir = await makeRepo({ profile });
     let run;
@@ -1422,6 +1428,39 @@ surfaceTest(
       );
       assert.match(JSON.stringify(logs.data), /ready to accept connections/i);
       assert.ok(mark.step);
+      const secretLog = assertEnvelope(
+        await runCli(
+          dir,
+          [
+            "--json",
+            "--run",
+            run,
+            "logs",
+            "db",
+            "--since",
+            "before-restart",
+            "--expect-text",
+            "ready to accept connections",
+          ],
+          {
+            env: {
+              ...dbEnv,
+              SPYGLASS_TEST_LOG_SECRET: "ready to accept connections",
+            },
+          },
+        ),
+        { ok: true, code: 0 },
+      );
+      assert.equal(
+        secretLog.data.claims[0].ok,
+        true,
+        "the expectation is evaluated before masking",
+      );
+      assert.ok(
+        !JSON.stringify(secretLog.data).includes("ready to accept connections"),
+        "the retained log stays masked",
+      );
+      assert.match(JSON.stringify(secretLog.data), /\[REDACTED\]/);
 
       await runCli(dir, ["--json", "--run", run, "down"], { env: dbEnv });
       const stillRunning = await spawnCapture(

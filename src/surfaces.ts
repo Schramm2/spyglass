@@ -1457,11 +1457,12 @@ async function logs(
       );
     return finishLogs(
       ctx,
-      ctx.vault.text(result.stdout),
+      result.stdout,
       filters,
       "compose-logs.txt",
       "container-log",
       { project: scope.project, service: service ?? null, ...window, markedAt },
+      "unmasked",
     );
   }
 
@@ -1491,17 +1492,21 @@ async function logs(
     .join("\n");
   return finishLogs(
     ctx,
-    ctx.vault.text(selected),
+    selected,
     filters,
     "process-logs.txt",
     "process-log",
     { service: service ?? "app", ...window, markedAt, truncated },
+    "masked",
   );
 }
 
 /**
  * Filter the log lines, keep the log as evidence, then check the text
- * expectations on what remains. A failed expectation keeps the artifact.
+ * expectations on what remains. Expectations run before masking when the
+ * caller gives unmasked text. A log that is already stored masked refuses an
+ * expectation that masking would change, because a masked log cannot prove a
+ * claim about its own secrets. A failed expectation keeps the artifact.
  */
 function finishLogs(
   ctx: Context,
@@ -1515,30 +1520,60 @@ function finishLogs(
   name: string,
   kind: string,
   base: Record<string, unknown>,
+  stored: "unmasked" | "masked",
 ): Record<string, unknown> {
-  const logs = filters.pattern
+  const expectations = [
+    ...filters.expectText.map((item) => ({
+      item,
+      id: `expect-text ${item}`,
+    })),
+    ...filters.forbidText.map((item) => ({
+      item,
+      id: `forbid-text ${item}`,
+    })),
+  ];
+  if (stored === "masked") {
+    const changed = expectations.filter(
+      ({ item }) => ctx.vault.text(item) !== item,
+    );
+    if (changed.length)
+      throw new Fault(
+        "LOG_EXPECTATION_MASKED",
+        `Log expectation cannot be evaluated: ${changed.map(({ id }) => id).join("; ")}. Secret masking changes this text, and the process log is stored masked.`,
+        "Assert on text that masking does not change, such as a non-secret marker on the same log line.",
+        2,
+      );
+  }
+  const searched = filters.pattern
     ? text
         .split(/\r?\n/)
         .filter((line) => filters.pattern!.test(line))
         .join("\n")
     : text;
+  const retained = ctx.vault.text(searched);
+  const maskedRegions = retained.split("[REDACTED]").length - 1;
+  const hiddenDetail =
+    stored === "masked" && maskedRegions > 0
+      ? `not found; ${maskedRegions} masked region(s) were not searched`
+      : "not found";
   const assertions: Assertion[] = [
     ...filters.expectText.map((item) => ({
       id: `expect-text ${item}`,
-      ok: logs.includes(item),
-      detail: logs.includes(item) ? "found" : "not found",
+      ok: searched.includes(item),
+      detail: searched.includes(item) ? "found" : "not found",
     })),
     ...filters.forbidText.map((item) => ({
       id: `forbid-text ${item}`,
-      ok: !logs.includes(item),
-      detail: logs.includes(item) ? "found" : "not found",
+      ok: !searched.includes(item),
+      detail: searched.includes(item) ? "found" : hiddenDetail,
     })),
   ];
-  const artifact = ctx.artifact(name, logs, kind);
+  const artifact = ctx.artifact(name, retained, kind);
   const data: Record<string, unknown> = {
     ...base,
     ...(filters.grepText !== undefined ? { grep: filters.grepText } : {}),
-    logs,
+    logs: retained,
+    ...(maskedRegions > 0 ? { maskedRegions } : {}),
     artifacts: [artifact],
     ...(assertions.length ? { claims: assertions } : {}),
   };
