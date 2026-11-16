@@ -165,7 +165,9 @@ test(
             commandFits: command.scrollWidth <= command.clientWidth + 1,
             reportFits: report.scrollHeight <= report.clientHeight + 1,
             folderFits: [...document.querySelectorAll('.rail-l > *')].every(e => e.scrollHeight <= e.clientHeight + 1),
-            pageFits: document.documentElement.scrollWidth <= innerWidth };
+            pageFits: document.documentElement.scrollWidth <= innerWidth,
+            overflow: [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('.marquee'))
+              .slice(0, 5).map(e => e.tagName.toLowerCase() + '.' + e.className + ' right=' + Math.round(e.getBoundingClientRect().right) + ' font=' + getComputedStyle(e).fontFamily) };
         })()`);
             observations.push({ width, ...state });
             assert.ok(
@@ -184,7 +186,10 @@ test(
               state.folderFits,
               `Folder files and product facts must not be clipped at ${width}px`,
             );
-            assert.ok(state.pageFits, `The page must reflow at ${width}px`);
+            assert.ok(
+              state.pageFits,
+              `The page must reflow at ${width}px; overflow: ${state.overflow.join("; ")}`,
+            );
             await evaluate("scrollTo(0, 0)");
             await screenshot(`hero-${width}`);
             if ([1440, 320].includes(width))
